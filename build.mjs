@@ -6,6 +6,8 @@ await build({
     outdir: 'dist',
     bundle: true,
     platform: 'node',
+    format: 'esm',
+    target: 'node20',
     sourcemap: true,
     plugins: [dtsPlugin()],
 });
