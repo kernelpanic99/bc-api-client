@@ -6,7 +6,8 @@
     "types": "dist/index.d.ts",
     "type": "module",
     "exports": {
-        ".": "./dist/index.js"
+        ".": "./dist/index.js",
+        "./package.json": "./package.json"
     },
     "engines": {
         "node": ">=20"
@@ -36,7 +37,7 @@
         "vitest": "^3.1.2"
     },
     "dependencies": {
-        "jsonwebtoken": "^9.0.2",
+        "jose": "^6.0.11",
         "ky": "^1.8.1",
         "remeda": "^2.21.3"
     }

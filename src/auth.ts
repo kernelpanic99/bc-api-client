@@ -1,5 +1,5 @@
 import ky from 'ky';
-import jwt from 'jsonwebtoken';
+import * as jose from 'jose';
 import { intersection } from 'remeda';
 
 type Config = {
@@ -96,13 +96,17 @@ export class BigCommerceAuth {
         }).json<TokenResponse>();
     }
 
-    verify(jwtPayload: string) {
+    async verify(jwtPayload: string) {
         try {
-            return jwt.verify(jwtPayload, this.config.secret, {
+            const secret = new TextEncoder().encode(this.config.secret);
+
+            const { payload } = await jose.jwtVerify(jwtPayload, secret, {
                 audience: this.config.clientId,
                 issuer: ISSUER,
                 subject: `stores/${this.config.storeHash}`,
-            }) as Claims;
+            });
+
+            return payload as Claims;
         } catch (error) {
             throw new Error('Invalid JWT payload', { cause: error });
         }
