@@ -51,11 +51,14 @@ export type RequestOptions<T> = {
     version?: ApiVersion;
     /** Query parameters to append to the URL */
     query?: Record<string, string>;
+};
+
+export type StoreOptions = {
     /** BigCommerce store hash */
     storeHash: string;
     /** API access token */
     accessToken: string;
-};
+}
 
 /**
  * Options for rate limit handling
@@ -89,7 +92,7 @@ export class RequestError<T> extends Error {
  * @returns Promise resolving to the API response
  * @throws {RequestError} If the request fails or rate limit is exceeded
  */
-export const request = async <T>(options: RequestOptions<T> & RateLimitOptions) => {
+export const request = async <T, R>(options: RequestOptions<T> & RateLimitOptions & StoreOptions): Promise<R> => {
     const { maxDelay = CONFIG.DEFAULT_MAX_DELAY, maxRetries = CONFIG.DEFAULT_MAX_RETRIES } = options;
 
     let retries = 0;
@@ -97,7 +100,7 @@ export const request = async <T>(options: RequestOptions<T> & RateLimitOptions) 
 
     while (retries < maxRetries) {
         try {
-            return await safeRequest(options);
+            return await safeRequest<T, R>(options);
         } catch (error) {
             const err = error as RequestError<T>;
             lastError = err;
@@ -144,11 +147,11 @@ export const request = async <T>(options: RequestOptions<T> & RateLimitOptions) 
  * @returns Promise resolving to the API response
  * @throws {RequestError} If the request fails
  */ 
-const safeRequest = async <T>(options: RequestOptions<T>): Promise<T> => {
+const safeRequest = async <T, R>(options: RequestOptions<T> & StoreOptions): Promise<R> => {
     let res: KyResponse<T>;
 
     try {
-        res = await call<T>(options);
+        res = await call<T, R>(options);
     } catch (_error) {
         if(_error instanceof RequestError) {
             throw _error;
@@ -185,7 +188,7 @@ const safeRequest = async <T>(options: RequestOptions<T>): Promise<T> => {
     }
 
     try {
-        return await res.json<T>();
+        return await res.json<R>();
     } catch (error) {
         throw new RequestError(
             res.status,
@@ -203,7 +206,7 @@ const safeRequest = async <T>(options: RequestOptions<T>): Promise<T> => {
  * @returns Promise resolving to the raw response
  * @throws {RequestError} If the URL is too long or request fails
  */
-const call = <T>(options: RequestOptions<T>): ResponsePromise<T> => {
+const call = <T, R>(options: RequestOptions<T> & StoreOptions): ResponsePromise<R> => {
     const { storeHash, accessToken, endpoint, method = 'GET', body, version = CONFIG.DEFAULT_VERSION, query } = options;
 
     const url = `${CONFIG.BASE_URL}${storeHash}/${version}/${endpoint.replace(/^\//, '')}`;
@@ -229,5 +232,5 @@ const call = <T>(options: RequestOptions<T>): ResponsePromise<T> => {
         body: JSON.stringify(body),
     };
 
-    return ky(fullUrl, request);
+    return ky<R>(fullUrl, request);
 };
