@@ -5,6 +5,7 @@ await build({
     entryPoints: ['src/index.ts'],
     outdir: 'dist',
     bundle: true,
+    platform: 'node',
     sourcemap: true,
     plugins: [dtsPlugin()],
 });
