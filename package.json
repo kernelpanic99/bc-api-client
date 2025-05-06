@@ -1,23 +1,28 @@
 {
-    "name": "bc-client",
-    "version": "1.0.0",
-    "description": "",
-    "main": "index.js",
+    "name": "bigcommerce-client",
+    "version": "0.0.1",
+    "description": "A client for the BigCommerce management API and app authentication",
+    "main": "dist/index.js",
     "type": "module",
+    "engines": {
+        "node": ">=20"
+    },
     "scripts": {
         "test": "vitest",
         "lint": "eslint . --fix",
         "format": "prettier --write .",
-        "build": "pnpm lint && esbuild src/index.ts --bundle --platform=node --outdir=dist --format=esm"
+        "build": "pnpm lint && node build.mjs"
     },
     "keywords": [],
-    "author": "",
-    "license": "ISC",
+    "author": "Arthur Nikolaienko",
+    "license": "MIT",
     "packageManager": "pnpm@10.10.0",
     "devDependencies": {
         "@eslint/js": "^9.25.1",
         "@types/node": "^22.15.3",
+        "dotenv": "^16.5.0",
         "esbuild": "^0.25.3",
+        "esbuild-plugin-d.ts": "^1.3.1",
         "eslint": "^9.25.1",
         "eslint-config-prettier": "^10.1.2",
         "prettier": "^3.5.3",
