@@ -19,6 +19,7 @@
     "packageManager": "pnpm@10.10.0",
     "devDependencies": {
         "@eslint/js": "^9.25.1",
+        "@types/jsonwebtoken": "^9.0.9",
         "@types/node": "^22.15.3",
         "dotenv": "^16.5.0",
         "esbuild": "^0.25.3",
@@ -31,6 +32,7 @@
         "vitest": "^3.1.2"
     },
     "dependencies": {
+        "jsonwebtoken": "^9.0.2",
         "ky": "^1.8.1",
         "remeda": "^2.21.3"
     }
