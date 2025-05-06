@@ -229,7 +229,7 @@ const call = <T, R>(options: RequestOptions<T> & StoreOptions): ResponsePromise<
             'Content-Type': 'application/json',
             'X-Auth-Token': accessToken,
         },
-        body: JSON.stringify(body),
+        json: body,
     };
 
     return ky<R>(fullUrl, request);
