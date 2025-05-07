@@ -187,13 +187,20 @@ const safeRequest = async <T, R>(options: RequestOptions<T> & StoreOptions): Pro
         );
     }
 
+    const text = await res.text();
+
+
+    if(res.status === 204) {
+        return undefined as unknown as R;
+    }
+
     try {
-        return await res.json<R>();
+        return JSON.parse(text);
     } catch (error) {
         throw new RequestError(
             res.status,
-            `Failed to parse response: ${await res.text()}`,
-            await res.text(),
+            `Failed to parse response: ${text}`,
+            text,
             error
         );
     }
@@ -227,6 +234,7 @@ const call = <T, R>(options: RequestOptions<T> & StoreOptions): ResponsePromise<
         method,
         headers: {
             'Content-Type': 'application/json',
+            'Accept': 'application/json',
             'X-Auth-Token': accessToken,
         },
         json: body,
