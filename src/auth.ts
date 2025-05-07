@@ -2,13 +2,19 @@ import ky from 'ky';
 import * as jose from 'jose';
 import { intersection } from 'remeda';
 
+/**
+ * Configuration options for BigCommerce authentication
+ */
 type Config = {
+    /** The OAuth client ID from BigCommerce */
     clientId: string;
+    /** The OAuth client secret from BigCommerce */
     secret: string;
+    /** The redirect URI registered with BigCommerce */
     redirectUri: string;
+    /** The store hash for the BigCommerce store */
     storeHash: string;
-    // Pass an array of scopes to validate the scopes in the auth callback.
-    // Otherwise the scopes will not be validated.
+    /** Optional array of scopes to validate during auth callback */
     scopes?: string[];
 };
 
@@ -16,14 +22,23 @@ const GRANT_TYPE = 'authorization_code';
 const TOKEN_ENDPOINT = 'https://login.bigcommerce.com/oauth2/token';
 const ISSUER = 'bc';
 
-
+/**
+ * Query parameters received from BigCommerce auth callback
+ */
 type AuthQuery = {
+    /** The BigCommerce account UUID */
     account_uuid: string;
+    /** The authorization code from BigCommerce */
     code: string;
+    /** The granted OAuth scopes */
     scope: string;
+    /** The store context */
     context: string;
 };
 
+/**
+ * Request payload for token endpoint
+ */
 type TokenRequest = {
     client_id: string;
     client_secret: string;
@@ -34,43 +49,80 @@ type TokenRequest = {
     redirect_uri: string;
 };
 
+/**
+ * User information returned from BigCommerce
+ */
 export type User = {
+    /** The user's ID */
     id: number;
+    /** The user's username */
     username: string;
+    /** The user's email address */
     email: string;
 };
 
+/**
+ * Response from BigCommerce token endpoint
+ */
 export type TokenResponse = {
+    /** The OAuth access token */
     access_token: string;
+    /** The granted OAuth scopes */
     scope: string;
+    /** Information about the authenticated user */
     user: User;
+    /** Information about the store owner */
     owner: User;
+    /** The store context */
     context: string;
+    /** The BigCommerce account UUID */
     account_uuid: string;
 };
 
+/**
+ * JWT claims from BigCommerce
+ */
 export type Claims = {
+    /** JWT audience */
     aud: string;
+    /** JWT issuer */
     iss: string;
+    /** JWT issued at timestamp */
     iat: number;
+    /** JWT not before timestamp */
     nbf: number;
+    /** JWT expiration timestamp */
     exp: number;
+    /** JWT unique identifier */
     jti: string;
+    /** JWT subject */
     sub: string;
+    /** Information about the authenticated user */
     user: {
         id: number;
         email: string;
         locale: string;
     };
+    /** Information about the store owner */
     owner: {
         id: number;
         email: string;
     };
+    /** The store URL */
     url: string;
+    /** The channel ID (if applicable) */
     channel_id: number | null;
 }
 
+/**
+ * Handles authentication with BigCommerce OAuth
+ */
 export class BigCommerceAuth {
+    /**
+     * Creates a new BigCommerceAuth instance
+     * @param config - Configuration options for BigCommerce authentication
+     * @throws {Error} If the redirect URI is invalid
+     */
     constructor(private readonly config: Config) {
         try {
             URL.parse(this.config.redirectUri);
@@ -79,8 +131,13 @@ export class BigCommerceAuth {
         }
     }
 
-    async requestToken(queryString: string) {
-        const query = this.parseQueryString(queryString);
+    /**
+     * Requests an access token from BigCommerce
+     * @param data - Either a query string or AuthQuery object containing auth callback data
+     * @returns Promise resolving to the token response
+     */
+    async requestToken(data: string | AuthQuery) {
+        const query = typeof data === 'string' ? this.parseQueryString(data) : data;
 
         const tokenRequest: TokenRequest = {
             client_id: this.config.clientId,
@@ -96,6 +153,12 @@ export class BigCommerceAuth {
         }).json<TokenResponse>();
     }
 
+    /**
+     * Verifies a JWT payload from BigCommerce
+     * @param jwtPayload - The JWT string to verify
+     * @returns Promise resolving to the verified JWT claims
+     * @throws {Error} If the JWT is invalid
+     */
     async verify(jwtPayload: string) {
         try {
             const secret = new TextEncoder().encode(this.config.secret);
@@ -112,6 +175,12 @@ export class BigCommerceAuth {
         }
     }
 
+    /**
+     * Parses and validates a query string from BigCommerce auth callback
+     * @param queryString - The query string to parse
+     * @returns The parsed auth query parameters
+     * @throws {Error} If required parameters are missing or scopes are invalid
+     */
     private parseQueryString(queryString: string): AuthQuery {
         const params = new URLSearchParams(queryString);
 
@@ -148,6 +217,11 @@ export class BigCommerceAuth {
         };
     }
 
+    /**
+     * Validates that the granted scopes match the expected scopes
+     * @param scopes - Space-separated list of granted scopes
+     * @throws {Error} If the scopes don't match the expected scopes
+     */
     private validateScopes(scopes: string) {
         const scopesArray = scopes.split(' ');
 
