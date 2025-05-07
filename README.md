@@ -1,5 +1,8 @@
 # Bigcommerce management API client and JWT authenticator
 
+
+<span style="color:orange">THIS LIBRARY IS NOT READY FOR PRODUCTION!!!</span>
+
 An opinionated and minimalistic client focusing on simplicity and performance.
 Features (or antifeatures - depends on your opinion)
 - Node 20+ LTS, ESM
