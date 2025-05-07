@@ -1,6 +1,7 @@
 import { V3Resource } from './core';
 import { RateLimitOptions, RequestError, RequestOptions, StoreOptions, request } from './net';
 import { chunk, range } from 'remeda';
+import { chunkStrLength } from './util';
 
 const MAX_PAGE_SIZE = 250;
 
@@ -17,6 +18,11 @@ export type PostOptions<T> = GetOptions & {
 export type ConcurrencyOptions = {
     concurrency?: number;
     skipErrors?: boolean;
+};
+
+export type QueryOptions = Omit<GetOptions, 'version'> & ConcurrencyOptions & {
+    key: string;
+    values: (string | number)[];
 };
 
 export type Config = StoreOptions & RateLimitOptions;
@@ -170,5 +176,21 @@ export class BigCommerceClient {
         }
 
         return results;
+    }
+
+    async query<T>(options: QueryOptions): Promise<T[]> {
+        const queryStr = options.values.map((value) => `${value}`)
+        const chunks = chunkStrLength(queryStr, {
+            chunkLength: MAX_PAGE_SIZE
+        });
+
+        const requests = chunks.map((chunk) => ({
+            ...options,
+            query: { ...options.query, [options.key]: chunk.join(',') },
+        }));
+
+        const responses = await this.concurrent<never, T[]>(requests, options);
+
+        return responses.flat();
     }
 }
