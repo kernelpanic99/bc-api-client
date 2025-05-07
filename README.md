@@ -31,12 +31,13 @@ yarn add bigcommerce-client
 import { BigCommerceClient, V3Response } from 'bigcommerce-client';
 
 type MyProduct = {
-    name: string,
-    sku: string,
-    inventory_level: number,
+    id: number;
+    name: string;
+    sku: string;
+    inventory_level: number;
 }
 
-const fields = 'name,sku,inventory_level';
+const fields = 'id,name,sku,inventory_level';
 
 const client = new BigCommerceClient({
   storeHash: 'your-store-hash',
@@ -49,21 +50,41 @@ const products = await client.get<V3Response<MyProduct[]>>({
   query: { 'include_fields': fields },
 });
 
-// Low level concurrent requests
+// Low level concurrent requests with error handling
 const results = await client.concurrent<never, V3Response<MyProduct>>(
   [
     { method: 'GET', endpoint: 'catalog/products/1', query: { include_fields: fields }},
     { method: 'GET', endpoint: 'catalog/products/2', query: { include_fields: fields }},
   ],
-  10 // concurrency limit
+  { 
+    concurrency: 10,
+    skipErrors: true // Optional: skip failed requests instead of throwing
+  }
 );
 
-// Collect all pages
+// Collect all pages from v3 endpoint
 const allProducts = await client.collect<MyProduct>({
   endpoint: 'catalog/products',
   query: {
     include_fields: fields,
   },
+  concurrency: 10, // Optional: control concurrent requests
+  skipErrors: true // Optional: skip failed requests
+});
+
+// Collect all pages from v2 endpoint
+type MyOrder = {
+    id: number;
+    status: string;
+}
+
+const orders = await client.collectV2<MyOrder>({
+  endpoint: 'orders',
+  query: {
+    limit: '5',
+  },
+  concurrency: 10, // Optional: control concurrent requests
+  skipErrors: true // Optional: skip failed requests
 });
 ```
 
@@ -102,11 +123,16 @@ Makes a PUT request to the BigCommerce API.
 #### `delete<R>(endpoint: string): Promise<void>`
 Makes a DELETE request to the BigCommerce API.
 
-#### `concurrent<T, R>(requests: RequestOptions<T>[], concurrency = 10): Promise<R[]>`
-Executes multiple requests concurrently with rate limit handling.
+#### `concurrent<T, R>(requests: RequestOptions<T>[], options: ConcurrencyOptions): Promise<R[]>`
+Executes multiple requests concurrently with rate limit handling. Options:
+- `concurrency`: number of concurrent requests (default: 10)
+- `skipErrors`: whether to skip failed requests instead of throwing (default: false)
 
-#### `collect<T>(options: Omit<GetOptions, 'version'>, concurrency = 10): Promise<T[]>`
-Automatically fetches all pages of a paginated endpoint. Only works with v3 endpoints.
+#### `collect<T>(options: Omit<GetOptions, 'version'> & ConcurrencyOptions): Promise<T[]>`
+Automatically fetches all pages of a paginated v3 endpoint. Supports the same concurrency options as `concurrent`.
+
+#### `collectV2<T>(options: Omit<GetOptions, 'version'> & ConcurrencyOptions): Promise<T[]>`
+Automatically fetches all pages of a paginated v2 endpoint. Supports the same concurrency options as `concurrent`.
 
 ### BigCommerceAuth
 
