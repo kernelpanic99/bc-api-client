@@ -4,25 +4,22 @@ import { chunk, range } from 'remeda';
 
 const MAX_PAGE_SIZE = 250;
 
-type GetOptions = {
+export type GetOptions = {
     endpoint: string;
     query?: Record<string, string>;
     version?: 'v2' | 'v3';
 };
 
-type PostOptions<T> = {
-    endpoint: string;
-    query?: Record<string, string>;
+export type PostOptions<T> = GetOptions & {
     body: T;
-    version?: 'v2' | 'v3';
 };
 
-type ConcurrencyOptions = {
+export type ConcurrencyOptions = {
     concurrency?: number;
     skipErrors?: boolean;
 };
 
-type Config = StoreOptions & RateLimitOptions;
+export type Config = StoreOptions & RateLimitOptions;
 
 export class BigCommerceClient {
     constructor(private readonly config: Config) {}
