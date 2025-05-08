@@ -41,8 +41,6 @@ describe('BigCommerceClient', () => {
             },
         });
 
-        console.log(products);
-
         expect(products).toBeDefined();
         expect(products.length).toBeGreaterThan(0);
 
@@ -71,9 +69,45 @@ describe('BigCommerceClient', () => {
             },
         });
 
-        console.log(orders.length);
-
         expect(orders).toBeDefined();
         expect(orders.length).toBeGreaterThan(0);
+    });
+
+    it.skip('should be able to query data with a large number of filter values', async () => {
+        const client = new BigCommerceClient({
+            storeHash: env.storeHash,
+            accessToken: env.accessToken,
+        });
+
+        // Fetch all products first
+        const products = await client.collect<{id: number}>({
+            endpoint: '/catalog/products',
+            query: {
+                include_fields: 'id',
+            },
+        });
+
+        const productIds = products.map((product) => product.id);
+
+        const filteredProducts = await client.query<MyProduct>({
+            endpoint: '/catalog/products',
+            key: 'id:in',
+            values: productIds,
+            query: {
+                include_fields: FIELDS,
+            },
+        });
+
+        console.log(filteredProducts);
+
+        expect(filteredProducts).toBeDefined();
+        expect(filteredProducts.length).toBeGreaterThan(0);
+        expect(filteredProducts.length).toBe(productIds.length);
+        
+        const product = filteredProducts[0];
+
+        expect(product.id).toBeDefined();
+        expect(product.name).toBeDefined();
+        expect(product.sku).toBeDefined();
     });
 });

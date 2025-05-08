@@ -179,6 +179,14 @@ export class BigCommerceClient {
     }
 
     async query<T>(options: QueryOptions): Promise<T[]> {
+        if(options.query) {
+            if(!options.query.limit) {
+                options.query.limit = MAX_PAGE_SIZE.toString();
+            }
+        } else {
+            options.query = { limit: MAX_PAGE_SIZE.toString() };
+        }
+
         const queryStr = options.values.map((value) => `${value}`)
         const chunks = chunkStrLength(queryStr, {
             chunkLength: MAX_PAGE_SIZE
@@ -189,8 +197,8 @@ export class BigCommerceClient {
             query: { ...options.query, [options.key]: chunk.join(',') },
         }));
 
-        const responses = await this.concurrent<never, T[]>(requests, options);
+        const responses = await this.concurrent<never, V3Resource<T[]>>(requests, options);
 
-        return responses.flat();
+        return responses.flatMap((response) => response.data);
     }
 }
