@@ -15,11 +15,11 @@ Features (or antifeatures - depends on your opinion)
 ## Installation
 
 ```bash
-npm install bigcommerce-client
+npm install bc-api-client
 # or
-pnpm add bigcommerce-client
+pnpm add bc-api-client
 # or
-yarn add bigcommerce-client
+yarn add bc-api-client
 ```
 
 ## Usage
