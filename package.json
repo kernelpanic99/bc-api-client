@@ -17,7 +17,8 @@
         "test": "vitest",
         "lint": "eslint . --fix",
         "format": "prettier --write .",
-        "build": "pnpm lint && node build.mjs"
+        "build": "pnpm lint && node build.mjs",
+        "prepublish": "pnpm build"
     },
     "keywords": [
         "bigcommerce",
