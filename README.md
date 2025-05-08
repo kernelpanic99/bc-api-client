@@ -29,6 +29,7 @@ yarn add bigcommerce-client
 
 ```typescript
 import { BigCommerceClient, V3Response } from 'bigcommerce-client';
+import { bc } from 'bigcommerce-client/endpoints';
 
 type MyProduct = {
     id: number;
@@ -46,15 +47,15 @@ const client = new BigCommerceClient({
 
 // Basic GET request
 const products = await client.get<V3Response<MyProduct[]>>({
-  endpoint: 'catalog/products',
+  endpoint: bc.products.path,
   query: { 'include_fields': fields },
 });
 
 // Low level concurrent requests with error handling
 const results = await client.concurrent<never, V3Response<MyProduct>>(
   [
-    { method: 'GET', endpoint: 'catalog/products/1', query: { include_fields: fields }},
-    { method: 'GET', endpoint: 'catalog/products/2', query: { include_fields: fields }},
+    { method: 'GET', endpoint: bc.products.byId(1), query: { include_fields: fields }},
+    { method: 'GET', endpoint: bc.products.byId(2), query: { include_fields: fields }},
   ],
   { 
     concurrency: 10,
@@ -64,7 +65,7 @@ const results = await client.concurrent<never, V3Response<MyProduct>>(
 
 // Collect all pages from v3 endpoint
 const allProducts = await client.collect<MyProduct>({
-  endpoint: 'catalog/products',
+  endpoint: bc.products.path,
   query: {
     include_fields: fields,
   },
@@ -79,9 +80,24 @@ type MyOrder = {
 }
 
 const orders = await client.collectV2<MyOrder>({
-  endpoint: 'orders',
+  endpoint: bc.orders.v2.path,
   query: {
     limit: '5',
+  },
+  concurrency: 10, // Optional: control concurrent requests
+  skipErrors: true // Optional: skip failed requests
+});
+
+// Query with multiple filter values
+// Note: productIds would be a large array of IDs in a real scenario
+const productIds = [1, 2, 3, 4, 5]; // Example IDs
+
+const filteredProducts = await client.query<MyProduct>({
+  endpoint: bc.products.path,
+  key: 'id:in',
+  values: productIds,
+  query: {
+    include_fields: fields,
   },
   concurrency: 10, // Optional: control concurrent requests
   skipErrors: true // Optional: skip failed requests
@@ -133,6 +149,15 @@ Automatically fetches all pages of a paginated v3 endpoint. Supports the same co
 
 #### `collectV2<T>(options: Omit<GetOptions, 'version'> & ConcurrencyOptions): Promise<T[]>`
 Automatically fetches all pages of a paginated v2 endpoint. Supports the same concurrency options as `concurrent`.
+
+#### `query<T>(options: QueryOptions): Promise<T[]>`
+Executes a query with multiple filter values, automatically handling large value sets by chunking them into smaller requests. Options:
+- `endpoint`: API endpoint to query
+- `key`: Filter key (e.g. 'id:in')
+- `values`: Array of values to filter by
+- `query`: Additional query parameters
+- `concurrency`: number of concurrent requests (default: 10)
+- `skipErrors`: whether to skip failed requests instead of throwing (default: false)
 
 ### BigCommerceAuth
 
