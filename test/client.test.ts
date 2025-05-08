@@ -1,6 +1,7 @@
 import { BigCommerceClient } from '../src/client';
 import { describe, it, expect } from 'vitest';
 import { config } from 'dotenv';
+import { bc } from '../src/endpoints';
 
 config();
 
@@ -35,7 +36,7 @@ describe('BigCommerceClient', () => {
         });
 
         const products = await client.collect<MyProduct>({
-            endpoint: '/catalog/products',
+            endpoint: bc.products.path,
             query: {
                 include_fields: FIELDS,
             },
@@ -63,7 +64,7 @@ describe('BigCommerceClient', () => {
         }
         
         const orders = await client.collectV2<MyOrder>({
-            endpoint: '/orders',
+            endpoint: bc.orders.v2.path,
             query: {
                 limit: '5',
             },
@@ -81,7 +82,7 @@ describe('BigCommerceClient', () => {
 
         // Fetch all products first
         const products = await client.collect<{id: number}>({
-            endpoint: '/catalog/products',
+            endpoint: bc.products.path,
             query: {
                 include_fields: 'id',
             },
@@ -90,7 +91,7 @@ describe('BigCommerceClient', () => {
         const productIds = products.map((product) => product.id);
 
         const filteredProducts = await client.query<MyProduct>({
-            endpoint: '/catalog/products',
+            endpoint: bc.products.path,
             key: 'id:in',
             values: productIds,
             query: {
