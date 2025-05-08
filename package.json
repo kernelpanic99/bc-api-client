@@ -1,6 +1,6 @@
 {
     "name": "bigcommerce-client",
-    "version": "0.0.1",
+    "version": "0.1.0-beta.1",
     "description": "A client for the BigCommerce management API and app authentication",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
@@ -19,7 +19,14 @@
         "format": "prettier --write .",
         "build": "pnpm lint && node build.mjs"
     },
-    "keywords": [],
+    "keywords": [
+        "bigcommerce",
+        "api",
+        "client",
+        "typescript",
+        "jwt",
+        "authentication"
+    ],
     "author": "Arthur Nikolaienko",
     "license": "MIT",
     "packageManager": "pnpm@10.10.0",
