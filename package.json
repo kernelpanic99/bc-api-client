@@ -10,6 +10,14 @@
         "./endpoints": "./dist/endpoints.js",
         "./package.json": "./package.json"
     },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/kernelpanic99/bigcommerce-client"
+    },
+    "homepage": "https://github.com/kernelpanic99/bigcommerce-client",
+    "bugs": {
+        "url": "https://github.com/kernelpanic99/bigcommerce-client/issues"
+    },
     "engines": {
         "node": ">=20"
     },
@@ -20,6 +28,11 @@
         "build": "pnpm lint && node build.mjs",
         "prepublish": "pnpm build"
     },
+    "files": [
+        "dist",
+        "README.md",
+        "LICENSE"
+    ],
     "keywords": [
         "bigcommerce",
         "api",
@@ -28,6 +41,9 @@
         "jwt",
         "authentication"
     ],
+    "publishConfig": {
+        "access": "public"
+    },
     "author": "Arthur Nikolaienko",
     "license": "MIT",
     "packageManager": "pnpm@10.10.0",
