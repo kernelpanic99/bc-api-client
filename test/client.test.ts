@@ -1,114 +1,247 @@
 import { BigCommerceClient } from '../src/client';
-import { describe, it, expect } from 'vitest';
-import { config } from 'dotenv';
-import { bc } from '../src/endpoints';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { request, Methods } from '../src/net';
 
-config();
-
-// Provide test credentials in .env file
-const loadEnv = () => {
-    if (!process.env.TEST_HASH || !process.env.TEST_TOKEN) {
-        throw new Error('TEST_HASH and TEST_TOKEN must be set');
-    }
-    
-    return {
-        storeHash: process.env.TEST_HASH,
-        accessToken: process.env.TEST_TOKEN,
-    };
-};
+// Mock the request function
+vi.mock('../src/net', () => ({
+    request: vi.fn(),
+    Methods: {
+        GET: 'GET',
+        POST: 'POST',
+        PUT: 'PUT',
+        DELETE: 'DELETE',
+    },
+}));
 
 describe('BigCommerceClient', () => {
-    const env = loadEnv();
-
-    type MyProduct = {
-        id: number;
-        name: string;
-        sku: string;
-        inventory_level: number;
+    const mockConfig = {
+        storeHash: 'test-store',
+        accessToken: 'test-token',
     };
 
-    const FIELDS = 'id,name,sku,inventory_level';
+    let client: BigCommerceClient;
 
-    it.skip('should be able to collect data', async () => {
-        const client = new BigCommerceClient({
-            storeHash: env.storeHash,
-            accessToken: env.accessToken,
-        });
-
-        const products = await client.collect<MyProduct>({
-            endpoint: bc.products.path,
-            query: {
-                include_fields: FIELDS,
-            },
-        });
-
-        expect(products).toBeDefined();
-        expect(products.length).toBeGreaterThan(0);
-
-        const product = products[0];
-
-        expect(product.id).toBeDefined();
-        expect(product.name).toBeDefined();
-        expect(product.sku).toBeDefined();
+    beforeEach(() => {
+        client = new BigCommerceClient(mockConfig);
+        vi.clearAllMocks();
     });
 
-    it.skip('should be able to collect v2 data', async () => {
-        const client = new BigCommerceClient({
-            storeHash: env.storeHash,
-            accessToken: env.accessToken,
+    describe('Basic HTTP Methods', () => {
+        it('should make GET requests', async () => {
+            const mockResponse = { data: { id: 1, name: 'Test' } };
+            vi.mocked(request).mockResolvedValueOnce(mockResponse);
+
+            const result = await client.get({
+                endpoint: '/test',
+                query: { limit: '10' },
+            });
+
+            expect(request).toHaveBeenCalledWith({
+                endpoint: '/test',
+                method: 'GET',
+                query: { limit: '10' },
+                ...mockConfig,
+            });
+            expect(result).toEqual(mockResponse);
         });
 
-        type MyOrder = {
-            id: number,
-            status: string;
-        }
-        
-        const orders = await client.collectV2<MyOrder>({
-            endpoint: bc.orders.v2.path,
-            query: {
-                limit: '5',
-            },
+        it('should make POST requests', async () => {
+            const mockResponse = { id: 1 };
+            const mockBody = { name: 'Test' };
+            vi.mocked(request).mockResolvedValueOnce(mockResponse);
+
+            const result = await client.post({
+                endpoint: '/test',
+                body: mockBody,
+            });
+
+            expect(request).toHaveBeenCalledWith({
+                endpoint: '/test',
+                method: 'POST',
+                body: mockBody,
+                ...mockConfig,
+            });
+            expect(result).toEqual(mockResponse);
         });
 
-        expect(orders).toBeDefined();
-        expect(orders.length).toBeGreaterThan(0);
+        it('should make PUT requests', async () => {
+            const mockResponse = { id: 1 };
+            const mockBody = { name: 'Updated' };
+            vi.mocked(request).mockResolvedValueOnce(mockResponse);
+
+            const result = await client.put({
+                endpoint: '/test',
+                body: mockBody,
+            });
+
+            expect(request).toHaveBeenCalledWith({
+                endpoint: '/test',
+                method: 'PUT',
+                body: mockBody,
+                ...mockConfig,
+            });
+            expect(result).toEqual(mockResponse);
+        });
+
+        it('should make DELETE requests', async () => {
+            vi.mocked(request).mockResolvedValueOnce(undefined);
+
+            await client.delete('/test');
+
+            expect(request).toHaveBeenCalledWith({
+                endpoint: '/test',
+                method: 'DELETE',
+                ...mockConfig,
+            });
+        });
     });
 
-    it.skip('should be able to query data with a large number of filter values', async () => {
-        const client = new BigCommerceClient({
-            storeHash: env.storeHash,
-            accessToken: env.accessToken,
+    describe('Collection Methods', () => {
+        it('should collect data with pagination', async () => {
+            const mockFirstPage = {
+                data: [{ id: 1 }, { id: 2 }],
+                meta: { pagination: { total_pages: 2 } },
+            };
+            const mockSecondPage = {
+                data: [{ id: 3 }, { id: 4 }],
+                meta: { pagination: { total_pages: 2 } },
+            };
+
+            vi.mocked(request)
+                .mockResolvedValueOnce(mockFirstPage)
+                .mockResolvedValueOnce(mockSecondPage);
+
+            const result = await client.collect({
+                endpoint: '/test',
+                query: { limit: '2' },
+            });
+
+            expect(result).toHaveLength(4);
+            expect(result).toEqual([{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }]);
         });
 
-        // Fetch all products first
-        const products = await client.collect<{id: number}>({
-            endpoint: bc.products.path,
-            query: {
-                include_fields: 'id',
-            },
+        it('should collect v2 data', async () => {
+            const mockResponses = [
+                [{ id: 1 }, { id: 2 }],
+                [{ id: 3 }, { id: 4 }],
+                undefined, // Empty response to signal end
+            ];
+
+            vi.mocked(request)
+                .mockResolvedValueOnce(mockResponses[0])
+                .mockResolvedValueOnce(mockResponses[1])
+                .mockResolvedValueOnce(mockResponses[2]);
+
+            const result = await client.collectV2({
+                endpoint: '/test',
+                query: { limit: '2' },
+            });
+
+            expect(result).toHaveLength(4);
+            expect(result).toEqual([{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }]);
         });
-
-        const productIds = products.map((product) => product.id);
-
-        const filteredProducts = await client.query<MyProduct>({
-            endpoint: bc.products.path,
-            key: 'id:in',
-            values: productIds,
-            query: {
-                include_fields: FIELDS,
-            },
-        });
-
-        console.log(filteredProducts);
-
-        expect(filteredProducts).toBeDefined();
-        expect(filteredProducts.length).toBeGreaterThan(0);
-        expect(filteredProducts.length).toBe(productIds.length);
-        
-        const product = filteredProducts[0];
-
-        expect(product.id).toBeDefined();
-        expect(product.name).toBeDefined();
-        expect(product.sku).toBeDefined();
     });
-});
+
+    describe('Query Method', () => {
+        it('should handle query with multiple values', async () => {
+            const mockResponse1 = {
+                data: [{ id: 1 }, { id: 2 }],
+                meta: { pagination: { total_pages: 1 } },
+            };
+            const mockResponse2 = {
+                data: [{ id: 3 }, { id: 4 }],
+                meta: { pagination: { total_pages: 1 } },
+            };
+
+            vi.mocked(request)
+                .mockResolvedValueOnce(mockResponse1)
+                .mockResolvedValueOnce(mockResponse2);
+
+            const result = await client.query({
+                endpoint: '/test',
+                key: 'id:in',
+                values: [1, 2, 3, 4],
+                query: { limit: '2' },
+            });
+
+            expect(result).toHaveLength(4);
+            expect(result).toEqual([{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }]);
+        });
+    });
+
+    describe('Concurrent Requests', () => {
+        it('should handle concurrent requests with success', async () => {
+            const mockResponses = [
+                { data: { id: 1 } },
+                { data: { id: 2 } },
+                { data: { id: 3 } },
+            ];
+
+            vi.mocked(request)
+                .mockResolvedValueOnce(mockResponses[0])
+                .mockResolvedValueOnce(mockResponses[1])
+                .mockResolvedValueOnce(mockResponses[2]);
+
+            const requests = [
+                { endpoint: '/test1', method: Methods.GET },
+                { endpoint: '/test2', method: Methods.GET },
+                { endpoint: '/test3', method: Methods.GET },
+            ];
+
+            const result = await client.concurrent(requests, { concurrency: 2 });
+
+            expect(result).toHaveLength(3);
+            expect(result).toEqual(mockResponses);
+        });
+
+        it('should handle concurrent requests with errors', async () => {
+            const mockResponses = [
+                { data: { id: 1 } },
+                new Error('Test error'),
+                { data: { id: 3 } },
+            ];
+
+            vi.mocked(request)
+                .mockResolvedValueOnce(mockResponses[0])
+                .mockRejectedValueOnce(mockResponses[1])
+                .mockResolvedValueOnce(mockResponses[2]);
+
+            const requests = [
+                { endpoint: '/test1', method: Methods.GET },
+                { endpoint: '/test2', method: Methods.GET },
+                { endpoint: '/test3', method: Methods.GET },
+            ];
+
+            await expect(client.concurrent(requests, { concurrency: 2 }))
+                .rejects.toThrow('Test error');
+        });
+
+        it('should skip errors when skipErrors is true', async () => {
+            const mockResponses = [
+                { data: { id: 1 } },
+                new Error('Test error'),
+                { data: { id: 3 } },
+            ];
+
+            vi.mocked(request)
+                .mockResolvedValueOnce(mockResponses[0])
+                .mockRejectedValueOnce(mockResponses[1])
+                .mockResolvedValueOnce(mockResponses[2]);
+
+            const requests = [
+                { endpoint: '/test1', method: Methods.GET },
+                { endpoint: '/test2', method: Methods.GET },
+                { endpoint: '/test3', method: Methods.GET },
+            ];
+
+            const result = await client.concurrent(requests, { 
+                concurrency: 2,
+                skipErrors: true 
+            });
+
+            expect(result).toHaveLength(2);
+            expect(result).toContainEqual(mockResponses[0]);
+            expect(result).toContainEqual(mockResponses[2]);
+        });
+    });
+}); 
