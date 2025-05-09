@@ -1,11 +1,28 @@
 import { request, RequestError } from "../src/net";
 import { describe, it, expect, vi, beforeEach, Mock } from "vitest";
-import ky, { KyResponse } from 'ky';
+import ky, { KyResponse, HTTPError } from 'ky';
 
-// Mock ky
-vi.mock('ky', () => ({
-    default: vi.fn(),
-}));
+// Mock ky and HTTPError
+vi.mock('ky', () => {
+    const HTTPError = class extends Error {
+        response: {
+            status: number;
+            text: () => Promise<string>;
+            headers: Headers;
+            ok: boolean;
+            statusText: string;
+        };
+        constructor(response: { status: number; text: () => Promise<string>; headers: Headers; ok: boolean; statusText: string }, message: string, _data: unknown) {
+            super(message);
+            this.response = response;
+        }
+    };
+
+    return {
+        default: vi.fn(),
+        HTTPError
+    };
+});
 
 describe('Network requests', () => {
     beforeEach(() => {
@@ -16,6 +33,7 @@ describe('Network requests', () => {
         const mockResponse = { data: 'test' };
         ((ky as unknown) as Mock).mockResolvedValue({
             json: () => Promise.resolve(mockResponse),
+            text: () => Promise.resolve(JSON.stringify(mockResponse)),
             status: 200
         } as KyResponse);
 
@@ -43,19 +61,23 @@ describe('Network requests', () => {
 
         ((ky as unknown) as Mock).mockImplementation(() => {
             callCount++;
+
             if (callCount === 1) {
-                throw {
-                    response: {
-                        status: 429,
-                        text: () => Promise.resolve('{"error": "rate limit"}'),
-                        headers: new Map([
-                            ['X-Rate-Limit-Time-Reset-Ms', '100']
-                        ])
-                    }
-                };
+                const headers = new Headers();
+                headers.set('X-Rate-Limit-Time-Reset-Ms', '100');
+
+                // @ts-expect-error - Mock response doesn't need all Response properties
+                throw new HTTPError({
+                    status: 429,
+                    text: () => Promise.resolve('{"error": "rate limit"}'),
+                    headers,
+                    ok: false,
+                    statusText: 'Too Many Requests'
+                }, 'Rate limit exceeded', {});
             }
             return {
                 json: () => Promise.resolve(mockResponse),
+                text: () => Promise.resolve(JSON.stringify(mockResponse)),
                 status: 200
             } as KyResponse;
         });
@@ -72,13 +94,15 @@ describe('Network requests', () => {
     });
 
     it('should throw RequestError on failed request', async () => {
-        ((ky as unknown) as Mock).mockRejectedValue({
-            response: {
-                status: 400,
-                text: () => Promise.resolve('{"error": "bad request"}'),
-                headers: new Map()
-            }
-        });
+        const headers = new Headers();
+        // @ts-expect-error - Mock response doesn't need all Response properties
+        ((ky as unknown) as Mock).mockRejectedValue(new HTTPError({
+            status: 400,
+            text: () => Promise.resolve('{"error": "bad request"}'),
+            headers,
+            ok: false,
+            statusText: 'Bad Request'
+        }, 'Bad request', {}));
 
         await expect(request({ 
             endpoint: '/catalog/products', 
