@@ -125,7 +125,7 @@ export class BigCommerceAuth {
      */
     constructor(private readonly config: Config) {
         try {
-            URL.parse(this.config.redirectUri);
+            new URL(this.config.redirectUri);
         } catch (error) {
             throw new Error('Invalid redirect URI', { cause: error });
         }
@@ -147,10 +147,12 @@ export class BigCommerceAuth {
             redirect_uri: this.config.redirectUri,
         };
 
-        return await ky(TOKEN_ENDPOINT, {
+        const res = await ky(TOKEN_ENDPOINT, {
             method: 'POST',
             json: tokenRequest,
-        }).json<TokenResponse>();
+        });
+
+        return res.json<TokenResponse>();
     }
 
     /**
