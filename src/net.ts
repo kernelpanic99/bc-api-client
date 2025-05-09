@@ -159,16 +159,15 @@ const safeRequest = async <T, R>(options: RequestOptions<T> & StoreOptions): Pro
 
     try {
         res = await call<T, R>(options);
-    } catch (_error) {
-        if(_error instanceof RequestError) {
-            throw _error;
+    } catch (error) {
+        if(error instanceof RequestError) {
+            throw error;
         }
 
-        if(!(_error instanceof HTTPError)) {
-            throw _error;
+        if(!(error instanceof HTTPError)) {
+            throw error;
         }
 
-        const error = _error as HTTPError;
         let data: unknown;
         let errorMessage = error.message;
 
@@ -188,11 +187,11 @@ const safeRequest = async <T, R>(options: RequestOptions<T> & StoreOptions): Pro
         }
 
         throw new RequestError(
-            error.response.status,
+            error?.response?.status ?? 500,
             errorMessage,
             {
                 data,
-                headers: Object.fromEntries(error.response.headers.entries()),
+                headers: Object.fromEntries(error?.response?.headers?.entries() ?? []),
             },
             error,
         );
