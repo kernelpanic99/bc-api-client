@@ -9,5 +9,6 @@ await build({
     format: 'esm',
     target: 'node20',
     sourcemap: true,
+    external: ['jose', 'ky', 'remeda'],
     plugins: [dtsPlugin()],
 });
