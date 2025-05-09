@@ -15,10 +15,12 @@ export const Methods: Record<string, Method> = {
     DELETE: 'DELETE',
 } as const;
 
+export const BASE_URL = 'https://api.bigcommerce.com/stores/';
+
 /** Configuration for the BigCommerce API client */
 const CONFIG = {
     /** Base URL for BigCommerce API */
-    BASE_URL: 'https://api.bigcommerce.com/stores/',
+    BASE_URL,
     /** Default API version to use */
     DEFAULT_VERSION: 'v3',
     /** Maximum delay in milliseconds for rate limit retries */

@@ -1,5 +1,5 @@
 import { V3Resource } from './core';
-import { RateLimitOptions, RequestError, RequestOptions, StoreOptions, request } from './net';
+import { BASE_URL, RateLimitOptions, RequestError, RequestOptions, StoreOptions, request } from './net';
 import { chunk, range } from 'remeda';
 import { chunkStrLength } from './util';
 
@@ -260,8 +260,13 @@ export class BigCommerceClient {
             options.query = { limit: MAX_PAGE_SIZE.toString() };
         }
 
+        const {limit:_, ...restQuery} = options.query;
+        // Only needed to calculate the offset for chunking
+        const fullUrl = `${BASE_URL}${this.config.storeHash}/v3/${options.endpoint}?${new URLSearchParams(restQuery).toString()}`;
+
         const queryStr = options.values.map((value) => `${value}`)
         const chunks = chunkStrLength(queryStr, {
+            offset: fullUrl.length,
             chunkLength: Number.parseInt(options.query?.limit) || MAX_PAGE_SIZE,
         });
 
