@@ -8,6 +8,13 @@ import ky, { ResponsePromise, KyResponse, HTTPError } from 'ky';
 /** HTTP methods supported by the API */
 export type Method = 'GET' | 'POST' | 'PUT' | 'DELETE';
 
+export const Methods: Record<string, Method> = {
+    GET: 'GET',
+    POST: 'POST',
+    PUT: 'PUT',
+    DELETE: 'DELETE',
+} as const;
+
 /** Configuration for the BigCommerce API client */
 const CONFIG = {
     /** Base URL for BigCommerce API */
