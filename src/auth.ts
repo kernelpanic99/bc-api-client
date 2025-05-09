@@ -1,6 +1,5 @@
 import ky from 'ky';
 import * as jose from 'jose';
-import { intersection } from 'remeda';
 
 /**
  * Configuration options for BigCommerce authentication
@@ -225,14 +224,16 @@ export class BigCommerceAuth {
      * @throws {Error} If the scopes don't match the expected scopes
      */
     private validateScopes(scopes: string) {
-        const scopesArray = scopes.split(' ');
+        if (!this.config.scopes) {
+            return;
+        }
 
-        if (this.config.scopes?.length) {
-            const int = intersection(scopesArray, this.config.scopes);
+        const grantedScopes = scopes.split(' ');
+        const requiredScopes = this.config.scopes;
+        const missingScopes = requiredScopes.filter(scope => !grantedScopes.includes(scope));
 
-            if (int.length !== scopesArray.length) {
-                throw new Error(`Scope mismatch: ${scopes}; expected: ${this.config.scopes.join(' ')}`);
-            }
+        if (missingScopes.length) {
+            throw new Error(`Scope mismatch: ${scopes}; expected: ${this.config.scopes.join(' ')}`);
         }
     }
 }

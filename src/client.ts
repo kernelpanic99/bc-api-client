@@ -1,10 +1,21 @@
 import { V3Resource } from './core';
 import { BASE_URL, RateLimitOptions, RequestError, RequestOptions, StoreOptions, request } from './net';
-import { chunk, range } from 'remeda';
 import { chunkStrLength } from './util';
 
 const MAX_PAGE_SIZE = 250;
 const DEFAULT_CONCURRENCY = 10;
+
+// Helper function to chunk array into smaller arrays
+function chunkArray<T>(array: T[], size: number): T[][] {
+    return Array.from({ length: Math.ceil(array.length / size) }, (_, i) =>
+        array.slice(i * size, i * size + size)
+    );
+}
+
+// Helper function to create range array
+function rangeArray(start: number, end: number): number[] {
+    return Array.from({ length: end - start + 1 }, (_, i) => start + i);
+}
 
 /**
  * Options for GET requests to the BigCommerce API
@@ -140,7 +151,7 @@ export class BigCommerceClient {
      * @returns Promise resolving to array of response data
      */
     async concurrent<T, R>(requests: RequestOptions<T>[], options?: ConcurrencyOptions): Promise<R[]> {
-        const chunks = chunk(requests, options?.concurrency ?? this.config.concurrency ?? DEFAULT_CONCURRENCY);
+        const chunks = chunkArray(requests, options?.concurrency ?? this.config.concurrency ?? DEFAULT_CONCURRENCY);
         const skipErrors = options?.skipErrors ?? this.config.skipErrors ?? false;
 
         const results: R[] = [];
@@ -198,19 +209,24 @@ export class BigCommerceClient {
         const results: T[] = [...first.data];
         const pages = first.meta.pagination.total_pages;
 
-        const remainingPages = range(2, pages + 1);
+        if (pages > 1) {
+            const pageRequests = rangeArray(2, pages).map((page) => ({
+                endpoint,
+                method: 'GET' as const,
+                query: {
+                    ...options.query,
+                    page: page.toString(),
+                },
+            }));
 
-        const requests = remainingPages.map((page) => ({
-            ...options,
-            endpoint,
-            query: { ...options.query, page: page.toString() },
-        }));
+            const remainingPages = await this.concurrent<never, V3Resource<T[]>>(pageRequests, options);
 
-        const responses = await this.concurrent<never, V3Resource<T[]>>(requests, options);
-
-        responses.forEach((response) => {
-            results.push(...response.data);
-        });
+            remainingPages.forEach((page) => {
+                if (Array.isArray(page.data)) {
+                    results.push(...page.data);
+                }
+            });
+        }
 
         return results;
     }
@@ -239,7 +255,7 @@ export class BigCommerceClient {
         const concurrency = options.concurrency ?? this.config.concurrency ?? DEFAULT_CONCURRENCY;
 
         while (!done) {
-            const pages = range(page, page + concurrency);
+            const pages = rangeArray(page, page + concurrency);
             page += concurrency;
 
             const requests = pages.map((page) => ({
