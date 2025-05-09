@@ -11,6 +11,7 @@ vi.mock('../src/net', () => ({
         PUT: 'PUT',
         DELETE: 'DELETE',
     },
+    BASE_URL: 'https://api.bigcommerce.com/stores/',
 }));
 
 describe('BigCommerceClient', () => {
