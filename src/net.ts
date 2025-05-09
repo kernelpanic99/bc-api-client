@@ -164,6 +164,10 @@ const safeRequest = async <T, R>(options: RequestOptions<T> & StoreOptions): Pro
             throw _error;
         }
 
+        if(!(_error instanceof HTTPError)) {
+            throw _error;
+        }
+
         const error = _error as HTTPError;
         let data: unknown;
         let errorMessage = error.message;
