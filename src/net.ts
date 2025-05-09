@@ -32,13 +32,13 @@ const CONFIG = {
     /** Rate limit header names */
     HEADERS: {
         /** Time window for rate limiting in milliseconds */
-        WINDOW: 'X-Rate-Limit-Time-Window-Ms',
+        WINDOW: 'x-rate-limit-time-window-ms',
         /** Time to wait before retrying after rate limit in milliseconds */
-        RETRY_AFTER: 'X-Rate-Limit-Time-Reset-Ms',
+        RETRY_AFTER: 'x-rate-limit-time-reset-ms',
         /** Total request quota for the time window */
-        REQUEST_QUOTA: 'X-Rate-Limit-Requests-Quota',
+        REQUEST_QUOTA: 'x-rate-limit-requests-quota',
         /** Number of requests remaining in the current window */
-        REQUESTS_LEFT: 'X-Rate-Limit-Requests-Left',
+        REQUESTS_LEFT: 'x-rate-limit-requests-left',
     }
 } as const;
 
