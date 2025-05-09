@@ -26,7 +26,9 @@
         "lint": "eslint . --fix",
         "format": "prettier --write .",
         "build": "pnpm lint && node build.mjs",
-        "prepublish": "pnpm build"
+        "prepublish": "pnpm build",
+        "version": "git add -A src",
+        "postversion": "git push && git push --tags"
     },
     "files": [
         "dist",
