@@ -189,7 +189,7 @@ export class BigCommerceClient {
 
         const queryStr = options.values.map((value) => `${value}`)
         const chunks = chunkStrLength(queryStr, {
-            chunkLength: MAX_PAGE_SIZE
+            chunkLength: Number.parseInt(options.query?.limit) || MAX_PAGE_SIZE,
         });
 
         const requests = chunks.map((chunk) => ({
