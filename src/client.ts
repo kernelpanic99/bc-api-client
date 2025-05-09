@@ -9,8 +9,6 @@ const MAX_PAGE_SIZE = 250;
  * Options for GET requests to the BigCommerce API
  */
 export type GetOptions = {
-    /** The API endpoint to call */
-    endpoint: string;
     /** Query parameters to include in the request */
     query?: Record<string, string>;
     /** API version to use (v2 or v3) */
@@ -68,10 +66,11 @@ export class BigCommerceClient {
      * @param options - Request options
      * @returns Promise resolving to the response data
      */
-    async get<R>(options: GetOptions): Promise<R> {
+    async get<R>(endpoint: string, options?: GetOptions): Promise<R> {
         return request<never, R>({
-            ...options,
+            endpoint,
             method: 'GET',
+            ...options,
             ...this.config,
         });
     }
@@ -81,10 +80,11 @@ export class BigCommerceClient {
      * @param options - Request options including body data
      * @returns Promise resolving to the response data
      */
-    async post<T, R>(options: PostOptions<T>): Promise<R> {
+    async post<T, R>(endpoint: string, options?: PostOptions<T>): Promise<R> {
         return request<T, R>({
-            ...options,
+            endpoint,
             method: 'POST',
+            ...options,
             ...this.config,
         });
     }
@@ -94,10 +94,11 @@ export class BigCommerceClient {
      * @param options - Request options including body data
      * @returns Promise resolving to the response data
      */
-    async put<T, R>(options: PostOptions<T>): Promise<R> {
+    async put<T, R>(endpoint: string, options?: PostOptions<T>): Promise<R> {
         return request<T, R>({
-            ...options,
+            endpoint,
             method: 'PUT',
+            ...options,
             ...this.config,
         });
     }
@@ -106,10 +107,11 @@ export class BigCommerceClient {
      * Makes a DELETE request to the BigCommerce API
      * @param endpoint - The API endpoint to delete
      */
-    async delete<R>(endpoint: string): Promise<void> {
+    async delete<R>(endpoint: string, options?: Pick<GetOptions, 'version'>): Promise<void> {
         await request<never, R>({
             endpoint,
             method: 'DELETE',
+            ...options,
             ...this.config,
         });
     }
@@ -120,9 +122,9 @@ export class BigCommerceClient {
      * @param options - Concurrency control options
      * @returns Promise resolving to array of response data
      */
-    async concurrent<T, R>(requests: RequestOptions<T>[], options: ConcurrencyOptions): Promise<R[]> {
-        const chunks = chunk(requests, options.concurrency ?? 10);
-        const skipErrors = options.skipErrors ?? false;
+    async concurrent<T, R>(requests: RequestOptions<T>[], options?: ConcurrencyOptions): Promise<R[]> {
+        const chunks = chunk(requests, options?.concurrency ?? 10);
+        const skipErrors = options?.skipErrors ?? false;
 
         const results: R[] = [];
 
@@ -157,7 +159,7 @@ export class BigCommerceClient {
      * @param options - Request options with pagination parameters
      * @returns Promise resolving to array of all items across all pages
      */
-    async collect<T>(options: Omit<GetOptions, 'version'> & ConcurrencyOptions): Promise<T[]> {
+    async collect<T>(endpoint: string, options: Omit<GetOptions, 'version'> & ConcurrencyOptions): Promise<T[]> {
         if (options.query) {
             if (!options.query.limit) {
                 options.query.limit = MAX_PAGE_SIZE.toString();
@@ -166,7 +168,7 @@ export class BigCommerceClient {
             options.query = { limit: MAX_PAGE_SIZE.toString() };
         }
 
-        const first = await this.get<V3Resource<T[]>>(options);
+        const first = await this.get<V3Resource<T[]>>(endpoint, options);
 
         if (!Array.isArray(first.data) || !first?.meta?.pagination?.total_pages) {
             return first.data;
@@ -179,6 +181,7 @@ export class BigCommerceClient {
 
         const requests = remainingPages.map((page) => ({
             ...options,
+            endpoint,
             query: { ...options.query, page: page.toString() },
         }));
 
@@ -196,7 +199,7 @@ export class BigCommerceClient {
      * @param options - Request options with pagination parameters
      * @returns Promise resolving to array of all items across all pages
      */
-    async collectV2<T>(options: Omit<GetOptions, 'version'> & ConcurrencyOptions): Promise<T[]> {
+    async collectV2<T>(endpoint: string, options: Omit<GetOptions, 'version'> & ConcurrencyOptions): Promise<T[]> {
         if (options.query) {
             if (!options.query.limit) {
                 options.query.limit = MAX_PAGE_SIZE.toString();
@@ -216,11 +219,12 @@ export class BigCommerceClient {
 
             const requests = pages.map((page) => ({
                 ...options,
+                endpoint,
                 version: 'v2' as const,
                 query: { ...options.query, page: page.toString() },
             }));
 
-            const responses = await Promise.allSettled(requests.map((request) => this.get<T[]>(request)));
+            const responses = await Promise.allSettled(requests.map((request) => this.get<T[]>(endpoint, request)));
 
             responses.forEach((response) => {
                 if (response.status === 'fulfilled') {
@@ -251,7 +255,7 @@ export class BigCommerceClient {
      * @param options - Query options including field name and values
      * @returns Promise resolving to array of matching items
      */
-    async query<T>(options: QueryOptions): Promise<T[]> {
+    async query<T>(endpoint: string, options: QueryOptions): Promise<T[]> {
         if(options.query) {
             if(!options.query.limit) {
                 options.query.limit = MAX_PAGE_SIZE.toString();
@@ -262,7 +266,7 @@ export class BigCommerceClient {
 
         const {limit:_, ...restQuery} = options.query;
         // Only needed to calculate the offset for chunking
-        const fullUrl = `${BASE_URL}${this.config.storeHash}/v3/${options.endpoint}?${new URLSearchParams(restQuery).toString()}`;
+        const fullUrl = `${BASE_URL}${this.config.storeHash}/v3/${endpoint}?${new URLSearchParams(restQuery).toString()}`;
 
         const queryStr = options.values.map((value) => `${value}`)
         const chunks = chunkStrLength(queryStr, {
@@ -272,6 +276,7 @@ export class BigCommerceClient {
 
         const requests = chunks.map((chunk) => ({
             ...options,
+            endpoint,
             query: { ...options.query, [options.key]: chunk.join(',') },
         }));
 

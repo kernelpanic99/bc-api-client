@@ -32,8 +32,7 @@ describe('BigCommerceClient', () => {
             const mockResponse = { data: { id: 1, name: 'Test' } };
             vi.mocked(request).mockResolvedValueOnce(mockResponse);
 
-            const result = await client.get({
-                endpoint: '/test',
+            const result = await client.get('/test', {
                 query: { limit: '10' },
             });
 
@@ -51,8 +50,7 @@ describe('BigCommerceClient', () => {
             const mockBody = { name: 'Test' };
             vi.mocked(request).mockResolvedValueOnce(mockResponse);
 
-            const result = await client.post({
-                endpoint: '/test',
+            const result = await client.post('/test', {
                 body: mockBody,
             });
 
@@ -70,8 +68,7 @@ describe('BigCommerceClient', () => {
             const mockBody = { name: 'Updated' };
             vi.mocked(request).mockResolvedValueOnce(mockResponse);
 
-            const result = await client.put({
-                endpoint: '/test',
+            const result = await client.put('/test', {
                 body: mockBody,
             });
 
@@ -112,8 +109,7 @@ describe('BigCommerceClient', () => {
                 .mockResolvedValueOnce(mockFirstPage)
                 .mockResolvedValueOnce(mockSecondPage);
 
-            const result = await client.collect({
-                endpoint: '/test',
+            const result = await client.collect('/test', {
                 query: { limit: '2' },
             });
 
@@ -133,8 +129,7 @@ describe('BigCommerceClient', () => {
                 .mockResolvedValueOnce(mockResponses[1])
                 .mockResolvedValueOnce(mockResponses[2]);
 
-            const result = await client.collectV2({
-                endpoint: '/test',
+            const result = await client.collectV2('/test', {
                 query: { limit: '2' },
             });
 
@@ -158,8 +153,7 @@ describe('BigCommerceClient', () => {
                 .mockResolvedValueOnce(mockResponse1)
                 .mockResolvedValueOnce(mockResponse2);
 
-            const result = await client.query({
-                endpoint: '/test',
+            const result = await client.query('/test', {
                 key: 'id:in',
                 values: [1, 2, 3, 4],
                 query: { limit: '2' },

@@ -45,8 +45,7 @@ const client = new BigCommerceClient({
 });
 
 // Basic GET request
-const products = await client.get<V3Response<MyProduct[]>>({
-  endpoint: bc.products.path,
+const products = await client.get<V3Response<MyProduct[]>>(bc.products.path, {
   query: { 'include_fields': fields },
 });
 
@@ -63,8 +62,7 @@ const results = await client.concurrent<never, V3Response<MyProduct>>(
 );
 
 // Collect all pages from v3 endpoint
-const allProducts = await client.collect<MyProduct>({
-  endpoint: bc.products.path,
+const allProducts = await client.collect<MyProduct>(bc.products.path, {
   query: {
     include_fields: fields,
   },
@@ -78,8 +76,7 @@ type MyOrder = {
     status: string;
 }
 
-const orders = await client.collectV2<MyOrder>({
-  endpoint: bc.orders.v2.path,
+const orders = await client.collectV2<MyOrder>(bc.orders.v2.path, {
   query: {
     limit: '5',
   },
@@ -91,8 +88,7 @@ const orders = await client.collectV2<MyOrder>({
 // Note: productIds would be a large array of IDs in a real scenario
 const productIds = [1, 2, 3, 4, 5]; // Example IDs
 
-const filteredProducts = await client.query<MyProduct>({
-  endpoint: bc.products.path,
+const filteredProducts = await client.query<MyProduct>(bc.products.path, {
   key: 'id:in',
   values: productIds,
   query: {
@@ -126,32 +122,31 @@ const claims = await auth.verify(jwtPayload);
 
 ### BigCommerceClient
 
-#### `get<R>(options: GetOptions): Promise<R>`
+#### `get<R>(endpoint: string, options?: GetOptions): Promise<R>`
 Makes a GET request to the BigCommerce API.
 
-#### `post<T, R>(options: PostOptions<T>): Promise<R>`
+#### `post<T, R>(endpoint: string, options?: PostOptions<T>): Promise<R>`
 Makes a POST request to the BigCommerce API.
 
-#### `put<T, R>(options: PostOptions<T>): Promise<R>`
+#### `put<T, R>(endpoint: string, options?: PostOptions<T>): Promise<R>`
 Makes a PUT request to the BigCommerce API.
 
-#### `delete<R>(endpoint: string): Promise<void>`
+#### `delete<R>(endpoint: string, options?: Pick<GetOptions, 'version'>): Promise<void>`
 Makes a DELETE request to the BigCommerce API.
 
-#### `concurrent<T, R>(requests: RequestOptions<T>[], options: ConcurrencyOptions): Promise<R[]>`
+#### `concurrent<T, R>(requests: RequestOptions<T>[], options?: ConcurrencyOptions): Promise<R[]>`
 Executes multiple requests concurrently with rate limit handling. Options:
 - `concurrency`: number of concurrent requests (default: 10)
 - `skipErrors`: whether to skip failed requests instead of throwing (default: false)
 
-#### `collect<T>(options: Omit<GetOptions, 'version'> & ConcurrencyOptions): Promise<T[]>`
+#### `collect<T>(endpoint: string, options: Omit<GetOptions, 'version'> & ConcurrencyOptions): Promise<T[]>`
 Automatically fetches all pages of a paginated v3 endpoint. Supports the same concurrency options as `concurrent`.
 
-#### `collectV2<T>(options: Omit<GetOptions, 'version'> & ConcurrencyOptions): Promise<T[]>`
+#### `collectV2<T>(endpoint: string, options: Omit<GetOptions, 'version'> & ConcurrencyOptions): Promise<T[]>`
 Automatically fetches all pages of a paginated v2 endpoint. Supports the same concurrency options as `concurrent`.
 
-#### `query<T>(options: QueryOptions): Promise<T[]>`
+#### `query<T>(endpoint: string, options: QueryOptions): Promise<T[]>`
 Executes a query with multiple filter values, automatically handling large value sets by chunking them into smaller requests. Options:
-- `endpoint`: API endpoint to query
 - `key`: Filter key (e.g. 'id:in')
 - `values`: Array of values to filter by
 - `query`: Additional query parameters

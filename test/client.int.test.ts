@@ -35,8 +35,7 @@ describe('BigCommerceClient', () => {
             accessToken: env.accessToken,
         });
 
-        const products = await client.collect<MyProduct>({
-            endpoint: bc.products.path,
+        const products = await client.collect<MyProduct>(bc.products.path, {
             query: {
                 include_fields: FIELDS,
             },
@@ -63,8 +62,7 @@ describe('BigCommerceClient', () => {
             status: string;
         }
         
-        const orders = await client.collectV2<MyOrder>({
-            endpoint: bc.orders.v2.path,
+        const orders = await client.collectV2<MyOrder>(bc.orders.v2.path, {
             query: {
                 limit: '5',
             },
@@ -81,8 +79,7 @@ describe('BigCommerceClient', () => {
         });
 
         // Fetch all products first
-        const products = await client.collect<{id: number}>({
-            endpoint: bc.products.path,
+        const products = await client.collect<{id: number}>(bc.products.path, {
             query: {
                 include_fields: 'id',
             },
@@ -90,8 +87,7 @@ describe('BigCommerceClient', () => {
 
         const productIds = products.map((product) => product.id);
 
-        const filteredProducts = await client.query<MyProduct>({
-            endpoint: bc.products.path,
+        const filteredProducts = await client.query<MyProduct>(bc.products.path, {
             key: 'id:in',
             values: productIds,
             query: {
