@@ -1,6 +1,7 @@
 import { BigCommerceClient } from '../src/client';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { request, Methods } from '../src/net';
+import pino from 'pino';
 
 // Mock the request function
 vi.mock('../src/net', () => ({
@@ -18,6 +19,9 @@ describe('BigCommerceClient', () => {
     const mockConfig = {
         storeHash: 'test-store',
         accessToken: 'test-token',
+        logger: pino({
+            level: 'debug',
+        }),
     };
 
     let client: BigCommerceClient;

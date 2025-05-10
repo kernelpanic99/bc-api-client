@@ -1,4 +1,4 @@
-import { V3Resource } from './core';
+import { V3Resource, Logger } from './core';
 import { BASE_URL, RateLimitOptions, RequestError, RequestOptions, StoreOptions, request } from './net';
 import { chunkStrLength } from './util';
 
@@ -58,7 +58,10 @@ export type QueryOptions = Omit<GetOptions, 'version'> & ConcurrencyOptions & {
 /**
  * Configuration options for the BigCommerce client
  */
-export type Config = StoreOptions & RateLimitOptions & ConcurrencyOptions;
+export type Config = StoreOptions & RateLimitOptions & ConcurrencyOptions & {
+    /** Logger instance */
+    logger?: Logger;
+};
 
 /**
  * Client for interacting with the BigCommerce API
@@ -151,10 +154,17 @@ export class BigCommerceClient {
      * @returns Promise resolving to array of response data
      */
     async concurrent<T, R>(requests: RequestOptions<T>[], options?: ConcurrencyOptions): Promise<R[]> {
-        const chunks = chunkArray(requests, options?.concurrency ?? this.config.concurrency ?? DEFAULT_CONCURRENCY);
+        const chunkSize = options?.concurrency ?? this.config.concurrency ?? DEFAULT_CONCURRENCY;
+        const chunks = chunkArray(requests, chunkSize);
         const skipErrors = options?.skipErrors ?? this.config.skipErrors ?? false;
 
         const results: R[] = [];
+
+        this.config.logger?.debug({
+            totalRequests: requests.length,
+            chunkSize,
+            chunks: chunks.length
+        }, 'Starting concurrent requests');
 
         for (const chunk of chunks) {
             const responses = await Promise.allSettled(
@@ -173,7 +183,12 @@ export class BigCommerceClient {
                     if (!skipErrors) {
                         throw response.reason;
                     } else {
-                        console.warn(`Error in concurrent request: ${response.reason}`);
+                        this.config.logger?.warn({
+                            error: response.reason instanceof Error ? {
+                                name: response.reason.name,
+                                message: response.reason.message
+                            } : response.reason
+                        }, 'Error in concurrent request');
                     }
                 }
             });
@@ -210,6 +225,11 @@ export class BigCommerceClient {
         const pages = first.meta.pagination.total_pages;
 
         if (pages > 1) {
+            this.config.logger?.debug({
+                totalPages: pages,
+                itemsPerPage: first.data.length
+            }, 'Collecting remaining pages');
+
             const pageRequests = rangeArray(2, pages).map((page) => ({
                 endpoint,
                 method: 'GET' as const,
@@ -281,7 +301,12 @@ export class BigCommerceClient {
                         if (!(options.skipErrors ?? this.config.skipErrors ?? false)) {
                             throw response.reason;
                         } else {
-                            console.warn(`Error in collectV2: ${response.reason}`);
+                            this.config.logger?.warn({
+                                error: response.reason instanceof Error ? {
+                                    name: response.reason.name,
+                                    message: response.reason.message
+                                } : response.reason
+                            }, 'Error in collectV2');
                         }
                     }
                 }
@@ -314,7 +339,6 @@ export class BigCommerceClient {
         }
 
         const {limit:_, ...restQuery} = options.query;
-        // Only needed to calculate the offset for chunking
         const fullUrl = `${BASE_URL}${this.config.storeHash}/v3/${endpoint}?${new URLSearchParams(restQuery).toString()}`;
 
         const queryStr = options.values.map((value) => `${value}`)
@@ -322,6 +346,12 @@ export class BigCommerceClient {
             offset: fullUrl.length,
             chunkLength: Number.parseInt(options.query?.limit) || MAX_PAGE_SIZE,
         });
+
+        this.config.logger?.debug({
+            totalValues: options.values.length,
+            chunks: chunks.length,
+            valuesPerChunk: chunks[0]?.length
+        }, 'Querying with chunked values');
 
         const requests = chunks.map((chunk) => ({
             ...options,

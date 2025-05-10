@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.0-beta.8] - 2024-05-10
+
+### Changed
+- Improved logging throughout the codebase:
+  - Added generic logging interface
+  - Add logging to basic request functions
+  - Added logging for authentication operations
+  - Added logging for concurrent methods
+
+### Added
+- Added Pino logger configuration in tests to showcase usage of a custom logger
+
 ## [0.1.0-beta.7] - 2024-05-09
 
 ### Changed

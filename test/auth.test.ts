@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { BigCommerceAuth, TokenResponse, Claims } from '../src/auth';
 import ky from 'ky';
 import * as jose from 'jose';
+import pino from 'pino';
 
 vi.mock('ky');
 vi.mock('jose');
@@ -12,7 +13,10 @@ describe('BigCommerceAuth', () => {
         secret: 'test-secret',
         redirectUri: 'https://example.com/callback',
         storeHash: 'test-store-hash',
-        scopes: ['store_v2_products', 'store_v2_customers']
+        scopes: ['store_v2_products', 'store_v2_customers'],
+        logger: pino({
+            level: 'debug',
+        }),
     };
 
     let auth: BigCommerceAuth;

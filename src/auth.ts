@@ -1,5 +1,6 @@
 import ky from 'ky';
 import * as jose from 'jose';
+import { Logger } from './core';
 
 /**
  * Configuration options for BigCommerce authentication
@@ -15,6 +16,8 @@ type Config = {
     storeHash: string;
     /** Optional array of scopes to validate during auth callback */
     scopes?: string[];
+    /** Optional logger instance */
+    logger?: Logger;
 };
 
 const GRANT_TYPE = 'authorization_code';
@@ -146,6 +149,12 @@ export class BigCommerceAuth {
             redirect_uri: this.config.redirectUri,
         };
 
+        this.config.logger?.debug({
+            clientId: this.config.clientId,
+            context: query.context,
+            scopes: query.scope
+        }, 'Requesting OAuth token');
+
         const res = await ky(TOKEN_ENDPOINT, {
             method: 'POST',
             json: tokenRequest,
@@ -170,8 +179,19 @@ export class BigCommerceAuth {
                 subject: `stores/${this.config.storeHash}`,
             });
 
+            this.config.logger?.debug({
+                userId: (payload as Claims).user?.id,
+                storeHash: this.config.storeHash
+            }, 'JWT verified successfully');
+
             return payload as Claims;
         } catch (error) {
+            this.config.logger?.error({
+                error: error instanceof Error ? {
+                    name: error.name,
+                    message: error.message
+                } : error
+            });
             throw new Error('Invalid JWT payload', { cause: error });
         }
     }
