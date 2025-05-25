@@ -12,8 +12,6 @@ type Config = {
     secret: string;
     /** The redirect URI registered with BigCommerce */
     redirectUri: string;
-    /** The store hash for the BigCommerce store */
-    storeHash: string;
     /** Optional array of scopes to validate during auth callback */
     scopes?: string[];
     /** Optional logger instance */
@@ -121,8 +119,13 @@ export type Claims = {
  */
 export class BigCommerceAuth {
     /**
-     * Creates a new BigCommerceAuth instance
+     * Creates a new BigCommerceAuth instance for handling OAuth authentication
      * @param config - Configuration options for BigCommerce authentication
+     * @param config.clientId - The OAuth client ID from BigCommerce
+     * @param config.secret - The OAuth client secret from BigCommerce
+     * @param config.redirectUri - The redirect URI registered with BigCommerce
+     * @param config.scopes - Optional array of scopes to validate during auth callback
+     * @param config.logger - Optional logger instance for debugging and error tracking
      * @throws {Error} If the redirect URI is invalid
      */
     constructor(private readonly config: Config) {
@@ -135,7 +138,7 @@ export class BigCommerceAuth {
 
     /**
      * Requests an access token from BigCommerce
-     * @param data - Either a query string or AuthQuery object containing auth callback data
+     * @param data - Either a query string, URLSearchParams, or AuthQuery object containing auth callback data
      * @returns Promise resolving to the token response
      */
     async requestToken(data: string | AuthQuery | URLSearchParams) {
@@ -166,25 +169,26 @@ export class BigCommerceAuth {
     /**
      * Verifies a JWT payload from BigCommerce
      * @param jwtPayload - The JWT string to verify
+     * @param storeHash - The store hash for the BigCommerce store
      * @returns Promise resolving to the verified JWT claims
      * @throws {Error} If the JWT is invalid
      */
-    async verify(jwtPayload: string) {
+    async verify(jwtPayload: string, storeHash: string): Promise<Claims> {
         try {
             const secret = new TextEncoder().encode(this.config.secret);
 
-            const { payload } = await jose.jwtVerify(jwtPayload, secret, {
+            const { payload }: { payload: Claims } = await jose.jwtVerify(jwtPayload, secret, {
                 audience: this.config.clientId,
                 issuer: ISSUER,
-                subject: `stores/${this.config.storeHash}`,
+                subject: `stores/${storeHash}`,
             });
 
             this.config.logger?.debug({
-                userId: (payload as Claims).user?.id,
-                storeHash: this.config.storeHash
+                userId: payload.user?.id,
+                storeHash: payload.sub.split('/')[1]
             }, 'JWT verified successfully');
 
-            return payload as Claims;
+            return payload;
         } catch (error) {
             this.config.logger?.error({
                 error: error instanceof Error ? {
