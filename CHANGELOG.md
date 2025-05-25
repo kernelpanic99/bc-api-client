@@ -5,6 +5,41 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.0-beta.10] - 2025-05-25
+
+### Breaking changes
+
+- `BigCommerceAuth` constructor does not require `storeHash` anymore
+- `BigCommerceAuth.verify` method now requires `storeHash` as second argument
+
+**Migration guide:**
+```ts
+// before
+const client = new BigCommerceAuth({
+  clientId: 'test',
+  secret: 'test',
+  redirectUri: 'http://localhost:3000/bc/auth
+  storeHash: 'hash'
+})
+
+client.verify('jwt_payload')
+
+// after
+const client = new BigCommerceAuth({
+  clientId: 'test',
+  secret: 'test',
+  redirectUri: 'http://localhost:3000/bc/auth
+})
+
+client.verify('jwt_payload', 'hash')
+```
+
+### Changed
+- Update documentation for `BigCommerceAuth` constructor to include the exact required params
+- Update auth.test.ts according to new changes
+- Update documentation for `BigCommerceAuth` and `BigCommerceClient` constructors
+- Update api documentation section in README to include constructors
+
 ## [0.1.0-beta.9] - 2025-05-25
 
 ### Changed
