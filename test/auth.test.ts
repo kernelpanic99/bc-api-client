@@ -88,6 +88,18 @@ describe('BigCommerceAuth', () => {
             expect(result).toEqual(mockTokenResponse);
         });
 
+        it('should request token with URLSearchParams instance', async () => {
+            const mockQuery = new URLSearchParams('code=test-code&scope=store_v2_products store_v2_customers&context=stores/test-store-hash&account_uuid=test-uuid');
+            const mockResponse = {
+                json: () => Promise.resolve(mockTokenResponse)
+            } as unknown as Response & { json: <T>() => Promise<T> };
+
+            vi.mocked(ky).mockResolvedValue(mockResponse);
+
+            const result = await auth.requestToken(mockQuery);
+            expect(result).toEqual(mockTokenResponse);
+        });
+
         it('should throw error for missing code in query string', async () => {
             const mockQueryString = 'scope=store_v2_products&context=stores/test-store-hash&account_uuid=test-uuid';
             await expect(auth.requestToken(mockQueryString)).rejects.toThrow('No code found in query string');

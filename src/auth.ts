@@ -138,8 +138,8 @@ export class BigCommerceAuth {
      * @param data - Either a query string or AuthQuery object containing auth callback data
      * @returns Promise resolving to the token response
      */
-    async requestToken(data: string | AuthQuery) {
-        const query = typeof data === 'string' ? this.parseQueryString(data) : data;
+    async requestToken(data: string | AuthQuery | URLSearchParams) {
+        const query = typeof data === 'string' || data instanceof URLSearchParams ? this.parseQueryString(data) : data;
 
         const tokenRequest: TokenRequest = {
             client_id: this.config.clientId,
@@ -202,8 +202,8 @@ export class BigCommerceAuth {
      * @returns The parsed auth query parameters
      * @throws {Error} If required parameters are missing or scopes are invalid
      */
-    private parseQueryString(queryString: string): AuthQuery {
-        const params = new URLSearchParams(queryString);
+    private parseQueryString(queryString: string | URLSearchParams): AuthQuery {
+        const params = typeof queryString === 'string' ? new URLSearchParams(queryString) : queryString;
 
         // Get required parameters
         const code = params.get('code');

@@ -5,7 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.1.0-beta.8] - 2024-05-10
+## [0.1.0-beta.9] - 2025-05-25
+
+### Changed
+- `BigCommerceAuth.requestToken` can now accept `UrlSearchParams` instance
+
+## [0.1.0-beta.8] - 2025-05-10
 
 ### Changed
 - Improved logging throughout the codebase:
@@ -17,12 +22,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Added Pino logger configuration in tests to showcase usage of a custom logger
 
-## [0.1.0-beta.7] - 2024-05-09
+## [0.1.0-beta.7] - 2025-05-09
 
 ### Changed
 - Removed Remeda dependency in favor of native JavaScript array methods
 
-## [0.1.0-beta.6] - 2024-05-09
+## [0.1.0-beta.6] - 2025-05-09
 
 ### Added
 - Concurrency options to `Config` for `BigCommerceClient`
@@ -33,7 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - More detailed JSDoc for `BigCommerceClient` methods
 - Updated API documentation section in README.md
 
-## [0.1.0-beta.5] - 2024-05-09
+## [0.1.0-beta.5] - 2025-05-09
 
 ### Breaking Changes
 - Changed method signatures to accept endpoint as first argument for better API consistency:
