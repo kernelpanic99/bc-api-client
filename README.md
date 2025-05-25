@@ -121,19 +121,31 @@ const auth = new BigCommerceAuth({
   clientId: 'your-client-id',
   secret: 'your-client-secret',
   redirectUri: 'your-redirect-uri',
-  storeHash: 'your-store-hash'
 });
 
 // Request token
 const token = await auth.requestToken(authQuery);
 
 // Verify JWT
-const claims = await auth.verify(jwtPayload);
+const claims = await auth.verify(jwtPayload, 'your-store-hash');
 ```
 
 ## API
 
 ### BigCommerceClient
+
+#### Constructor
+```typescript
+new BigCommerceClient(config: {
+    storeHash: string;
+    accessToken: string;
+    maxRetries?: number;      // default: 5
+    maxDelay?: number;        // default: 60000 (1 minute)
+    concurrency?: number;     // default: 10
+    skipErrors?: boolean;     // default: false
+    logger?: Logger;          // optional
+})
+```
 
 #### `get<R>(endpoint: string, options?: GetOptions): Promise<R>`
 Makes a GET request to the BigCommerce API.
@@ -191,10 +203,21 @@ Queries multiple values against a single field using the v3 API. If the URL + qu
 
 ### BigCommerceAuth
 
-#### `requestToken(data: string | AuthQuery): Promise<TokenResponse>`
+#### Constructor
+```typescript
+new BigCommerceAuth(config: {
+    clientId: string;
+    secret: string;
+    redirectUri: string;
+    scopes?: string[];        // optional
+    logger?: Logger;          // optional
+})
+```
+
+#### `requestToken(data: string | UrlSearchParams | AuthQuery): Promise<TokenResponse>`
 Requests an access token from BigCommerce OAuth.
 
-#### `verify(jwtPayload: string): Promise<Claims>`
+#### `verify(jwtPayload: string, storeHash: string): Promise<Claims>`
 Verifies a JWT payload from BigCommerce.
 
 ## Tips
