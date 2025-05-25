@@ -8,11 +8,12 @@ vi.mock('ky');
 vi.mock('jose');
 
 describe('BigCommerceAuth', () => {
+    const storeHash = 'test-store-hash';
+
     const mockConfig = {
         clientId: 'test-client-id',
         secret: 'test-secret',
         redirectUri: 'https://example.com/callback',
-        storeHash: 'test-store-hash',
         scopes: ['store_v2_products', 'store_v2_customers'],
         logger: pino({
             level: 'debug',
@@ -124,7 +125,7 @@ describe('BigCommerceAuth', () => {
             nbf: Date.now() / 1000,
             exp: Date.now() / 1000 + 3600,
             jti: 'test-jti',
-            sub: `stores/${mockConfig.storeHash}`,
+            sub: `stores/${storeHash}`,
             user: {
                 id: 1,
                 email: 'test@example.com',
@@ -147,14 +148,14 @@ describe('BigCommerceAuth', () => {
 
             vi.mocked(jose.jwtVerify).mockResolvedValue(mockVerifyResult);
 
-            const result = await auth.verify('test-jwt');
+            const result = await auth.verify('test-jwt', storeHash);
             expect(result).toEqual(mockClaims);
         });
 
         it('should throw error for invalid JWT payload', async () => {
             vi.mocked(jose.jwtVerify).mockRejectedValue(new Error('Invalid JWT'));
 
-            await expect(auth.verify('invalid-jwt')).rejects.toThrow('Invalid JWT payload');
+            await expect(auth.verify('invalid-jwt', storeHash)).rejects.toThrow('Invalid JWT payload');
         });
     });
 }); 
