@@ -72,12 +72,14 @@ export type Config = StoreOptions & RateLimitOptions & ConcurrencyOptions & {
 export class BigCommerceClient {
     /**
      * Creates a new BigCommerce client instance
+     * @param config - Configuration options for the client
      * @param config.storeHash - The store hash to use for the client
      * @param config.accessToken - The API access token to use for the client
-     * @param config.maxRetries - (default: 5) The maximum number of retries for rate limit errors
-     * @param config.maxDelay - (default: 60e3 - 1 minute) Maximum time to wait to retry in case of rate limit errors. If `X-Rate-Limit-Time-Reset-Ms` header is higher than `maxDelay`, the request will fail immediately.
-     * @param config.concurrency - (default: 10) The default concurrency for concurrent methods
-     * @param config.skipErrors - (default: false) Whether to skip errors during concurrent requests
+     * @param config.maxRetries - The maximum number of retries for rate limit errors (default: 5)
+     * @param config.maxDelay - Maximum time to wait to retry in case of rate limit errors in milliseconds (default: 60000 - 1 minute). If `X-Rate-Limit-Time-Reset-Ms` header is higher than `maxDelay`, the request will fail immediately.
+     * @param config.concurrency - The default concurrency for concurrent methods (default: 10)
+     * @param config.skipErrors - Whether to skip errors during concurrent requests (default: false)
+     * @param config.logger - Optional logger instance for debugging and error tracking
      */
     constructor(private readonly config: Config) {}
 
