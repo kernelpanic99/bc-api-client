@@ -1,4 +1,4 @@
-import ky, { HTTPError } from 'ky';
+import ky, { HTTPError, KyResponse } from 'ky';
 import * as jose from 'jose';
 import { Logger } from './core';
 
@@ -139,7 +139,7 @@ export class BigCommerceAuth {
      * @param data - Either a query string, URLSearchParams, or AuthQuery object containing auth callback data
      * @returns Promise resolving to the token response
      */
-    async requestToken(data: string | AuthQuery | URLSearchParams) {
+    async requestToken(data: string | AuthQuery | URLSearchParams): Promise<TokenResponse> {
         const query = typeof data === 'string' || data instanceof URLSearchParams ? this.parseQueryString(data) : data;
 
         this.validateScopes(query.scope);
@@ -158,10 +158,10 @@ export class BigCommerceAuth {
             scopes: query.scope
         }, 'Requesting OAuth token');
 
-        let res: Response;
+        let res: KyResponse;
 
         try {
-            res = await ky(TOKEN_ENDPOINT, {
+            res = await ky<TokenResponse>(TOKEN_ENDPOINT, {
                 method: 'POST',
                 json: tokenRequest,
             });
