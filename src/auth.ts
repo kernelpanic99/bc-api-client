@@ -1,4 +1,4 @@
-import ky from 'ky';
+import ky, { HTTPError } from 'ky';
 import * as jose from 'jose';
 import { Logger } from './core';
 
@@ -26,8 +26,6 @@ const ISSUER = 'bc';
  * Query parameters received from BigCommerce auth callback
  */
 type AuthQuery = {
-    /** The BigCommerce account UUID */
-    account_uuid: string;
     /** The authorization code from BigCommerce */
     code: string;
     /** The granted OAuth scopes */
@@ -144,6 +142,8 @@ export class BigCommerceAuth {
     async requestToken(data: string | AuthQuery | URLSearchParams) {
         const query = typeof data === 'string' || data instanceof URLSearchParams ? this.parseQueryString(data) : data;
 
+        this.validateScopes(query.scope);
+
         const tokenRequest: TokenRequest = {
             client_id: this.config.clientId,
             client_secret: this.config.secret,
@@ -158,12 +158,39 @@ export class BigCommerceAuth {
             scopes: query.scope
         }, 'Requesting OAuth token');
 
-        const res = await ky(TOKEN_ENDPOINT, {
-            method: 'POST',
-            json: tokenRequest,
-        });
+        let res: Response;
 
-        return res.json<TokenResponse>();
+        try {
+            res = await ky(TOKEN_ENDPOINT, {
+                method: 'POST',
+                json: tokenRequest,
+            });
+        } catch (error) {
+            if(error instanceof HTTPError) {
+                const text = await error.response.text();
+
+                this.config.logger?.error({
+                    err: {
+                        name: error.name,
+                        message: error.message,
+                        text
+                    }
+                });
+
+                throw new Error(`Failed to request token. BC returned: ${text}`, { cause: error });
+            }
+
+            this.config.logger?.error({
+                err: error instanceof Error ? {
+                    name: error.name,
+                    message: error.message
+                } : error
+            });
+
+            throw new Error(`Failed to request token`, { cause: error });
+        }
+
+        return res.json();
     }
 
     /**
@@ -196,6 +223,7 @@ export class BigCommerceAuth {
                     message: error.message
                 } : error
             });
+
             throw new Error('Invalid JWT payload', { cause: error });
         }
     }
@@ -213,7 +241,6 @@ export class BigCommerceAuth {
         const code = params.get('code');
         const scope = params.get('scope');
         const context = params.get('context');
-        const account_uuid = params.get('account_uuid');
 
         // Validate required parameters
         if (!code) {
@@ -230,12 +257,8 @@ export class BigCommerceAuth {
             throw new Error('No context found in query string');
         }
 
-        if (!account_uuid) {
-            throw new Error('No account UUID found in query string');
-        }
 
         return {
-            account_uuid,
             code,
             scope,
             context,
