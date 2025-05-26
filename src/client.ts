@@ -208,7 +208,9 @@ export class BigCommerceClient {
      * @param options.skipErrors - Whether to skip errors and continue processing, overrides the client's skipErrors setting (default: false)
      * @returns Promise resolving to array of all items across all pages
      */
-    async collect<T>(endpoint: string, options: Omit<GetOptions, 'version'> & ConcurrencyOptions): Promise<T[]> {
+    async collect<T>(endpoint: string, options?: Omit<GetOptions, 'version'> & ConcurrencyOptions): Promise<T[]> {
+        options = options ?? {};
+
         if (options.query) {
             if (!options.query.limit) {
                 options.query.limit = MAX_PAGE_SIZE.toString();
@@ -262,7 +264,9 @@ export class BigCommerceClient {
      * @param options.skipErrors - Whether to skip errors and continue processing, overrides the client's skipErrors setting (default: false)
      * @returns Promise resolving to array of all items across all pages
      */
-    async collectV2<T>(endpoint: string, options: Omit<GetOptions, 'version'> & ConcurrencyOptions): Promise<T[]> {
+    async collectV2<T>(endpoint: string, options?: Omit<GetOptions, 'version'> & ConcurrencyOptions): Promise<T[]> {
+        options = options ?? {};
+
         if (options.query) {
             if (!options.query.limit) {
                 options.query.limit = MAX_PAGE_SIZE.toString();
