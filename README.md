@@ -176,7 +176,12 @@ Makes a DELETE request to the BigCommerce API.
 Executes multiple requests concurrently with rate limit handling.
 - `requests`: Array of request options to execute
 - `options.concurrency`: Maximum number of concurrent requests (default: 10)
-- `options.skipErrors`: Whether to skip errors and continue processing (default: false)
+- `options.skipErrors`: Whether to skip errors and continue processing (the errors will be logged if logger is provided), default: false)
+
+#### `concurrentSettled<T, R>(requests: RequestOptions<T>[], options?: Pick<ConcurrencyOptions, 'concurrency'>): Promise<PromiseSettledResult<R>[]>`
+Lowest level concurrent request method. This method executes requests in chunks and returns bare PromiseSettledResult objects. Use this method if you need to handle errors in a custom way.
+- `requests`: Array of request options to execute
+- `options.concurrency`: Maximum number of concurrent requests (default: 10)
 
 #### `collect<T>(endpoint: string, options: Omit<GetOptions, 'version'> & ConcurrencyOptions): Promise<T[]>`
 Automatically fetches all pages of a paginated v3 endpoint. Pulls the first page and uses pagination meta to collect remaining pages concurrently.

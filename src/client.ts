@@ -152,21 +152,51 @@ export class BigCommerceClient {
      * Executes multiple requests concurrently with controlled concurrency
      * @param requests - Array of request options to execute
      * @param options.concurrency - Maximum number of concurrent requests, overrides the client's concurrency setting (default: 10)
-     * @param options.skipErrors - Whether to skip errors and continue processing, overrides the client's skipErrors setting (default: false)
+     * @param options.skipErrors - Whether to skip errors and continue processing (the errors will be logged if logger is provided), overrides the client's skipErrors setting (default: false)
      * @returns Promise resolving to array of response data
      */
     async concurrent<T, R>(requests: RequestOptions<T>[], options?: ConcurrencyOptions): Promise<R[]> {
+        const skipErrors = options?.skipErrors ?? this.config.skipErrors ?? false;
+        const results = await this.concurrentSettled<T, R>(requests, options);
+
+        const successfulResults: R[] = [];
+
+        for (const result of results) {
+            if (result.status === 'fulfilled') {
+                successfulResults.push(result.value);
+            } else {
+                if (!skipErrors) {
+                    throw result.reason;
+                } else {
+                    this.config.logger?.warn({
+                        error: result.reason
+                    }, 'Error in concurrent request');
+                }
+            }
+        }
+
+        return successfulResults;
+    }
+
+    /**
+     * Lowest level concurrent request method.
+     * This method executes requests in chunks and returns bare PromiseSettledResult objects.
+     * Use this method if you need to handle errors in a custom way.
+     * @param requests - Array of request options to execute
+     * @param options.concurrency - Maximum number of concurrent requests, overrides the client's concurrency setting (default: 10)
+     * @returns Promise resolving to array of PromiseSettledResult containing both successful and failed requests
+     */
+    async concurrentSettled<T, R>(requests: RequestOptions<T>[], options?: Pick<ConcurrencyOptions, 'concurrency'>): Promise<PromiseSettledResult<R>[]> {
         const chunkSize = options?.concurrency ?? this.config.concurrency ?? DEFAULT_CONCURRENCY;
         const chunks = chunkArray(requests, chunkSize);
-        const skipErrors = options?.skipErrors ?? this.config.skipErrors ?? false;
-
-        const results: R[] = [];
 
         this.config.logger?.debug({
             totalRequests: requests.length,
             chunkSize,
             chunks: chunks.length
-        }, 'Starting concurrent requests');
+        }, 'Starting concurrent requests with detailed results');
+
+        const allResults: PromiseSettledResult<R>[] = [];
 
         for (const chunk of chunks) {
             const responses = await Promise.allSettled(
@@ -178,25 +208,10 @@ export class BigCommerceClient {
                 ),
             );
 
-            responses.forEach((response) => {
-                if (response.status === 'fulfilled') {
-                    results.push(response.value);
-                } else {
-                    if (!skipErrors) {
-                        throw response.reason;
-                    } else {
-                        this.config.logger?.warn({
-                            error: response.reason instanceof Error ? {
-                                name: response.reason.name,
-                                message: response.reason.message
-                            } : response.reason
-                        }, 'Error in concurrent request');
-                    }
-                }
-            });
+            allResults.push(...responses);
         }
 
-        return results;
+        return allResults;
     }
 
     /**
@@ -205,7 +220,7 @@ export class BigCommerceClient {
      * @param endpoint - The API endpoint to request
      * @param options.query - Query parameters to include in the request
      * @param options.concurrency - Maximum number of concurrent requests, overrides the client's concurrency setting (default: 10)
-     * @param options.skipErrors - Whether to skip errors and continue processing, overrides the client's skipErrors setting (default: false)
+     * @param options.skipErrors - Whether to skip errors and continue processing (the errors will be logged if logger is provided), overrides the client's skipErrors setting (default: false)
      * @returns Promise resolving to array of all items across all pages
      */
     async collect<T>(endpoint: string, options?: Omit<GetOptions, 'version'> & ConcurrencyOptions): Promise<T[]> {
@@ -261,7 +276,7 @@ export class BigCommerceClient {
      * @param endpoint - The API endpoint to request
      * @param options.query - Query parameters to include in the request
      * @param options.concurrency - Maximum number of concurrent requests, overrides the client's concurrency setting (default: 10)
-     * @param options.skipErrors - Whether to skip errors and continue processing, overrides the client's skipErrors setting (default: false)
+     * @param options.skipErrors - Whether to skip errors and continue processing (the errors will be logged if logger is provided), overrides the client's skipErrors setting (default: false)
      * @returns Promise resolving to array of all items across all pages
      */
     async collectV2<T>(endpoint: string, options?: Omit<GetOptions, 'version'> & ConcurrencyOptions): Promise<T[]> {
@@ -332,7 +347,7 @@ export class BigCommerceClient {
      * @param options.values - Array of values to query for e.g. `['123', '456', ...]`
      * @param options.query - Additional query parameters
      * @param options.concurrency - Maximum number of concurrent requests, overrides the client's concurrency setting (default: 10)
-     * @param options.skipErrors - Whether to skip errors and continue processing, overrides the client's skipErrors setting (default: false)
+     * @param options.skipErrors - Whether to skip errors and continue processing (the errors will be logged if logger is provided), overrides the client's skipErrors setting (default: false)
      * @returns Promise resolving to array of matching items
      */
     async query<T>(endpoint: string, options: QueryOptions): Promise<T[]> {
