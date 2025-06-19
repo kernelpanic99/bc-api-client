@@ -226,7 +226,7 @@ const safeRequest = async <T, R>(options: RequestOptions<T> & StoreOptions & {
                 data,
                 endpoint: options.endpoint,
                 query: options.query,
-                body: error?.response?.body,
+                body: options.body,
                 headers: Object.fromEntries(error?.response?.headers?.entries() ?? []),
             },
             error,
