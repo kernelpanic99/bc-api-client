@@ -104,6 +104,7 @@ const trees = {
     path: '/catalog/trees',
     byId: (id: number) => `/catalog/trees/${id}`,
     categories: (id: number) => `/catalog/trees/${id}/categories`,
+    allCategories: '/catalog/trees/categories',
 };
 
 const abandonedCarts = {
