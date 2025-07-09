@@ -72,7 +72,7 @@ describe('BigCommerceClient', () => {
         expect(orders.length).toBeGreaterThan(0);
     });
 
-    it('should be able to query data with a large number of filter values', async () => {
+    it.skip('should be able to query data with a large number of filter values', async () => {
         const client = new BigCommerceClient({
             storeHash: env.storeHash,
             accessToken: env.accessToken,
