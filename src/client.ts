@@ -359,19 +359,25 @@ export class BigCommerceClient {
             options.query = { limit: MAX_PAGE_SIZE.toString() };
         }
 
-        const {limit:_, ...restQuery} = options.query;
-        const fullUrl = `${BASE_URL}${this.config.storeHash}/v3/${endpoint}?${new URLSearchParams(restQuery).toString()}`;
+        const keySize = encodeURIComponent(options.key).length;
+        const fullUrl = `${BASE_URL}${this.config.storeHash}/v3/${endpoint}?${new URLSearchParams(options.query).toString()}`;
+        const offset = fullUrl.length + keySize + 1;
+        const chunkLength = Number.parseInt(options.query?.limit) || MAX_PAGE_SIZE;
+        const separatorSize = encodeURIComponent(',').length;
 
         const queryStr = options.values.map((value) => `${value}`)
         const chunks = chunkStrLength(queryStr, {
-            offset: fullUrl.length,
-            chunkLength: Number.parseInt(options.query?.limit) || MAX_PAGE_SIZE,
+            separatorSize,
+            offset,
+            chunkLength,
         });
 
         this.config.logger?.debug({
+            offset,
             totalValues: options.values.length,
             chunks: chunks.length,
-            valuesPerChunk: chunks[0]?.length
+            valuesPerChunk: chunks[0]?.length,
+            separatorSize,
         }, 'Querying with chunked values');
 
         const requests = chunks.map((chunk) => ({

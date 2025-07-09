@@ -30,30 +30,30 @@ export const chunkStrLength = (
     let currentChunk: string[] = [];
 
     for (const item of items) {
-        const itemLength = item.length + separatorSize;
+        const itemLength = encodeURIComponent(item).length;
+        const separatorLength = currentChunk.length > 0 ? separatorSize : 0;
+        const totalItemLength = itemLength + separatorLength;
 
-        const newCurrentStrLength = currentStrLength + itemLength;
-        // Check if adding this item would exceed maxLength
-        if (newCurrentStrLength > maxLength) {
-            if (currentChunk.length > 0) {
-                chunks.push(currentChunk);
-                currentChunk = [];
-                currentStrLength = offset;
-            }
-        }
+        // Check if adding this item would exceed limits
+        const wouldExceedLength = currentStrLength + totalItemLength > maxLength;
+        const wouldExceedCount = currentChunk.length >= chunkLength;
 
-        // Check if current chunk is full
-        if (currentChunk.length === chunkLength) {
+        if ((wouldExceedLength || wouldExceedCount) && currentChunk.length > 0) {
             chunks.push(currentChunk);
             currentChunk = [];
             currentStrLength = offset;
         }
 
+        // Handle items that are too large even for a new chunk
+        if (itemLength + offset > maxLength) {
+            // Either skip, truncate, or throw error depending on requirements
+            throw new Error(`Item too large: ${itemLength} exceeds maxLength ${maxLength}`);
+        }
+
         currentChunk.push(item);
-        currentStrLength += itemLength;
+        currentStrLength += totalItemLength;
     }
 
-    // Add the last chunk if it's not empty
     if (currentChunk.length > 0) {
         chunks.push(currentChunk);
     }
