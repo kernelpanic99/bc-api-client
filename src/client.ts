@@ -198,7 +198,7 @@ export class BigCommerceClient {
 
         const allResults: PromiseSettledResult<R>[] = [];
 
-        for (const chunk of chunks) {
+        for (const [index, chunk] of chunks.entries()) {
             const responses = await Promise.allSettled(
                 chunk.map((opt) =>
                     request<T, R>({
@@ -207,6 +207,14 @@ export class BigCommerceClient {
                     }),
                 ),
             );
+
+            this.config.logger?.debug({
+                chunkIndex: index,
+                chunkSize: chunk.length,
+                totalRequests: requests.length,
+                totalChunks: chunks.length,
+                responses: responses.map((response) => response.status),
+            }, 'Completed chunk');
 
             allResults.push(...responses);
         }
