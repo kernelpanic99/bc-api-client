@@ -33,10 +33,13 @@ describe('BigCommerceAuth', () => {
         });
 
         it('should throw error for invalid redirect URI', () => {
-            expect(() => new BigCommerceAuth({
-                ...mockConfig,
-                redirectUri: 'invalid-uri'
-            })).toThrow('Invalid redirect URI');
+            expect(
+                () =>
+                    new BigCommerceAuth({
+                        ...mockConfig,
+                        redirectUri: 'invalid-uri',
+                    }),
+            ).toThrow('Invalid redirect URI');
         });
     });
 
@@ -47,22 +50,23 @@ describe('BigCommerceAuth', () => {
             user: {
                 id: 1,
                 username: 'test-user',
-                email: 'test@example.com'
+                email: 'test@example.com',
             },
             owner: {
                 id: 2,
                 username: 'owner',
-                email: 'owner@example.com'
+                email: 'owner@example.com',
             },
             context: 'stores/test-store-hash',
-            account_uuid: 'test-uuid'
+            account_uuid: 'test-uuid',
         };
 
         it('should request token with query string', async () => {
-            const mockQueryString = 'code=test-code&scope=store_v2_products store_v2_customers&context=stores/test-store-hash&account_uuid=test-uuid';
-            
+            const mockQueryString =
+                'code=test-code&scope=store_v2_products store_v2_customers&context=stores/test-store-hash&account_uuid=test-uuid';
+
             const mockResponse = {
-                json: () => Promise.resolve(mockTokenResponse)
+                json: () => Promise.resolve(mockTokenResponse),
             } as unknown as Response & { json: <T>() => Promise<T> };
 
             vi.mocked(ky).mockResolvedValue(mockResponse);
@@ -76,11 +80,11 @@ describe('BigCommerceAuth', () => {
                 code: 'test-code',
                 scope: 'store_v2_products store_v2_customers',
                 context: 'stores/test-store-hash',
-                account_uuid: 'test-uuid'
+                account_uuid: 'test-uuid',
             };
 
             const mockResponse = {
-                json: () => Promise.resolve(mockTokenResponse)
+                json: () => Promise.resolve(mockTokenResponse),
             } as unknown as Response & { json: <T>() => Promise<T> };
 
             vi.mocked(ky).mockResolvedValue(mockResponse);
@@ -90,9 +94,11 @@ describe('BigCommerceAuth', () => {
         });
 
         it('should request token with URLSearchParams instance', async () => {
-            const mockQuery = new URLSearchParams('code=test-code&scope=store_v2_products store_v2_customers&context=stores/test-store-hash&account_uuid=test-uuid');
+            const mockQuery = new URLSearchParams(
+                'code=test-code&scope=store_v2_products store_v2_customers&context=stores/test-store-hash&account_uuid=test-uuid',
+            );
             const mockResponse = {
-                json: () => Promise.resolve(mockTokenResponse)
+                json: () => Promise.resolve(mockTokenResponse),
             } as unknown as Response & { json: <T>() => Promise<T> };
 
             vi.mocked(ky).mockResolvedValue(mockResponse);
@@ -112,7 +118,8 @@ describe('BigCommerceAuth', () => {
         });
 
         it('should throw error for scope mismatch', async () => {
-            const mockQueryString = 'code=test-code&scope=store_v2_orders&context=stores/test-store-hash&account_uuid=test-uuid';
+            const mockQueryString =
+                'code=test-code&scope=store_v2_orders&context=stores/test-store-hash&account_uuid=test-uuid';
             await expect(auth.requestToken(mockQueryString)).rejects.toThrow('Scope mismatch');
         });
     });
@@ -129,21 +136,21 @@ describe('BigCommerceAuth', () => {
             user: {
                 id: 1,
                 email: 'test@example.com',
-                locale: 'en-US'
+                locale: 'en-US',
             },
             owner: {
                 id: 2,
-                email: 'owner@example.com'
+                email: 'owner@example.com',
             },
             url: 'https://store.example.com',
-            channel_id: null
+            channel_id: null,
         };
 
         it('should verify valid JWT payload', async () => {
             const mockVerifyResult = {
                 payload: mockClaims,
                 protectedHeader: { alg: 'HS256' },
-                key: new TextEncoder().encode('test-key')
+                key: new TextEncoder().encode('test-key'),
             };
 
             vi.mocked(jose.jwtVerify).mockResolvedValue(mockVerifyResult);
@@ -158,4 +165,4 @@ describe('BigCommerceAuth', () => {
             await expect(auth.verify('invalid-jwt', storeHash)).rejects.toThrow('Invalid JWT payload');
         });
     });
-}); 
+});

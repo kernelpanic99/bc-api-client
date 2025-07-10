@@ -109,9 +109,7 @@ describe('BigCommerceClient', () => {
                 meta: { pagination: { total_pages: 2 } },
             };
 
-            vi.mocked(request)
-                .mockResolvedValueOnce(mockFirstPage)
-                .mockResolvedValueOnce(mockSecondPage);
+            vi.mocked(request).mockResolvedValueOnce(mockFirstPage).mockResolvedValueOnce(mockSecondPage);
 
             const result = await client.collect('/test', {
                 query: { limit: '2' },
@@ -153,9 +151,7 @@ describe('BigCommerceClient', () => {
                 meta: { pagination: { total_pages: 1 } },
             };
 
-            vi.mocked(request)
-                .mockResolvedValueOnce(mockResponse1)
-                .mockResolvedValueOnce(mockResponse2);
+            vi.mocked(request).mockResolvedValueOnce(mockResponse1).mockResolvedValueOnce(mockResponse2);
 
             const result = await client.query('/test', {
                 key: 'id:in',
@@ -170,11 +166,7 @@ describe('BigCommerceClient', () => {
 
     describe('Concurrent Requests', () => {
         it('should handle concurrent requests with success', async () => {
-            const mockResponses = [
-                { data: { id: 1 } },
-                { data: { id: 2 } },
-                { data: { id: 3 } },
-            ];
+            const mockResponses = [{ data: { id: 1 } }, { data: { id: 2 } }, { data: { id: 3 } }];
 
             vi.mocked(request)
                 .mockResolvedValueOnce(mockResponses[0])
@@ -194,11 +186,7 @@ describe('BigCommerceClient', () => {
         });
 
         it('should handle concurrent requests with errors', async () => {
-            const mockResponses = [
-                { data: { id: 1 } },
-                new Error('Test error'),
-                { data: { id: 3 } },
-            ];
+            const mockResponses = [{ data: { id: 1 } }, new Error('Test error'), { data: { id: 3 } }];
 
             vi.mocked(request)
                 .mockResolvedValueOnce(mockResponses[0])
@@ -211,16 +199,11 @@ describe('BigCommerceClient', () => {
                 { endpoint: '/test3', method: Methods.GET },
             ];
 
-            await expect(client.concurrent(requests, { concurrency: 2 }))
-                .rejects.toThrow('Test error');
+            await expect(client.concurrent(requests, { concurrency: 2 })).rejects.toThrow('Test error');
         });
 
         it('should skip errors when skipErrors is true', async () => {
-            const mockResponses = [
-                { data: { id: 1 } },
-                new Error('Test error'),
-                { data: { id: 3 } },
-            ];
+            const mockResponses = [{ data: { id: 1 } }, new Error('Test error'), { data: { id: 3 } }];
 
             vi.mocked(request)
                 .mockResolvedValueOnce(mockResponses[0])
@@ -233,9 +216,9 @@ describe('BigCommerceClient', () => {
                 { endpoint: '/test3', method: Methods.GET },
             ];
 
-            const result = await client.concurrent(requests, { 
+            const result = await client.concurrent(requests, {
                 concurrency: 2,
-                skipErrors: true 
+                skipErrors: true,
             });
 
             expect(result).toHaveLength(2);
@@ -243,4 +226,4 @@ describe('BigCommerceClient', () => {
             expect(result).toContainEqual(mockResponses[2]);
         });
     });
-}); 
+});

@@ -110,7 +110,7 @@ export type Claims = {
     url: string;
     /** The channel ID (if applicable) */
     channel_id: number | null;
-}
+};
 
 /**
  * Handles authentication with BigCommerce OAuth
@@ -152,11 +152,14 @@ export class BigCommerceAuth {
             redirect_uri: this.config.redirectUri,
         };
 
-        this.config.logger?.debug({
-            clientId: this.config.clientId,
-            context: query.context,
-            scopes: query.scope
-        }, 'Requesting OAuth token');
+        this.config.logger?.debug(
+            {
+                clientId: this.config.clientId,
+                context: query.context,
+                scopes: query.scope,
+            },
+            'Requesting OAuth token',
+        );
 
         let res: KyResponse;
 
@@ -166,25 +169,28 @@ export class BigCommerceAuth {
                 json: tokenRequest,
             });
         } catch (error) {
-            if(error instanceof HTTPError) {
+            if (error instanceof HTTPError) {
                 const text = await error.response.text();
 
                 this.config.logger?.error({
                     err: {
                         name: error.name,
                         message: error.message,
-                        text
-                    }
+                        text,
+                    },
                 });
 
                 throw new Error(`Failed to request token. BC returned: ${text}`, { cause: error });
             }
 
             this.config.logger?.error({
-                err: error instanceof Error ? {
-                    name: error.name,
-                    message: error.message
-                } : error
+                err:
+                    error instanceof Error
+                        ? {
+                              name: error.name,
+                              message: error.message,
+                          }
+                        : error,
             });
 
             throw new Error(`Failed to request token`, { cause: error });
@@ -210,18 +216,24 @@ export class BigCommerceAuth {
                 subject: `stores/${storeHash}`,
             });
 
-            this.config.logger?.debug({
-                userId: payload.user?.id,
-                storeHash: payload.sub.split('/')[1]
-            }, 'JWT verified successfully');
+            this.config.logger?.debug(
+                {
+                    userId: payload.user?.id,
+                    storeHash: payload.sub.split('/')[1],
+                },
+                'JWT verified successfully',
+            );
 
             return payload;
         } catch (error) {
             this.config.logger?.error({
-                error: error instanceof Error ? {
-                    name: error.name,
-                    message: error.message
-                } : error
+                error:
+                    error instanceof Error
+                        ? {
+                              name: error.name,
+                              message: error.message,
+                          }
+                        : error,
             });
 
             throw new Error('Invalid JWT payload', { cause: error });
@@ -257,7 +269,6 @@ export class BigCommerceAuth {
             throw new Error('No context found in query string');
         }
 
-
         return {
             code,
             scope,
@@ -277,7 +288,7 @@ export class BigCommerceAuth {
 
         const grantedScopes = scopes.split(' ');
         const requiredScopes = this.config.scopes;
-        const missingScopes = requiredScopes.filter(scope => !grantedScopes.includes(scope));
+        const missingScopes = requiredScopes.filter((scope) => !grantedScopes.includes(scope));
 
         if (missingScopes.length) {
             throw new Error(`Scope mismatch: ${scopes}; expected: ${this.config.scopes.join(' ')}`);

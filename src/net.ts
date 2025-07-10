@@ -40,7 +40,7 @@ const CONFIG = {
         REQUEST_QUOTA: 'x-rate-limit-requests-quota',
         /** Number of requests remaining in the current window */
         REQUESTS_LEFT: 'x-rate-limit-requests-left',
-    }
+    },
 } as const;
 
 /** Supported BigCommerce API versions */
@@ -68,7 +68,7 @@ export type StoreOptions = {
     storeHash: string;
     /** API access token */
     accessToken: string;
-}
+};
 
 /**
  * Options for rate limit handling
@@ -102,9 +102,13 @@ export class RequestError<T> extends Error {
  * @returns Promise resolving to the API response
  * @throws {RequestError} If the request fails or rate limit is exceeded
  */
-export const request = async <T, R>(options: RequestOptions<T> & RateLimitOptions & StoreOptions & {
-    logger?: Logger;
-}): Promise<R> => {
+export const request = async <T, R>(
+    options: RequestOptions<T> &
+        RateLimitOptions &
+        StoreOptions & {
+            logger?: Logger;
+        },
+): Promise<R> => {
     const { maxDelay = CONFIG.DEFAULT_MAX_DELAY, maxRetries = CONFIG.DEFAULT_MAX_RETRIES, logger } = options;
 
     let retries = 0;
@@ -121,11 +125,14 @@ export const request = async <T, R>(options: RequestOptions<T> & RateLimitOption
                 const headers = err.data.headers as Record<string, string>;
                 const retryAfter = Number.parseInt(headers[CONFIG.HEADERS.RETRY_AFTER]);
 
-                logger?.debug({
-                    retryAfter,
-                    retries,
-                    remaining: headers[CONFIG.HEADERS.REQUESTS_LEFT]
-                }, 'Rate limit hit, retrying');
+                logger?.debug(
+                    {
+                        retryAfter,
+                        retries,
+                        remaining: headers[CONFIG.HEADERS.REQUESTS_LEFT],
+                    },
+                    'Rate limit hit, retrying',
+                );
 
                 if (Number.isNaN(retryAfter)) {
                     throw new RequestError(
@@ -137,10 +144,13 @@ export const request = async <T, R>(options: RequestOptions<T> & RateLimitOption
                 }
 
                 if (retryAfter > maxDelay) {
-                    logger?.warn({
-                        retryAfter,
-                        maxDelay
-                    }, 'Rate limit delay exceeds maximum allowed delay');
+                    logger?.warn(
+                        {
+                            retryAfter,
+                            maxDelay,
+                        },
+                        'Rate limit delay exceeds maximum allowed delay',
+                    );
                     throw new RequestError(
                         err.status,
                         `Rate limit exceeded: ${retryAfter}ms, ${err.message}`,
@@ -158,10 +168,13 @@ export const request = async <T, R>(options: RequestOptions<T> & RateLimitOption
         }
     }
 
-    logger?.error({
-        retries,
-        error: lastError
-    }, 'Request failed after maximum retries');
+    logger?.error(
+        {
+            retries,
+            error: lastError,
+        },
+        'Request failed after maximum retries',
+    );
 
     throw lastError ?? new RequestError(500, 'Failed to make request', 'Too many retries after rate limit');
 };
@@ -172,27 +185,36 @@ export const request = async <T, R>(options: RequestOptions<T> & RateLimitOption
  * @param options - Request options
  * @returns Promise resolving to the API response
  * @throws {RequestError} If the request fails
- */ 
-const safeRequest = async <T, R>(options: RequestOptions<T> & StoreOptions & {
-    logger?: Logger;
-}): Promise<R> => {
+ */
+const safeRequest = async <T, R>(
+    options: RequestOptions<T> &
+        StoreOptions & {
+            logger?: Logger;
+        },
+): Promise<R> => {
     const { logger } = options;
     let res: KyResponse<T>;
 
     try {
         res = await call<T, R>(options);
     } catch (error) {
-        if(error instanceof RequestError) {
+        if (error instanceof RequestError) {
             throw error;
         }
 
-        if(!(error instanceof HTTPError)) {
-            logger?.error({
-                error: error instanceof Error ? {
-                    name: error.name,
-                    message: error.message
-                } : error
-            }, 'Unexpected error during request');
+        if (!(error instanceof HTTPError)) {
+            logger?.error(
+                {
+                    error:
+                        error instanceof Error
+                            ? {
+                                  name: error.name,
+                                  message: error.message,
+                              }
+                            : error,
+                },
+                'Unexpected error during request',
+            );
             throw error;
         }
 
@@ -214,10 +236,13 @@ const safeRequest = async <T, R>(options: RequestOptions<T> & StoreOptions & {
             data = 'Failed to read error response';
         }
 
-        logger?.error({
-            status: error?.response?.status,
-            errorMessage
-        }, 'HTTP error during request');
+        logger?.error(
+            {
+                status: error?.response?.status,
+                errorMessage,
+            },
+            'HTTP error during request',
+        );
 
         throw new RequestError(
             error?.response?.status ?? 500,
@@ -235,26 +260,27 @@ const safeRequest = async <T, R>(options: RequestOptions<T> & StoreOptions & {
 
     const text = await res.text();
 
-    if(res.status === 204) {
+    if (res.status === 204) {
         return undefined as unknown as R;
     }
 
     try {
         return JSON.parse(text);
     } catch (error) {
-        logger?.error({
-            status: res.status,
-            error: error instanceof Error ? {
-                name: error.name,
-                message: error.message
-            } : error
-        }, 'Failed to parse response');
-        throw new RequestError(
-            res.status,
-            `Failed to parse response: ${text}`,
-            text,
-            error
+        logger?.error(
+            {
+                status: res.status,
+                error:
+                    error instanceof Error
+                        ? {
+                              name: error.name,
+                              message: error.message,
+                          }
+                        : error,
+            },
+            'Failed to parse response',
         );
+        throw new RequestError(res.status, `Failed to parse response: ${text}`, text, error);
     }
 };
 
@@ -265,22 +291,37 @@ const safeRequest = async <T, R>(options: RequestOptions<T> & StoreOptions & {
  * @returns Promise resolving to the raw response
  * @throws {RequestError} If the URL is too long or request fails
  */
-const call = async <T, R>(options: RequestOptions<T> & StoreOptions & {
-    logger?: Logger;
-}): Promise<KyResponse<R>> => {
-    const { storeHash, accessToken, endpoint, method = 'GET', body, version = CONFIG.DEFAULT_VERSION, query, logger } = options;
+const call = async <T, R>(
+    options: RequestOptions<T> &
+        StoreOptions & {
+            logger?: Logger;
+        },
+): Promise<KyResponse<R>> => {
+    const {
+        storeHash,
+        accessToken,
+        endpoint,
+        method = 'GET',
+        body,
+        version = CONFIG.DEFAULT_VERSION,
+        query,
+        logger,
+    } = options;
 
     const url = `${CONFIG.BASE_URL}${storeHash}/${version}/${endpoint.replace(/^\//, '')}`;
-    
+
     // Check URL length including search params
     const searchParams = query ? new URLSearchParams(query).toString() : '';
     const fullUrl = searchParams ? `${url}?${searchParams}` : url;
-    
+
     if (fullUrl.length > CONFIG.MAX_URL_LENGTH) {
-        logger?.error({
-            urlLength: fullUrl.length,
-            maxLength: CONFIG.MAX_URL_LENGTH
-        }, 'URL length exceeds maximum allowed length');
+        logger?.error(
+            {
+                urlLength: fullUrl.length,
+                maxLength: CONFIG.MAX_URL_LENGTH,
+            },
+            'URL length exceeds maximum allowed length',
+        );
         throw new RequestError(
             400,
             'URL too long',
@@ -292,7 +333,7 @@ const call = async <T, R>(options: RequestOptions<T> & StoreOptions & {
         method,
         headers: {
             'Content-Type': 'application/json',
-            'Accept': 'application/json',
+            Accept: 'application/json',
             'X-Auth-Token': accessToken,
         },
         json: body,

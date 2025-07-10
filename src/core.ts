@@ -8,16 +8,15 @@ export type Pagination = {
         previous: string | null;
         current: string;
         next: string | null;
-    }
-}
-
+    };
+};
 
 export type V3Resource<T> = {
     data: T;
     meta: {
         pagination: Pagination;
-    }
-}
+    };
+};
 
 /**
  * Logger interface for logging messages and data, Pino compatible by default

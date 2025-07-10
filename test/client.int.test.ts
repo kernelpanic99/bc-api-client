@@ -10,7 +10,7 @@ const loadEnv = () => {
     if (!process.env.TEST_HASH || !process.env.TEST_TOKEN) {
         throw new Error('TEST_HASH and TEST_TOKEN must be set');
     }
-    
+
     return {
         storeHash: process.env.TEST_HASH,
         accessToken: process.env.TEST_TOKEN,
@@ -58,10 +58,10 @@ describe('BigCommerceClient', () => {
         });
 
         type MyOrder = {
-            id: number,
+            id: number;
             status: string;
-        }
-        
+        };
+
         const orders = await client.collectV2<MyOrder>(bc.orders.v2.path, {
             query: {
                 limit: '5',
@@ -85,7 +85,7 @@ describe('BigCommerceClient', () => {
         });
 
         // Fetch all products first
-        const products = await client.collect<{id: number, sku: string}>(bc.products.path, {
+        const products = await client.collect<{ id: number; sku: string }>(bc.products.path, {
             query: {
                 include_fields: 'sku',
             },
@@ -106,7 +106,7 @@ describe('BigCommerceClient', () => {
         expect(filteredProducts).toBeDefined();
         expect(filteredProducts.length).toBeGreaterThan(0);
         expect(filteredProducts.length).toBe(skus.length);
-        
+
         const product = filteredProducts[0];
 
         expect(product.id).toBeDefined();

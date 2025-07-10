@@ -7,9 +7,7 @@ const DEFAULT_CONCURRENCY = 10;
 
 // Helper function to chunk array into smaller arrays
 function chunkArray<T>(array: T[], size: number): T[][] {
-    return Array.from({ length: Math.ceil(array.length / size) }, (_, i) =>
-        array.slice(i * size, i * size + size)
-    );
+    return Array.from({ length: Math.ceil(array.length / size) }, (_, i) => array.slice(i * size, i * size + size));
 }
 
 // Helper function to create range array
@@ -48,24 +46,27 @@ export type ConcurrencyOptions = {
 /**
  * Options for querying multiple values against a single filter field
  */
-export type QueryOptions = Omit<GetOptions, 'version'> & ConcurrencyOptions & {
-    /** The field name to query against */
-    key: string;
-    /** Array of values to query for */
-    values: (string | number)[];
-};
+export type QueryOptions = Omit<GetOptions, 'version'> &
+    ConcurrencyOptions & {
+        /** The field name to query against */
+        key: string;
+        /** Array of values to query for */
+        values: (string | number)[];
+    };
 
 /**
  * Configuration options for the BigCommerce client
  */
-export type Config = StoreOptions & RateLimitOptions & ConcurrencyOptions & {
-    /** Logger instance */
-    logger?: Logger;
-};
+export type Config = StoreOptions &
+    RateLimitOptions &
+    ConcurrencyOptions & {
+        /** Logger instance */
+        logger?: Logger;
+    };
 
 /**
  * Client for interacting with the BigCommerce API
- * 
+ *
  * This client provides methods for making HTTP requests to the BigCommerce API,
  * with support for both v2 and v3 endpoints, pagination, and concurrent requests.
  */
@@ -168,9 +169,12 @@ export class BigCommerceClient {
                 if (!skipErrors) {
                     throw result.reason;
                 } else {
-                    this.config.logger?.warn({
-                        error: result.reason
-                    }, 'Error in concurrent request');
+                    this.config.logger?.warn(
+                        {
+                            error: result.reason,
+                        },
+                        'Error in concurrent request',
+                    );
                 }
             }
         }
@@ -186,15 +190,21 @@ export class BigCommerceClient {
      * @param options.concurrency - Maximum number of concurrent requests, overrides the client's concurrency setting (default: 10)
      * @returns Promise resolving to array of PromiseSettledResult containing both successful and failed requests
      */
-    async concurrentSettled<T, R>(requests: RequestOptions<T>[], options?: Pick<ConcurrencyOptions, 'concurrency'>): Promise<PromiseSettledResult<R>[]> {
+    async concurrentSettled<T, R>(
+        requests: RequestOptions<T>[],
+        options?: Pick<ConcurrencyOptions, 'concurrency'>,
+    ): Promise<PromiseSettledResult<R>[]> {
         const chunkSize = options?.concurrency ?? this.config.concurrency ?? DEFAULT_CONCURRENCY;
         const chunks = chunkArray(requests, chunkSize);
 
-        this.config.logger?.debug({
-            totalRequests: requests.length,
-            chunkSize,
-            chunks: chunks.length
-        }, 'Starting concurrent requests with detailed results');
+        this.config.logger?.debug(
+            {
+                totalRequests: requests.length,
+                chunkSize,
+                chunks: chunks.length,
+            },
+            'Starting concurrent requests with detailed results',
+        );
 
         const allResults: PromiseSettledResult<R>[] = [];
 
@@ -208,13 +218,16 @@ export class BigCommerceClient {
                 ),
             );
 
-            this.config.logger?.debug({
-                chunkIndex: index,
-                chunkSize: chunk.length,
-                totalRequests: requests.length,
-                totalChunks: chunks.length,
-                responses: responses.map((response) => response.status),
-            }, 'Completed chunk');
+            this.config.logger?.debug(
+                {
+                    chunkIndex: index,
+                    chunkSize: chunk.length,
+                    totalRequests: requests.length,
+                    totalChunks: chunks.length,
+                    responses: responses.map((response) => response.status),
+                },
+                'Completed chunk',
+            );
 
             allResults.push(...responses);
         }
@@ -252,10 +265,13 @@ export class BigCommerceClient {
         const pages = first.meta.pagination.total_pages;
 
         if (pages > 1) {
-            this.config.logger?.debug({
-                totalPages: pages,
-                itemsPerPage: first.data.length
-            }, 'Collecting remaining pages');
+            this.config.logger?.debug(
+                {
+                    totalPages: pages,
+                    itemsPerPage: first.data.length,
+                },
+                'Collecting remaining pages',
+            );
 
             const pageRequests = rangeArray(2, pages).map((page) => ({
                 endpoint,
@@ -330,12 +346,18 @@ export class BigCommerceClient {
                         if (!(options.skipErrors ?? this.config.skipErrors ?? false)) {
                             throw response.reason;
                         } else {
-                            this.config.logger?.warn({
-                                error: response.reason instanceof Error ? {
-                                    name: response.reason.name,
-                                    message: response.reason.message
-                                } : response.reason
-                            }, 'Error in collectV2');
+                            this.config.logger?.warn(
+                                {
+                                    error:
+                                        response.reason instanceof Error
+                                            ? {
+                                                  name: response.reason.name,
+                                                  message: response.reason.message,
+                                              }
+                                            : response.reason,
+                                },
+                                'Error in collectV2',
+                            );
                         }
                     }
                 }
@@ -346,10 +368,10 @@ export class BigCommerceClient {
     }
 
     /**
-     * Queries multiple values against a single field using the v3 API. 
+     * Queries multiple values against a single field using the v3 API.
      * If the url + query params are too long, the query will be chunked. Otherwise, this method acts like `collect`.
      * This method does not check for uniqueness of the `values` array.
-     * 
+     *
      * @param endpoint - The API endpoint to request
      * @param options.key - The field name to query against e.g. `sku:in`
      * @param options.values - Array of values to query for e.g. `['123', '456', ...]`
@@ -359,8 +381,8 @@ export class BigCommerceClient {
      * @returns Promise resolving to array of matching items
      */
     async query<T>(endpoint: string, options: QueryOptions): Promise<T[]> {
-        if(options.query) {
-            if(!options.query.limit) {
+        if (options.query) {
+            if (!options.query.limit) {
                 options.query.limit = MAX_PAGE_SIZE.toString();
             }
         } else {
@@ -373,20 +395,23 @@ export class BigCommerceClient {
         const chunkLength = Number.parseInt(options.query?.limit) || MAX_PAGE_SIZE;
         const separatorSize = encodeURIComponent(',').length;
 
-        const queryStr = options.values.map((value) => `${value}`)
+        const queryStr = options.values.map((value) => `${value}`);
         const chunks = chunkStrLength(queryStr, {
             separatorSize,
             offset,
             chunkLength,
         });
 
-        this.config.logger?.debug({
-            offset,
-            totalValues: options.values.length,
-            chunks: chunks.length,
-            valuesPerChunk: chunks[0]?.length,
-            separatorSize,
-        }, 'Querying with chunked values');
+        this.config.logger?.debug(
+            {
+                offset,
+                totalValues: options.values.length,
+                chunks: chunks.length,
+                valuesPerChunk: chunks[0]?.length,
+                separatorSize,
+            },
+            'Querying with chunked values',
+        );
 
         const requests = chunks.map((chunk) => ({
             ...options,

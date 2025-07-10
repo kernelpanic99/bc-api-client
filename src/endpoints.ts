@@ -161,7 +161,8 @@ const checkouts = {
     billingAddress: (uuid: string) => `/checkouts/${uuid}/billing-address`,
     consignments: {
         path: (uuid: string) => `/checkouts/${uuid}/consignments`,
-        byId: (checkoutUuid: string, consignmentUuid: string) => `/checkouts/${checkoutUuid}/consignments/${consignmentUuid}`,
+        byId: (checkoutUuid: string, consignmentUuid: string) =>
+            `/checkouts/${checkoutUuid}/consignments/${consignmentUuid}`,
     },
     coupons: {
         add: (uuid: string) => `/checkouts/${uuid}/coupons`,

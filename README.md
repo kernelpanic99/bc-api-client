@@ -4,6 +4,7 @@
 
 An opinionated and minimalistic client focusing on simplicity and concurrent performance.
 Features (or antifeatures - depends on your opinion)
+
 - Node 20+ LTS, ESM
 - Bring Your Own Types
 - Basic API methods (get, post, put, delete)
@@ -15,13 +16,14 @@ Features (or antifeatures - depends on your opinion)
 ⚠️ **Disclaimer**: This library provides concurrent request capabilities. BigCommerce has strict rate limits that vary by plan and endpoint. The author is not responsible for any issues arising from improper API usage. Use at your own risk.
 
 ## Table of Contents
+
 - [Installation](#installation)
 - [Usage](#usage)
-  - [API Client](#api-client)
-  - [Authentication](#authentication)
+    - [API Client](#api-client)
+    - [Authentication](#authentication)
 - [API](#api)
-  - [BigCommerceClient](#bigcommerceclient)
-  - [BigCommerceAuth](#bigcommerceauth)
+    - [BigCommerceClient](#bigcommerceclient)
+    - [BigCommerceAuth](#bigcommerceauth)
 - [Tips](#tips)
 - [License](#license)
 
@@ -48,53 +50,53 @@ type MyProduct = {
     name: string;
     sku: string;
     inventory_level: number;
-}
+};
 
 const fields = 'id,name,sku,inventory_level';
 
 const client = new BigCommerceClient({
-  storeHash: 'your-store-hash',
-  accessToken: 'your-access-token'
+    storeHash: 'your-store-hash',
+    accessToken: 'your-access-token',
 });
 
 // Basic GET request
 const products = await client.get<V3Response<MyProduct[]>>(bc.products.path, {
-  query: { 'include_fields': fields },
+    query: { include_fields: fields },
 });
 
 // Low level concurrent requests with error handling
 const results = await client.concurrent<never, V3Response<MyProduct>>(
-  [
-    { method: 'GET', endpoint: bc.products.byId(1), query: { include_fields: fields }},
-    { method: 'GET', endpoint: bc.products.byId(2), query: { include_fields: fields }},
-  ],
-  { 
-    concurrency: 10,
-    skipErrors: true // Optional: skip failed requests instead of throwing
-  }
+    [
+        { method: 'GET', endpoint: bc.products.byId(1), query: { include_fields: fields } },
+        { method: 'GET', endpoint: bc.products.byId(2), query: { include_fields: fields } },
+    ],
+    {
+        concurrency: 10,
+        skipErrors: true, // Optional: skip failed requests instead of throwing
+    },
 );
 
 // Collect all pages from v3 endpoint
 const allProducts = await client.collect<MyProduct>(bc.products.path, {
-  query: {
-    include_fields: fields,
-  },
-  concurrency: 10, // Optional: control concurrent requests
-  skipErrors: true // Optional: skip failed requests
+    query: {
+        include_fields: fields,
+    },
+    concurrency: 10, // Optional: control concurrent requests
+    skipErrors: true, // Optional: skip failed requests
 });
 
 // Collect all pages from v2 endpoint
 type MyOrder = {
     id: number;
     status: string;
-}
+};
 
 const orders = await client.collectV2<MyOrder>(bc.orders.v2.path, {
-  query: {
-    limit: '5',
-  },
-  concurrency: 10, // Optional: control concurrent requests
-  skipErrors: true // Optional: skip failed requests
+    query: {
+        limit: '5',
+    },
+    concurrency: 10, // Optional: control concurrent requests
+    skipErrors: true, // Optional: skip failed requests
 });
 
 // Query with multiple filter values
@@ -102,13 +104,13 @@ const orders = await client.collectV2<MyOrder>(bc.orders.v2.path, {
 const productIds = [1, 2, 3, 4, 5]; // Example IDs
 
 const filteredProducts = await client.query<MyProduct>(bc.products.path, {
-  key: 'id:in',
-  values: productIds,
-  query: {
-    include_fields: fields,
-  },
-  concurrency: 10, // Optional: control concurrent requests
-  skipErrors: true // Optional: skip failed requests
+    key: 'id:in',
+    values: productIds,
+    query: {
+        include_fields: fields,
+    },
+    concurrency: 10, // Optional: control concurrent requests
+    skipErrors: true, // Optional: skip failed requests
 });
 ```
 
@@ -118,9 +120,9 @@ const filteredProducts = await client.query<MyProduct>(bc.products.path, {
 import { BigCommerceAuth } from 'bigcommerce-client';
 
 const auth = new BigCommerceAuth({
-  clientId: 'your-client-id',
-  secret: 'your-client-secret',
-  redirectUri: 'your-redirect-uri',
+    clientId: 'your-client-id',
+    secret: 'your-client-secret',
+    redirectUri: 'your-redirect-uri',
 });
 
 // Request token
@@ -135,6 +137,7 @@ const claims = await auth.verify(jwtPayload, 'your-store-hash');
 ### BigCommerceClient
 
 #### Constructor
+
 ```typescript
 new BigCommerceClient(config: {
     storeHash: string;
@@ -148,57 +151,75 @@ new BigCommerceClient(config: {
 ```
 
 #### `get<R>(endpoint: string, options?: GetOptions): Promise<R>`
+
 Makes a GET request to the BigCommerce API.
+
 - `endpoint`: The API endpoint to request
 - `options.query`: Query parameters to include in the request
 - `options.version`: API version to use (v2 or v3, default: v3)
 
 #### `post<T, R>(endpoint: string, options?: PostOptions<T>): Promise<R>`
+
 Makes a POST request to the BigCommerce API.
+
 - `endpoint`: The API endpoint to request
 - `options.query`: Query parameters to include in the request
 - `options.version`: API version to use (v2 or v3, default: v3)
 - `options.body`: Request body data of type `T`
 
 #### `put<T, R>(endpoint: string, options?: PostOptions<T>): Promise<R>`
+
 Makes a PUT request to the BigCommerce API.
+
 - `endpoint`: The API endpoint to request
 - `options.query`: Query parameters to include in the request
 - `options.version`: API version to use (v2 or v3, default: v3)
 - `options.body`: Request body data of type `T`
 
 #### `delete<R>(endpoint: string, options?: Pick<GetOptions, 'version'>): Promise<void>`
+
 Makes a DELETE request to the BigCommerce API.
+
 - `endpoint`: The API endpoint to delete
 - `options.version`: API version to use (v2 or v3, default: v3)
 
 #### `concurrent<T, R>(requests: RequestOptions<T>[], options?: ConcurrencyOptions): Promise<R[]>`
+
 Executes multiple requests concurrently with rate limit handling.
+
 - `requests`: Array of request options to execute
 - `options.concurrency`: Maximum number of concurrent requests (default: 10)
 - `options.skipErrors`: Whether to skip errors and continue processing (the errors will be logged if logger is provided), default: false)
 
 #### `concurrentSettled<T, R>(requests: RequestOptions<T>[], options?: Pick<ConcurrencyOptions, 'concurrency'>): Promise<PromiseSettledResult<R>[]>`
+
 Lowest level concurrent request method. This method executes requests in chunks and returns bare PromiseSettledResult objects. Use this method if you need to handle errors in a custom way.
+
 - `requests`: Array of request options to execute
 - `options.concurrency`: Maximum number of concurrent requests (default: 10)
 
 #### `collect<T>(endpoint: string, options: Omit<GetOptions, 'version'> & ConcurrencyOptions): Promise<T[]>`
+
 Automatically fetches all pages of a paginated v3 endpoint. Pulls the first page and uses pagination meta to collect remaining pages concurrently.
+
 - `endpoint`: The API endpoint to request
 - `options.query`: Query parameters to include in the request (limit defaults to 250)
 - `options.concurrency`: Maximum number of concurrent requests (default: 10)
 - `options.skipErrors`: Whether to skip errors and continue processing (default: false)
 
 #### `collectV2<T>(endpoint: string, options: Omit<GetOptions, 'version'> & ConcurrencyOptions): Promise<T[]>`
+
 Automatically fetches all pages of a paginated v2 endpoint. Pulls all pages concurrently until a 204 is returned.
+
 - `endpoint`: The API endpoint to request
 - `options.query`: Query parameters to include in the request (limit defaults to 250)
 - `options.concurrency`: Maximum number of concurrent requests (default: 10)
 - `options.skipErrors`: Whether to skip errors and continue processing (default: false)
 
 #### `query<T>(endpoint: string, options: QueryOptions): Promise<T[]>`
+
 Queries multiple values against a single field using the v3 API. If the URL + query params are too long, the query will be chunked.
+
 - `endpoint`: The API endpoint to request
 - `options.key`: The field name to query against (e.g. 'id:in')
 - `options.values`: Array of values to query for
@@ -209,6 +230,7 @@ Queries multiple values against a single field using the v3 API. If the URL + qu
 ### BigCommerceAuth
 
 #### Constructor
+
 ```typescript
 new BigCommerceAuth(config: {
     clientId: string;
@@ -220,9 +242,11 @@ new BigCommerceAuth(config: {
 ```
 
 #### `requestToken(data: string | UrlSearchParams | AuthQuery): Promise<TokenResponse>`
+
 Requests an access token from BigCommerce OAuth.
 
 #### `verify(jwtPayload: string, storeHash: string): Promise<Claims>`
+
 Verifies a JWT payload from BigCommerce.
 
 ## Tips
@@ -237,4 +261,3 @@ Verifies a JWT payload from BigCommerce.
 ## License
 
 MIT
-
