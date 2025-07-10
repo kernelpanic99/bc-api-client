@@ -5,6 +5,42 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.0-beta.19] - 2025-07-10
+
+### Added
+
+- Logging to the `BigCommerceClient.concurrentSettled` to better monitor the concurrent fetching progress
+
+### Changed
+
+- Ran prettier for the entire project
+- Brought the changelog up to speed and fixed some formatting in the code blocks
+
+## [0.1.0-beta.18] - 2025-07-09
+
+### Fixed
+
+- Updated `chunkStrLength` and `BigCommerceClient.query` methods to account for url encoding while chunking the url.
+- Adjust the live test to fetch by sku, to better cover the encoding case
+
+## [0.1.0-beta.17] - 2025-06-23
+
+### Added
+
+- An endpoint variable for '/catalog/trees/categories'
+
+## [0.1.0-beta.16] - 2025-06-19
+
+### Changed
+
+- Instead of response body, log request body when the request fails
+
+## [0.1.0-beta.15] - 2025-06-19
+
+### Added
+
+- Additonal details to the error data in `safeRequest` method. Specifically endpoint, query and body of the request
+
 ## [0.1.0-beta.14] - 2025-06-18
 
 ### Added
@@ -48,22 +84,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ```ts
 // before
 const client = new BigCommerceAuth({
-  clientId: 'test',
-  secret: 'test',
-  redirectUri: 'http://localhost:3000/bc/auth
-  storeHash: 'hash'
-})
+    clientId: 'test',
+    secret: 'test',
+    redirectUri: 'http://localhost:3000/bc/auth',
+    storeHash: 'hash',
+});
 
-client.verify('jwt_payload')
+client.verify('jwt_payload');
 
 // after
 const client = new BigCommerceAuth({
-  clientId: 'test',
-  secret: 'test',
-  redirectUri: 'http://localhost:3000/bc/auth
-})
+    clientId: 'test',
+    secret: 'test',
+    redirectUri: 'http://localhost:3000/bc/auth',
+});
 
-client.verify('jwt_payload', 'hash')
+client.verify('jwt_payload', 'hash');
 ```
 
 ### Changed
