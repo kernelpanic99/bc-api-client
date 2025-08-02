@@ -5,20 +5,11 @@ import { bc } from '../src/endpoints';
 
 config();
 
-// Provide test credentials in .env file
-const loadEnv = () => {
-    if (!process.env.TEST_HASH || !process.env.TEST_TOKEN) {
-        throw new Error('TEST_HASH and TEST_TOKEN must be set');
-    }
-
-    return {
-        storeHash: process.env.TEST_HASH,
-        accessToken: process.env.TEST_TOKEN,
-    };
-};
-
 describe('BigCommerceClient', () => {
-    const env = loadEnv();
+    const env = {
+        storeHash: process.env.TEST_HASH!,
+        accessToken: process.env.TEST_TOKEN!,
+    };
 
     type MyProduct = {
         id: number;
