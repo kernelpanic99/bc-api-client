@@ -32,6 +32,8 @@ jobs:
         with:
           node-version-file: .node-version
           registry-url: https://registry.npmjs.org/
+          always-auth: true
+      - run: pnpm whoami
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
       - run: pnpm publish --no-git-checks
