@@ -9,32 +9,30 @@ permissions:
   contents: read
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v2
-      - uses: actions/setup-node@v4
-        with:
-          node-version-file: .node-version
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm test
-      - run: pnpm lint
-      - run: pnpm build
-
   publish-npm:
-    needs: build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v2
-      - uses: actions/setup-node@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version-file: .node-version
           registry-url: https://registry.npmjs.org/
-          always-auth: true
-      - run: npm whoami
-      - run: pnpm whoami
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm build
-      - run: pnpm publish --no-git-checks
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Quality checks
+        run: pnpm test & pnpm lint
+
+      # Publish builds automatically
+      - name: Build and publish
+        run: |
+          pnpm publish --no-git-checks
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
