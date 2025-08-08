@@ -240,6 +240,11 @@ const safeRequest = async <T, R>(
             {
                 status: error?.response?.status,
                 errorMessage,
+                data,
+                endpoint: options.endpoint,
+                query: options.query,
+                body: options.body,
+                headers: Object.fromEntries(error?.response?.headers?.entries() ?? []),
             },
             'HTTP error during request',
         );
