@@ -51,6 +51,8 @@ export type ApiVersion = 'v3' | 'v2';
  * @template T - Type of the request body
  */
 export type RequestOptions<T> = {
+    /** Base URL to use for the request */
+    baseUrl?: string;
     /** API endpoint to call */
     endpoint: string;
     /** HTTP method to use */
@@ -64,6 +66,8 @@ export type RequestOptions<T> = {
 };
 
 export type StoreOptions = {
+    /** Base URL to use for the request */
+    baseUrl?: string;
     /** BigCommerce store hash */
     storeHash: string;
     /** API access token */
@@ -109,14 +113,19 @@ export const request = async <T, R>(
             logger?: Logger;
         },
 ): Promise<R> => {
-    const { maxDelay = CONFIG.DEFAULT_MAX_DELAY, maxRetries = CONFIG.DEFAULT_MAX_RETRIES, logger } = options;
+    const {
+        baseUrl = CONFIG.BASE_URL,
+        maxDelay = CONFIG.DEFAULT_MAX_DELAY,
+        maxRetries = CONFIG.DEFAULT_MAX_RETRIES,
+        logger,
+    } = options;
 
     let retries = 0;
     let lastError: RequestError<T> | null = null;
 
     while (retries < maxRetries) {
         try {
-            return await safeRequest<T, R>(options);
+            return await safeRequest<T, R>({ ...options, baseUrl });
         } catch (error) {
             const err = error as RequestError<T>;
             lastError = err;
@@ -187,16 +196,13 @@ export const request = async <T, R>(
  * @throws {RequestError} If the request fails
  */
 const safeRequest = async <T, R>(
-    options: RequestOptions<T> &
-        StoreOptions & {
-            logger?: Logger;
-        },
+    options: RequestOptions<T> & StoreOptions & { logger?: Logger; baseUrl?: string },
 ): Promise<R> => {
-    const { logger } = options;
+    const { logger, baseUrl = CONFIG.BASE_URL } = options;
     let res: KyResponse<T>;
 
     try {
-        res = await call<T, R>(options);
+        res = await call<T, R>({ ...options, baseUrl });
     } catch (error) {
         if (error instanceof RequestError) {
             throw error;
@@ -297,10 +303,7 @@ const safeRequest = async <T, R>(
  * @throws {RequestError} If the URL is too long or request fails
  */
 const call = async <T, R>(
-    options: RequestOptions<T> &
-        StoreOptions & {
-            logger?: Logger;
-        },
+    options: RequestOptions<T> & StoreOptions & { logger?: Logger; baseUrl?: string },
 ): Promise<KyResponse<R>> => {
     const {
         storeHash,
@@ -311,9 +314,10 @@ const call = async <T, R>(
         version = CONFIG.DEFAULT_VERSION,
         query,
         logger,
+        baseUrl = CONFIG.BASE_URL,
     } = options;
 
-    const url = `${CONFIG.BASE_URL}${storeHash}/${version}/${endpoint.replace(/^\//, '')}`;
+    const url = `${baseUrl}${storeHash}/${version}/${endpoint.replace(/^\//, '')}`;
 
     // Check URL length including search params
     const searchParams = query ? new URLSearchParams(query).toString() : '';

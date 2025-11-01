@@ -74,6 +74,7 @@ export class BigCommerceClient {
     /**
      * Creates a new BigCommerce client instance
      * @param config - Configuration options for the client
+     * @param config.baseUrl - The base URL to use for the client (default: https://api.bigcommerce.com)
      * @param config.storeHash - The store hash to use for the client
      * @param config.accessToken - The API access token to use for the client
      * @param config.maxRetries - The maximum number of retries for rate limit errors (default: 5)
