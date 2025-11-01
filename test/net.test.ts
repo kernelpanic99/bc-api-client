@@ -166,4 +166,110 @@ describe('Network requests', () => {
             expect((error as RequestError<unknown>).data).toContain('exceeds maximum allowed length');
         }
     });
+
+    describe('Custom baseUrl', () => {
+        it('should use custom baseUrl when provided', async () => {
+            const customBaseUrl = 'https://custom-api.example.com/stores/';
+            const mockResponse = { data: 'test' };
+            (ky as unknown as Mock).mockResolvedValue({
+                json: () => Promise.resolve(mockResponse),
+                text: () => Promise.resolve(JSON.stringify(mockResponse)),
+                status: 200,
+            } as KyResponse);
+
+            await request({
+                endpoint: '/catalog/products',
+                storeHash: 'test',
+                accessToken: 'test',
+                baseUrl: customBaseUrl,
+            });
+
+            expect(ky).toHaveBeenCalledWith(
+                expect.stringContaining(customBaseUrl),
+                expect.any(Object),
+            );
+            expect(ky).toHaveBeenCalledWith(
+                expect.stringContaining('test/v3/catalog/products'),
+                expect.objectContaining({
+                    headers: expect.objectContaining({
+                        'X-Auth-Token': 'test',
+                    }),
+                }),
+            );
+        });
+
+        it('should use default baseUrl when not provided', async () => {
+            const mockResponse = { data: 'test' };
+            (ky as unknown as Mock).mockResolvedValue({
+                json: () => Promise.resolve(mockResponse),
+                text: () => Promise.resolve(JSON.stringify(mockResponse)),
+                status: 200,
+            } as KyResponse);
+
+            await request({
+                endpoint: '/catalog/products',
+                storeHash: 'test',
+                accessToken: 'test',
+            });
+
+            expect(ky).toHaveBeenCalledWith(
+                expect.stringContaining('https://api.bigcommerce.com/stores/'),
+                expect.any(Object),
+            );
+        });
+
+        it('should use custom baseUrl with different API version', async () => {
+            const customBaseUrl = 'https://staging-api.example.com/stores/';
+            const mockResponse = { data: 'test' };
+            (ky as unknown as Mock).mockResolvedValue({
+                json: () => Promise.resolve(mockResponse),
+                text: () => Promise.resolve(JSON.stringify(mockResponse)),
+                status: 200,
+            } as KyResponse);
+
+            await request({
+                endpoint: '/orders',
+                storeHash: 'mystore',
+                accessToken: 'token',
+                baseUrl: customBaseUrl,
+                version: 'v2',
+            });
+
+            expect(ky).toHaveBeenCalledWith(
+                expect.stringContaining(customBaseUrl),
+                expect.any(Object),
+            );
+            expect(ky).toHaveBeenCalledWith(
+                expect.stringContaining('mystore/v2/orders'),
+                expect.objectContaining({
+                    headers: expect.objectContaining({
+                        'X-Auth-Token': 'token',
+                    }),
+                }),
+            );
+        });
+
+        it('should use custom baseUrl with query parameters', async () => {
+            const customBaseUrl = 'https://custom-api.example.com/stores/';
+            const mockResponse = { data: 'test' };
+            (ky as unknown as Mock).mockResolvedValue({
+                json: () => Promise.resolve(mockResponse),
+                text: () => Promise.resolve(JSON.stringify(mockResponse)),
+                status: 200,
+            } as KyResponse);
+
+            await request({
+                endpoint: '/catalog/products',
+                storeHash: 'test',
+                accessToken: 'test',
+                baseUrl: customBaseUrl,
+                query: { limit: '10', page: '1' },
+            });
+
+            expect(ky).toHaveBeenCalledWith(
+                expect.stringMatching(new RegExp(`^${customBaseUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}test/v3/catalog/products\\?limit=10&page=1$`)),
+                expect.any(Object),
+            );
+        });
+    });
 });

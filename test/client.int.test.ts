@@ -20,6 +20,22 @@ describe('BigCommerceClient', () => {
 
     const FIELDS = 'id,name,sku,inventory_level';
 
+    it.skip('should be able to use a custom baseUrl (Will fail with EADDRNOTFOUND)', async () => {
+        const client = new BigCommerceClient({
+            storeHash: env.storeHash,
+            accessToken: env.accessToken,
+            baseUrl: 'https://custom-api.example.com/stores/',
+        });
+
+        await expect(
+            client.collect<MyProduct>(bc.products.path, {
+                query: {
+                    include_fields: FIELDS,
+                },
+            }),
+        ).rejects.toThrow();
+    });
+
     it.skip('should be able to collect data', async () => {
         const client = new BigCommerceClient({
             storeHash: env.storeHash,

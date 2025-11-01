@@ -226,4 +226,176 @@ describe('BigCommerceClient', () => {
             expect(result).toContainEqual(mockResponses[2]);
         });
     });
+
+    describe('Custom baseUrl', () => {
+        it('should pass baseUrl from config to request for GET', async () => {
+            const customBaseUrl = 'https://custom-api.example.com/stores/';
+            const mockResponse = { data: { id: 1 } };
+            const clientWithCustomBaseUrl = new BigCommerceClient({
+                ...mockConfig,
+                baseUrl: customBaseUrl,
+            });
+
+            vi.mocked(request).mockResolvedValueOnce(mockResponse);
+
+            await clientWithCustomBaseUrl.get('/test');
+
+            expect(request).toHaveBeenCalledWith({
+                endpoint: '/test',
+                method: 'GET',
+                ...mockConfig,
+                baseUrl: customBaseUrl,
+            });
+        });
+
+        it('should pass baseUrl from config to request for POST', async () => {
+            const customBaseUrl = 'https://custom-api.example.com/stores/';
+            const mockResponse = { id: 1 };
+            const mockBody = { name: 'Test' };
+            const clientWithCustomBaseUrl = new BigCommerceClient({
+                ...mockConfig,
+                baseUrl: customBaseUrl,
+            });
+
+            vi.mocked(request).mockResolvedValueOnce(mockResponse);
+
+            await clientWithCustomBaseUrl.post('/test', { body: mockBody });
+
+            expect(request).toHaveBeenCalledWith({
+                endpoint: '/test',
+                method: 'POST',
+                body: mockBody,
+                ...mockConfig,
+                baseUrl: customBaseUrl,
+            });
+        });
+
+        it('should pass baseUrl from config to request for PUT', async () => {
+            const customBaseUrl = 'https://custom-api.example.com/stores/';
+            const mockResponse = { id: 1 };
+            const mockBody = { name: 'Updated' };
+            const clientWithCustomBaseUrl = new BigCommerceClient({
+                ...mockConfig,
+                baseUrl: customBaseUrl,
+            });
+
+            vi.mocked(request).mockResolvedValueOnce(mockResponse);
+
+            await clientWithCustomBaseUrl.put('/test', { body: mockBody });
+
+            expect(request).toHaveBeenCalledWith({
+                endpoint: '/test',
+                method: 'PUT',
+                body: mockBody,
+                ...mockConfig,
+                baseUrl: customBaseUrl,
+            });
+        });
+
+        it('should pass baseUrl from config to request for DELETE', async () => {
+            const customBaseUrl = 'https://custom-api.example.com/stores/';
+            const clientWithCustomBaseUrl = new BigCommerceClient({
+                ...mockConfig,
+                baseUrl: customBaseUrl,
+            });
+
+            vi.mocked(request).mockResolvedValueOnce(undefined);
+
+            await clientWithCustomBaseUrl.delete('/test');
+
+            expect(request).toHaveBeenCalledWith({
+                endpoint: '/test',
+                method: 'DELETE',
+                ...mockConfig,
+                baseUrl: customBaseUrl,
+            });
+        });
+
+        it('should pass baseUrl from config to concurrent requests', async () => {
+            const customBaseUrl = 'https://custom-api.example.com/stores/';
+            const mockResponses = [{ data: { id: 1 } }, { data: { id: 2 } }];
+            const clientWithCustomBaseUrl = new BigCommerceClient({
+                ...mockConfig,
+                baseUrl: customBaseUrl,
+            });
+
+            vi.mocked(request)
+                .mockResolvedValueOnce(mockResponses[0])
+                .mockResolvedValueOnce(mockResponses[1]);
+
+            const requests = [
+                { endpoint: '/test1', method: Methods.GET },
+                { endpoint: '/test2', method: Methods.GET },
+            ];
+
+            await clientWithCustomBaseUrl.concurrent(requests);
+
+            expect(request).toHaveBeenCalledTimes(2);
+            expect(request).toHaveBeenNthCalledWith(1, {
+                endpoint: '/test1',
+                method: Methods.GET,
+                ...mockConfig,
+                baseUrl: customBaseUrl,
+            });
+            expect(request).toHaveBeenNthCalledWith(2, {
+                endpoint: '/test2',
+                method: Methods.GET,
+                ...mockConfig,
+                baseUrl: customBaseUrl,
+            });
+        });
+
+        it('should pass baseUrl from config to collect method', async () => {
+            const customBaseUrl = 'https://custom-api.example.com/stores/';
+            const mockFirstPage = {
+                data: [{ id: 1 }, { id: 2 }],
+                meta: { pagination: { total_pages: 2 } },
+            };
+            const mockSecondPage = {
+                data: [{ id: 3 }, { id: 4 }],
+                meta: { pagination: { total_pages: 2 } },
+            };
+            const clientWithCustomBaseUrl = new BigCommerceClient({
+                ...mockConfig,
+                baseUrl: customBaseUrl,
+            });
+
+            vi.mocked(request).mockResolvedValueOnce(mockFirstPage).mockResolvedValueOnce(mockSecondPage);
+
+            await clientWithCustomBaseUrl.collect('/test');
+
+            expect(request).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    ...mockConfig,
+                    baseUrl: customBaseUrl,
+                }),
+            );
+        });
+
+        it('should pass baseUrl from config to query method', async () => {
+            const customBaseUrl = 'https://custom-api.example.com/stores/';
+            const mockResponse = {
+                data: [{ id: 1 }, { id: 2 }],
+                meta: { pagination: { total_pages: 1 } },
+            };
+            const clientWithCustomBaseUrl = new BigCommerceClient({
+                ...mockConfig,
+                baseUrl: customBaseUrl,
+            });
+
+            vi.mocked(request).mockResolvedValueOnce(mockResponse);
+
+            await clientWithCustomBaseUrl.query('/test', {
+                key: 'id:in',
+                values: [1, 2],
+            });
+
+            expect(request).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    ...mockConfig,
+                    baseUrl: customBaseUrl,
+                }),
+            );
+        });
+    });
 });
