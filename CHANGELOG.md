@@ -5,6 +5,61 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.0] - 2025-12-17
+
+### Changed
+
+- Allow query option in `delete` method
+
+## [0.1.0-beta.27] - 2025-11-01
+
+### Added
+
+- Custom base URL configuration support via `baseUrl` option in client config
+- Tests for custom base URL configuration
+
+## [0.1.0-beta.26] - 2025-08-08
+
+### Changed
+
+- Added more data to error logs for better debugging
+
+## [0.1.0-beta.25] - 2025-08-02
+
+### Changed
+
+- Restructured CI/CD action steps
+
+## [0.1.0-beta.24] - 2025-08-02
+
+### Changed
+
+- CI debugging improvements
+
+## [0.1.0-beta.23] - 2025-08-02
+
+### Changed
+
+- CI authentication debugging
+
+## [0.1.0-beta.22] - 2025-08-02
+
+### Changed
+
+- Added `--no-git-checks` flag to pnpm publish step in CI
+
+## [0.1.0-beta.21] - 2025-08-02
+
+### Changed
+
+- Removed environment validation for CI
+
+## [0.1.0-beta.20] - 2025-08-02
+
+### Added
+
+- GitHub Actions workflow for automated publishing
+
 ## [0.1.0-beta.19] - 2025-07-10
 
 ### Added
