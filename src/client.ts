@@ -141,7 +141,7 @@ export class BigCommerceClient {
      * @param options.version - API version to use (v2 or v3) (default: v3)
      * @returns Promise resolving to void
      */
-    async delete<R>(endpoint: string, options?: Pick<GetOptions, 'version'>): Promise<void> {
+    async delete<R>(endpoint: string, options?: Pick<GetOptions, 'version' | 'query'>): Promise<void> {
         await request<never, R>({
             endpoint,
             method: 'DELETE',
