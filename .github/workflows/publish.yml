@@ -32,5 +32,4 @@ jobs:
 
       # Publish builds automatically
       - name: Build and publish
-        run: |
-          npm publish
+        run: npm publish --provenance
