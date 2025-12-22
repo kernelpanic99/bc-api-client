@@ -33,6 +33,9 @@ jobs:
       - name: Upgrade npm
         run: npm i -g npm
 
+      - name: Build
+        run: pnpm build
+
       # Publish builds automatically
       - name: Build and publish
         run: npm publish --provenance
