@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.4] - 2025-12-22
+
+Versions 0.1.1 through 0.1.4 were attempts to setup publishing via OIDC. No functional changes here.
+Good news is that now this library is a lot more resistand to the likes of Shai-Hulud.
+I disabled token publishing completely so the only way to publish is via CI.
+
+*Note to myself and anyone interested: Don't forget to bump your npm version to 11.5.1 or later for OIDC to work*
+
 ## [0.1.0] - 2025-12-17
 
 ### Changed
