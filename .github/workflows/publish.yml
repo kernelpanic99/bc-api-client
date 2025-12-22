@@ -28,9 +28,9 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Quality checks
-        run: pnpm test & pnpm lint
+        run: pnpm test && pnpm lint
 
       # Publish builds automatically
       - name: Build and publish
         run: |
-          pnpm publish --no-git-checks
+          npm publish
