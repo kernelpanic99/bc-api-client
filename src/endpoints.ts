@@ -184,9 +184,9 @@ const currencies = {
 
 const customers = {
     path: '/customers',
-    addresses: (id: number) => `/customers/${id}/addresses`,
-    attributes: (id: number) => `/customers/${id}/attributes`,
-    attributesValues: (id: number) => `/customers/${id}/attribute-values`,
+    addresses: '/customers/addresses',
+    attributes: '/customers/attributes',
+    attributesValues: '/customers/attribute-values',
     settings: {
         channel: (channelId: number) => `/customers/settings/channels/${channelId}`,
         global: '/customers/settings',
