@@ -1,6 +1,6 @@
 {
     "name": "bc-api-client",
-    "version": "0.1.5",
+    "version": "0.2.0",
     "description": "A client for the BigCommerce management API and app authentication",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
