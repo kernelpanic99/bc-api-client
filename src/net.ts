@@ -4,10 +4,12 @@
  */
 
 import ky, { KyResponse, HTTPError } from 'ky';
+import type { Options as KyOptions } from 'ky';
 import { Logger } from './core';
 
 /** HTTP methods supported by the API */
 export type Method = 'GET' | 'POST' | 'PUT' | 'DELETE';
+export type { KyOptions };
 
 export const Methods: Record<string, Method> = {
     GET: 'GET',
@@ -63,6 +65,8 @@ export type RequestOptions<T> = {
     version?: ApiVersion;
     /** Query parameters to append to the URL */
     query?: Record<string, string>;
+    /** Options to pass directly to ky */
+    kyOptions?: KyOptions;
 };
 
 export type StoreOptions = {
@@ -315,6 +319,7 @@ const call = async <T, R>(
         query,
         logger,
         baseUrl = CONFIG.BASE_URL,
+        kyOptions,
     } = options;
 
     const url = `${baseUrl}${storeHash}/${version}/${endpoint.replace(/^\//, '')}`;
@@ -346,6 +351,7 @@ const call = async <T, R>(
             'X-Auth-Token': accessToken,
         },
         json: body,
+        ...kyOptions,
     };
 
     const response = await ky<R>(fullUrl, request);

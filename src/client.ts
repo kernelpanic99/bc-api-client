@@ -1,5 +1,5 @@
 import { V3Resource, Logger } from './core';
-import { BASE_URL, RateLimitOptions, RequestError, RequestOptions, StoreOptions, request } from './net';
+import { BASE_URL, RateLimitOptions, RequestError, RequestOptions, StoreOptions, request, KyOptions } from './net';
 import { chunkStrLength } from './util';
 
 const MAX_PAGE_SIZE = 250;
@@ -23,6 +23,8 @@ export type GetOptions = {
     query?: Record<string, string>;
     /** API version to use (v2 or v3) */
     version?: 'v2' | 'v3';
+    /** Options to pass directly to ky */
+    kyOptions?: KyOptions;
 };
 
 /**
@@ -52,6 +54,9 @@ export type QueryOptions = Omit<GetOptions, 'version'> &
         key: string;
         /** Array of values to query for */
         values: (string | number)[];
+    } & {
+        /** Options to pass directly to ky */
+        kyOptions?: KyOptions;
     };
 
 /**
@@ -141,7 +146,7 @@ export class BigCommerceClient {
      * @param options.version - API version to use (v2 or v3) (default: v3)
      * @returns Promise resolving to void
      */
-    async delete<R>(endpoint: string, options?: Pick<GetOptions, 'version' | 'query'>): Promise<void> {
+    async delete<R>(endpoint: string, options?: Pick<GetOptions, 'version' | 'query'> & { kyOptions?: KyOptions }): Promise<void> {
         await request<never, R>({
             endpoint,
             method: 'DELETE',
@@ -245,7 +250,7 @@ export class BigCommerceClient {
      * @param options.skipErrors - Whether to skip errors and continue processing (the errors will be logged if logger is provided), overrides the client's skipErrors setting (default: false)
      * @returns Promise resolving to array of all items across all pages
      */
-    async collect<T>(endpoint: string, options?: Omit<GetOptions, 'version'> & ConcurrencyOptions): Promise<T[]> {
+    async collect<T>(endpoint: string, options?: Omit<GetOptions, 'version'> & ConcurrencyOptions & { kyOptions?: KyOptions }): Promise<T[]> {
         options = options ?? {};
 
         if (options.query) {
@@ -281,6 +286,7 @@ export class BigCommerceClient {
                     ...options.query,
                     page: page.toString(),
                 },
+                kyOptions: options.kyOptions,
             }));
 
             const remainingPages = await this.concurrent<never, V3Resource<T[]>>(pageRequests, options);
@@ -304,7 +310,7 @@ export class BigCommerceClient {
      * @param options.skipErrors - Whether to skip errors and continue processing (the errors will be logged if logger is provided), overrides the client's skipErrors setting (default: false)
      * @returns Promise resolving to array of all items across all pages
      */
-    async collectV2<T>(endpoint: string, options?: Omit<GetOptions, 'version'> & ConcurrencyOptions): Promise<T[]> {
+    async collectV2<T>(endpoint: string, options?: Omit<GetOptions, 'version'> & ConcurrencyOptions & { kyOptions?: KyOptions }): Promise<T[]> {
         options = options ?? {};
 
         if (options.query) {
