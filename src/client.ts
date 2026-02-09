@@ -67,6 +67,8 @@ export type Config = StoreOptions &
     ConcurrencyOptions & {
         /** Logger instance */
         logger?: Logger;
+        /** Default options to pass directly to ky for all requests */
+        kyOptions?: KyOptions;
     };
 
 /**
