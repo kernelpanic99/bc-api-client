@@ -58,7 +58,7 @@ export const BASE_KY_CONFIG: KyOptions = {
         limit: 3,
         // BC uses PUT for many upsert operations, It's not gurantteed to be indempotent
         methods: ['GET', 'DELETE'],
-        statusCodes: [429, 500, 501, 502, 503, 504],
+        statusCodes: [429, 500, 502, 503, 504],
         // BC does not send standart Retry-After. We'll use custom beforeRetry hook
         afterStatusCodes: [],
         jitter: true,
