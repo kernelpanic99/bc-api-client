@@ -7,7 +7,8 @@
     "type": "module",
     "exports": {
         ".": "./dist/index.js",
-        "./endpoints": "./dist/endpoints.js",
+        "./v2": "./dist/v2/index.js",
+        "./v2/endpoints": "./dist/v2/endpoints.js",
         "./package.json": "./package.json"
     },
     "repository": {
