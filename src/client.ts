@@ -1,7 +1,7 @@
 import ky, { type KyInstance, type SearchParamsOption } from 'ky';
 import { type ApiVersion, BASE_KY_CONFIG, type ClientConfig, HEADERS, type Logger } from './common';
 import { BigCommerceCredentialsError } from './errors';
-import { bcRateLimitRetry, validateUrlLength } from './hooks';
+import { bcRateLimitRetry, logResponse, validateUrlLength } from './hooks';
 import { initLogger } from './logger';
 
 const LEADING_SLASHES = /^\/+/;
@@ -37,6 +37,7 @@ export class BigCommerceClient {
             hooks: {
                 beforeRequest: [validateUrlLength],
                 beforeRetry: [bcRateLimitRetry(this.logger)],
+                afterResponse: [logResponse(this.logger)],
             },
         });
     }

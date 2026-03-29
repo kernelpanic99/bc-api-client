@@ -1,4 +1,4 @@
-import { type BeforeRequestHook, type BeforeRetryHook, isHTTPError } from 'ky';
+import { type AfterResponseHook, type BeforeRequestHook, type BeforeRetryHook, isHTTPError } from 'ky';
 import { type Logger, rateLimitJitter } from './common';
 import { BigCommerceRateLimitDelayTooLong, BigCommerceRateLimitNoHeaders, BigCommerceUrlTooLong } from './errors';
 import { extractRateLimitHeaders } from './util';
@@ -43,5 +43,32 @@ export const bcRateLimitRetry =
             await new Promise((resolve) => setTimeout(resolve, delay));
         } else {
             logger?.warn({ url: request.url, method: request.method, attempt: retryCount }, 'Retrying request');
+        }
+    };
+
+export const logResponse =
+    (logger?: Logger): AfterResponseHook =>
+    async (request, _options, response, { retryCount }) => {
+        if (!logger) {
+            return;
+        }
+
+        if (response.ok) {
+            logger.debug(
+                { method: request.method, url: request.url, status: response.status, retryCount },
+                'Successful request',
+            );
+        } else {
+            logger.error(
+                {
+                    status: response.status,
+                    statusText: response.statusText,
+                    method: request.method,
+                    url: request.url,
+                    retryCount,
+                    rawBody: await response.text(),
+                },
+                'Request failed',
+            );
         }
     };
