@@ -1,4 +1,5 @@
 import type { KyRequest } from 'ky';
+import type { StandardSchemaV1 } from './standard-schema';
 
 export type ErrorContext = Record<string, unknown>;
 
@@ -64,6 +65,17 @@ export class BigCommerceRateLimitDelayTooLong extends BaseError {
             attempts,
             maxDelay,
             delay,
+        });
+    }
+}
+
+export class BigCommerceSchemaValidationError extends BaseError {
+    code = 'BC_SCHEMA_VALIDATION_FAILED';
+
+    constructor(message: string, data: unknown, error: StandardSchemaV1.FailureResult) {
+        super(message, {
+            data,
+            error,
         });
     }
 }

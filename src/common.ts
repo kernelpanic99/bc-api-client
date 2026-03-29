@@ -1,4 +1,5 @@
 import type { Options as KyOptions } from 'ky';
+import type { StandardSchemaV1 } from './standard-schema';
 
 export interface Logger {
     debug(data: Record<string, unknown>, message?: string): void;
@@ -18,10 +19,15 @@ export const LOG_LEVELS = ['debug', 'info', 'warn', 'error'] as const;
 
 export type LogLevel = (typeof LOG_LEVELS)[number];
 
+export type CustomValidationBehavior = (error: StandardSchemaV1.FailureResult, body: unknown) => unknown;
+
+export type ValidationBehavior = 'ignore' | 'throw' | 'warn' | CustomValidationBehavior;
+
 export interface ClientConfig extends KyOptions {
     storeHash: string;
     accessToken: string;
     logger?: Logger | LogLevel | boolean;
+    onInvalid?: ValidationBehavior;
 }
 
 /**
@@ -72,3 +78,33 @@ export const BASE_KY_CONFIG: KyOptions = {
 };
 
 export type ApiVersion = 'v3' | 'v2';
+
+export type QueryValue = string | number | Array<string | number>;
+
+export type Query = Record<string, QueryValue>;
+
+export const toUrlSearchParams = (query?: Query): URLSearchParams | undefined => {
+    if (!query) {
+        return;
+    }
+
+    const params = new URLSearchParams();
+
+    for (const [key, value] of Object.entries(query)) {
+        if (Array.isArray(value)) {
+            params.append(key, value.map(String).join(','));
+        } else {
+            params.append(key, String(value));
+        }
+    }
+
+    return params;
+};
+
+export type RequestOptions<T, Q extends Query> = {
+    version?: ApiVersion;
+    query?: Q;
+    responseSchema?: StandardSchemaV1<T>;
+    querySchema?: StandardSchemaV1<Q>;
+    onInvalid?: ValidationBehavior;
+};
