@@ -28,9 +28,27 @@ export interface ClientConfig extends KyOptions {
  * Random positive jitter within 0-500 ms in increments of 100
  * @param {number} delay
  */
-export const defaultJitter = (delay: number) => delay + Math.floor(Math.random() * 6) * 100;
+export const rateLimitJitter = (delay: number) => delay + Math.floor(Math.random() * 6) * 100;
+
+export const HEADERS = {
+    AUTH_TOKEN: 'X-Auth-Token',
+    ACCEPT: 'Accept',
+    CONTENT_TYPE: 'Content-Type',
+    RATE_LIMIT_LEFT: 'x-rate-limit-requests-left',
+    RATE_LIMIT_RESET: 'x-rate-limit-time-reset-ms',
+    RATE_LIMIT_QUOTA: 'x-rate-limit-requests-quota',
+    RATE_LIMIT_WINDOW: 'x-rate-limit-time-window-ms',
+} as const;
+
+export type RateLimitMeta = {
+    resetIn: number;
+    requestsLeft?: number;
+    quota?: number;
+    window?: number;
+};
 
 export const BASE_KY_CONFIG: KyOptions = {
+    prefixUrl: 'https://api.bigcommerce.com',
     // Some BC endpoints may take a while.
     // For example /catalog/product/options* endpoints may fully
     // recreate all variants in some cases
@@ -43,6 +61,14 @@ export const BASE_KY_CONFIG: KyOptions = {
         statusCodes: [429, 500, 501, 502, 503, 504],
         // BC does not send standart Retry-After. We'll use custom beforeRetry hook
         afterStatusCodes: [],
-        jitter: defaultJitter,
+        jitter: true,
+        maxRetryAfter: 120e3,
+    },
+
+    headers: {
+        [HEADERS.ACCEPT]: 'application/json',
+        [HEADERS.CONTENT_TYPE]: 'application/json',
     },
 };
+
+export type ApiVersion = 'v3' | 'v2';
