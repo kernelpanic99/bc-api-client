@@ -1,6 +1,6 @@
-import { request, RequestError } from '../../src/v2/net';
-import { describe, it, expect, vi, beforeEach, Mock } from 'vitest';
-import ky, { KyResponse, HTTPError } from 'ky';
+import ky, { HTTPError, type KyResponse } from 'ky';
+import { beforeEach, describe, expect, it, type Mock, vi } from 'vitest';
+import { RequestError, request } from '../../src/v2/net';
 
 // Mock ky and HTTPError
 vi.mock('ky', () => {
@@ -184,10 +184,7 @@ describe('Network requests', () => {
                 baseUrl: customBaseUrl,
             });
 
-            expect(ky).toHaveBeenCalledWith(
-                expect.stringContaining(customBaseUrl),
-                expect.any(Object),
-            );
+            expect(ky).toHaveBeenCalledWith(expect.stringContaining(customBaseUrl), expect.any(Object));
             expect(ky).toHaveBeenCalledWith(
                 expect.stringContaining('test/v3/catalog/products'),
                 expect.objectContaining({
@@ -235,10 +232,7 @@ describe('Network requests', () => {
                 version: 'v2',
             });
 
-            expect(ky).toHaveBeenCalledWith(
-                expect.stringContaining(customBaseUrl),
-                expect.any(Object),
-            );
+            expect(ky).toHaveBeenCalledWith(expect.stringContaining(customBaseUrl), expect.any(Object));
             expect(ky).toHaveBeenCalledWith(
                 expect.stringContaining('mystore/v2/orders'),
                 expect.objectContaining({
@@ -267,7 +261,11 @@ describe('Network requests', () => {
             });
 
             expect(ky).toHaveBeenCalledWith(
-                expect.stringMatching(new RegExp(`^${customBaseUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}test/v3/catalog/products\\?limit=10&page=1$`)),
+                expect.stringMatching(
+                    new RegExp(
+                        `^${customBaseUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}test/v3/catalog/products\\?limit=10&page=1$`,
+                    ),
+                ),
                 expect.any(Object),
             );
         });

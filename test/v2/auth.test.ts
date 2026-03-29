@@ -1,8 +1,8 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { BigCommerceAuth, TokenResponse, Claims } from '../../src/v2/auth';
-import ky from 'ky';
 import * as jose from 'jose';
+import ky from 'ky';
 import pino from 'pino';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { BigCommerceAuth, type Claims, type TokenResponse } from '../../src/v2/auth';
 
 vi.mock('ky');
 vi.mock('jose');

@@ -1,7 +1,7 @@
-import { BigCommerceClient } from '../../src/v2/client';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { request, Methods } from '../../src/v2/net';
 import pino from 'pino';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { BigCommerceClient } from '../../src/v2/client';
+import { Methods, request } from '../../src/v2/net';
 
 // Mock the request function
 vi.mock('../src/net', () => ({
@@ -319,9 +319,7 @@ describe('BigCommerceClient', () => {
                 baseUrl: customBaseUrl,
             });
 
-            vi.mocked(request)
-                .mockResolvedValueOnce(mockResponses[0])
-                .mockResolvedValueOnce(mockResponses[1]);
+            vi.mocked(request).mockResolvedValueOnce(mockResponses[0]).mockResolvedValueOnce(mockResponses[1]);
 
             const requests = [
                 { endpoint: '/test1', method: Methods.GET },

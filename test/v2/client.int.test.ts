@@ -1,14 +1,14 @@
-import { BigCommerceClient } from '../../src/v2/client';
-import { describe, it, expect } from 'vitest';
 import { config } from 'dotenv';
+import { describe, expect, it } from 'vitest';
+import { BigCommerceClient } from '../../src/v2/client';
 import { bc } from '../../src/v2/endpoints';
 
 config();
 
 describe('BigCommerceClient', () => {
     const env = {
-        storeHash: process.env.TEST_HASH!,
-        accessToken: process.env.TEST_TOKEN!,
+        storeHash: process.env.TEST_HASH as unknown as string,
+        accessToken: process.env.TEST_TOKEN as unknown as string,
     };
 
     type MyProduct = {

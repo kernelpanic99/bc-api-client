@@ -1,5 +1,5 @@
+import { describe, expect, it } from 'vitest';
 import { chunkStrLength } from '../../src/v2/util';
-import { expect, describe, it } from 'vitest';
 
 describe('chunkStrLength', () => {
     it('should return an array of strings', () => {
