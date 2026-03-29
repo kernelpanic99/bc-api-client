@@ -15,6 +15,9 @@ importers:
         specifier: ^1.14.3
         version: 1.14.3
     devDependencies:
+      '@aws-lambda-powertools/logger':
+        specifier: ^2.32.0
+        version: 2.32.0
       '@biomejs/biome':
         specifier: ^2.4.9
         version: 2.4.9
@@ -50,6 +53,24 @@ importers:
         version: 3.1.2(@types/node@22.15.3)
 
 packages:
+
+  '@aws-lambda-powertools/commons@2.32.0':
+    resolution: {integrity: sha512-vsdakJDZu/KkJ5+1WHkawQ5R06aCK0XYB3nc3tpcBfO1YmOHkn+QpuGiZtkmpzIykGPAO9lnBjK5joAeim2o4A==}
+
+  '@aws-lambda-powertools/logger@2.32.0':
+    resolution: {integrity: sha512-ZfomsMv4FnxYkgUvU9S6BPrTzd+ntPiIBZcrvSNz+/aPvVwu2BGHSKDuVlXa7nr6rB1wjzaA5bmLVTESIdnsdQ==}
+    peerDependencies:
+      '@aws-lambda-powertools/jmespath': 2.32.0
+      '@middy/core': 4.x || 5.x || 6.x || 7.x
+    peerDependenciesMeta:
+      '@aws-lambda-powertools/jmespath':
+        optional: true
+      '@middy/core':
+        optional: true
+
+  '@aws/lambda-invoke-store@0.2.4':
+    resolution: {integrity: sha512-iY8yvjE0y651BixKNPgmv1WrQc+GZ142sb0z4gYnChDDY2YqI4P/jsSopBWrKfAt7LOJAkOXt7rC/hms+WclQQ==}
+    engines: {node: '>=18.0.0'}
 
   '@biomejs/biome@2.4.9':
     resolution: {integrity: sha512-wvZW92FrwitTcacvCBT8xdAbfbxWfDLwjYMmU3djjqQTh7Ni4ZdiWIT/x5VcZ+RQuxiKzIOzi5D+dcyJDFZMsA==}
@@ -854,6 +875,17 @@ packages:
     engines: {node: '>=12'}
 
 snapshots:
+
+  '@aws-lambda-powertools/commons@2.32.0':
+    dependencies:
+      '@aws/lambda-invoke-store': 0.2.4
+
+  '@aws-lambda-powertools/logger@2.32.0':
+    dependencies:
+      '@aws-lambda-powertools/commons': 2.32.0
+      '@aws/lambda-invoke-store': 0.2.4
+
+  '@aws/lambda-invoke-store@0.2.4': {}
 
   '@biomejs/biome@2.4.9':
     optionalDependencies:

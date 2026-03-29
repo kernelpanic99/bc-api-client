@@ -51,6 +51,7 @@
     "license": "MIT",
     "packageManager": "pnpm@10.10.0",
     "devDependencies": {
+        "@aws-lambda-powertools/logger": "^2.32.0",
         "@biomejs/biome": "^2.4.9",
         "@eslint/js": "^9.25.1",
         "@types/node": "^22.15.3",
