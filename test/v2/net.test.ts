@@ -1,4 +1,4 @@
-import { request, RequestError } from '../src/net';
+import { request, RequestError } from '../../src/v2/net';
 import { describe, it, expect, vi, beforeEach, Mock } from 'vitest';
 import ky, { KyResponse, HTTPError } from 'ky';
 

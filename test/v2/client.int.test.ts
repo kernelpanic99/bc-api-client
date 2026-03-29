@@ -1,7 +1,7 @@
-import { BigCommerceClient } from '../src/client';
+import { BigCommerceClient } from '../../src/v2/client';
 import { describe, it, expect } from 'vitest';
 import { config } from 'dotenv';
-import { bc } from '../src/endpoints';
+import { bc } from '../../src/v2/endpoints';
 
 config();
 
@@ -98,7 +98,7 @@ describe('BigCommerceClient', () => {
             },
         });
 
-        const skus = products.map((product) => product.sku);
+        const skus = products.map((product: { id: number; sku: string }) => product.sku);
 
         const filteredProducts = await client.query<MyProduct>(bc.products.path, {
             key: 'sku:in',

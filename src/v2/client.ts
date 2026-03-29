@@ -1,5 +1,13 @@
-import { V3Resource, Logger } from './core';
-import { BASE_URL, RateLimitOptions, RequestError, RequestOptions, StoreOptions, request, KyOptions } from './net';
+import type { Logger, V3Resource } from './core';
+import {
+    BASE_URL,
+    type KyOptions,
+    type RateLimitOptions,
+    RequestError,
+    type RequestOptions,
+    request,
+    type StoreOptions,
+} from './net';
 import { chunkStrLength } from './util';
 
 const MAX_PAGE_SIZE = 250;
@@ -148,7 +156,10 @@ export class BigCommerceClient {
      * @param options.version - API version to use (v2 or v3) (default: v3)
      * @returns Promise resolving to void
      */
-    async delete<R>(endpoint: string, options?: Pick<GetOptions, 'version' | 'query'> & { kyOptions?: KyOptions }): Promise<void> {
+    async delete<R>(
+        endpoint: string,
+        options?: Pick<GetOptions, 'version' | 'query'> & { kyOptions?: KyOptions },
+    ): Promise<void> {
         await request<never, R>({
             endpoint,
             method: 'DELETE',
@@ -252,7 +263,10 @@ export class BigCommerceClient {
      * @param options.skipErrors - Whether to skip errors and continue processing (the errors will be logged if logger is provided), overrides the client's skipErrors setting (default: false)
      * @returns Promise resolving to array of all items across all pages
      */
-    async collect<T>(endpoint: string, options?: Omit<GetOptions, 'version'> & ConcurrencyOptions & { kyOptions?: KyOptions }): Promise<T[]> {
+    async collect<T>(
+        endpoint: string,
+        options?: Omit<GetOptions, 'version'> & ConcurrencyOptions & { kyOptions?: KyOptions },
+    ): Promise<T[]> {
         options = options ?? {};
 
         if (options.query) {
@@ -312,7 +326,10 @@ export class BigCommerceClient {
      * @param options.skipErrors - Whether to skip errors and continue processing (the errors will be logged if logger is provided), overrides the client's skipErrors setting (default: false)
      * @returns Promise resolving to array of all items across all pages
      */
-    async collectV2<T>(endpoint: string, options?: Omit<GetOptions, 'version'> & ConcurrencyOptions & { kyOptions?: KyOptions }): Promise<T[]> {
+    async collectV2<T>(
+        endpoint: string,
+        options?: Omit<GetOptions, 'version'> & ConcurrencyOptions & { kyOptions?: KyOptions },
+    ): Promise<T[]> {
         options = options ?? {};
 
         if (options.query) {
@@ -401,7 +418,7 @@ export class BigCommerceClient {
         const keySize = encodeURIComponent(options.key).length;
         const fullUrl = `${BASE_URL}${this.config.storeHash}/v3/${endpoint}?${new URLSearchParams(options.query).toString()}`;
         const offset = fullUrl.length + keySize + 1;
-        const chunkLength = Number.parseInt(options.query?.limit) || MAX_PAGE_SIZE;
+        const chunkLength = Number.parseInt(options.query?.limit, 10) || MAX_PAGE_SIZE;
         const separatorSize = encodeURIComponent(',').length;
 
         const queryStr = options.values.map((value) => `${value}`);

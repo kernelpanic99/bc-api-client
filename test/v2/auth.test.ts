@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { BigCommerceAuth, TokenResponse, Claims } from '../src/auth';
+import { BigCommerceAuth, TokenResponse, Claims } from '../../src/v2/auth';
 import ky from 'ky';
 import * as jose from 'jose';
 import pino from 'pino';

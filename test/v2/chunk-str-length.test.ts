@@ -1,4 +1,4 @@
-import { chunkStrLength } from '../src/util';
+import { chunkStrLength } from '../../src/v2/util';
 import { expect, describe, it } from 'vitest';
 
 describe('chunkStrLength', () => {

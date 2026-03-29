@@ -1,6 +1,6 @@
-import ky, { HTTPError, KyResponse } from 'ky';
 import * as jose from 'jose';
-import { Logger } from './core';
+import ky, { HTTPError, type KyResponse } from 'ky';
+import type { Logger } from './core';
 
 /**
  * Configuration options for BigCommerce authentication

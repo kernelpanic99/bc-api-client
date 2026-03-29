@@ -1,6 +1,6 @@
-import { BigCommerceClient } from '../src/client';
+import { BigCommerceClient } from '../../src/v2/client';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { request, Methods } from '../src/net';
+import { request, Methods } from '../../src/v2/net';
 import pino from 'pino';
 
 // Mock the request function

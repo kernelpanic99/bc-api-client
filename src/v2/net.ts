@@ -3,9 +3,9 @@
  * Provides rate-limited request handling, error management, and type-safe API calls.
  */
 
-import ky, { KyResponse, HTTPError } from 'ky';
 import type { Options as KyOptions } from 'ky';
-import { Logger } from './core';
+import ky, { HTTPError, type KyResponse } from 'ky';
+import type { Logger } from './core';
 
 /** HTTP methods supported by the API */
 export type Method = 'GET' | 'POST' | 'PUT' | 'DELETE';
@@ -136,7 +136,7 @@ export const request = async <T, R>(
 
             if (err.status === 429 && typeof err.data === 'object' && err.data !== null && 'headers' in err.data) {
                 const headers = err.data.headers as Record<string, string>;
-                const retryAfter = Number.parseInt(headers[CONFIG.HEADERS.RETRY_AFTER]);
+                const retryAfter = Number.parseInt(headers[CONFIG.HEADERS.RETRY_AFTER], 10);
 
                 logger?.debug(
                     {
