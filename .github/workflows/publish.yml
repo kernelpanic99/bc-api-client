@@ -2,7 +2,7 @@ name: Publish
 on:
   push:
     tags:
-      - '*'
+      - "*"
 
 permissions:
   id-token: write
@@ -15,27 +15,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: .node-version
-          # registry-url: https://registry.npmjs.org/
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v2
+      - name: Mise install
+        run: |
+          curl https://mise.run | sh
+          mise install
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: mise x -- pnpm install --frozen-lockfile
 
       - name: Quality checks
-        run: pnpm test && pnpm lint
-
-      - name: Upgrade npm
-        run: npm i -g npm
+        run: mise x -- pnpm test && mise x -- pnpm lint && mise x -- pnpm typecheck
 
       - name: Build
-        run: pnpm build
+        run: mise x -- pnpm build
 
-      # Publish builds automatically
       - name: Build and publish
-        run: npm publish --provenance
+        run: mise x -- pnpm publish --provenance
