@@ -12,8 +12,8 @@ importers:
         specifier: ^5.2.2
         version: 5.10.0
       ky:
-        specifier: ^1.1.0
-        version: 1.8.1
+        specifier: ^1.14.3
+        version: 1.14.3
     devDependencies:
       '@biomejs/biome':
         specifier: ^2.4.9
@@ -560,8 +560,8 @@ packages:
   jose@5.10.0:
     resolution: {integrity: sha512-s+3Al/p9g32Iq+oqXxkW//7jk2Vig6FF1CFqzVXoTUXt2qz89YWbL+OwS17NFYEvxC35n0FKeGO2LGYSxeM2Gg==}
 
-  ky@1.8.1:
-    resolution: {integrity: sha512-7Bp3TpsE+L+TARSnnDpk3xg8Idi8RwSLdj6CMbNWoOARIrGrbuLGusV0dYwbZOm4bB3jHNxSw8Wk/ByDqJEnDw==}
+  ky@1.14.3:
+    resolution: {integrity: sha512-9zy9lkjac+TR1c2tG+mkNSVlyOpInnWdSMiue4F+kq8TwJSgv6o8jhLRg8Ho6SnZ9wOYUq/yozts9qQCfk7bIw==}
     engines: {node: '>=18'}
 
   lefthook-darwin-arm64@2.1.4:
@@ -1223,7 +1223,7 @@ snapshots:
 
   jose@5.10.0: {}
 
-  ky@1.8.1: {}
+  ky@1.14.3: {}
 
   lefthook-darwin-arm64@2.1.4:
     optional: true
