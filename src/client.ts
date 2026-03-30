@@ -61,7 +61,15 @@ export class BigCommerceClient {
 
             hooks: {
                 beforeRequest: [...(kyOptions.hooks?.beforeRequest ?? []), validateUrlLength],
-                beforeRetry: [bcRateLimitRetry(this.logger), ...(kyOptions.hooks?.beforeRetry ?? [])],
+                beforeRetry: [
+                    ({ error }) => {
+                        if (error instanceof BaseError) {
+                            throw error;
+                        }
+                    },
+                    bcRateLimitRetry(this.logger),
+                    ...(kyOptions.hooks?.beforeRetry ?? []),
+                ],
                 beforeError: [...(kyOptions.hooks?.beforeError ?? [])],
                 afterResponse: [...(kyOptions.hooks?.afterResponse ?? [])],
             },
