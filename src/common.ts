@@ -19,15 +19,10 @@ export const LOG_LEVELS = ['debug', 'info', 'warn', 'error'] as const;
 
 export type LogLevel = (typeof LOG_LEVELS)[number];
 
-export type CustomValidationBehavior = (error: StandardSchemaV1.FailureResult, body: unknown) => unknown;
-
-export type ValidationBehavior = 'ignore' | 'throw' | 'warn' | CustomValidationBehavior;
-
 export interface ClientConfig extends KyOptions {
     storeHash: string;
     accessToken: string;
     logger?: Logger | LogLevel | boolean;
-    onInvalid?: ValidationBehavior;
 }
 
 /**
@@ -62,7 +57,7 @@ export const BASE_KY_CONFIG: KyOptions = {
 
     retry: {
         limit: 3,
-        // BC uses PUT for many upsert operations, It's not gurantteed to be indempotent
+        // BC uses PUT for many upsert operations, it's not guaranteed to be idempotent
         methods: ['GET', 'DELETE'],
         statusCodes: [429, 500, 502, 503, 504],
         // BC does not send standart Retry-After. We'll use custom beforeRetry hook
@@ -101,10 +96,28 @@ export const toUrlSearchParams = (query?: Query): URLSearchParams | undefined =>
     return params;
 };
 
-export type RequestOptions<T, Q extends Query> = {
+export type HttpMethod = 'POST' | 'GET' | 'PUT' | 'DELETE';
+
+type BaseKyRequest = Omit<KyOptions, 'json' | 'method' | 'searchQueryParams' | 'body'>;
+
+export interface RequestOptions<TBody, TRes, TQuery extends Query> extends BaseKyRequest {
+    method: HttpMethod;
     version?: ApiVersion;
-    query?: Q;
-    responseSchema?: StandardSchemaV1<T>;
-    querySchema?: StandardSchemaV1<Q>;
-    onInvalid?: ValidationBehavior;
-};
+    query?: TQuery;
+    body?: TBody;
+    responseSchema?: StandardSchemaV1<TRes>;
+    bodySchema?: StandardSchemaV1<TBody>;
+    querySchema?: StandardSchemaV1<TQuery>;
+}
+
+export type GetOptions<TRes, TQuery extends Query> = Omit<
+    RequestOptions<never, TRes, TQuery>,
+    'body' | 'bodySchema' | 'method'
+>;
+
+export type PostOptions<TBody, TRes, TQuery extends Query> = Omit<RequestOptions<TBody, TRes, TQuery>, 'method'>;
+export type PutOptions<TBody, TRes, TQuery extends Query> = PostOptions<TBody, TRes, TQuery>;
+export type DeleteOptions<TRes, TQuery extends Query> = Omit<
+    RequestOptions<never, TRes, TQuery>,
+    'body' | 'bodySchema' | 'method'
+>;

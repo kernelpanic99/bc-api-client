@@ -1,14 +1,14 @@
-import type { KyRequest } from 'ky';
+import type { HTTPError, KyRequest, TimeoutError as KyTimeoutError } from 'ky';
 import type { StandardSchemaV1 } from './standard-schema';
 
 export type ErrorContext = Record<string, unknown>;
 
-export abstract class BaseError extends Error {
+export abstract class BaseError<TContext extends ErrorContext = ErrorContext> extends Error {
     abstract readonly code: string;
 
     constructor(
         message: string,
-        readonly context: ErrorContext = {},
+        readonly context: TContext,
         options?: ErrorOptions,
     ) {
         super(message, options);
@@ -27,7 +27,17 @@ export abstract class BaseError extends Error {
     }
 }
 
-export class BigCommerceCredentialsError extends BaseError {
+export class BCClientError extends BaseError<Record<string, string>> {
+    code = 'BC_GENERIC_ERROR';
+
+    constructor(message: string, cause: unknown) {
+        super(message, {}, { cause });
+    }
+}
+
+export class BCCredentialsError extends BaseError<{
+    errors: string[];
+}> {
     code = 'BC_CLIENT_INIT_ERROR';
 
     constructor(errors: string[]) {
@@ -35,7 +45,11 @@ export class BigCommerceCredentialsError extends BaseError {
     }
 }
 
-export class BigCommerceUrlTooLong extends BaseError {
+export class BCUrlTooLongError extends BaseError<{
+    url: string;
+    max: number;
+    len: number;
+}> {
     code = 'BC_URL_TOO_LONG';
 
     constructor(url: string, max: number) {
@@ -43,7 +57,11 @@ export class BigCommerceUrlTooLong extends BaseError {
     }
 }
 
-export class BigCommerceRateLimitNoHeaders extends BaseError {
+export class BCRateLimitNoHeadersError extends BaseError<{
+    url: string;
+    method: string;
+    attempts: number;
+}> {
     code = 'BC_RATE_LIMIT_NO_HEADERS';
 
     constructor(attempts: number, request: KyRequest) {
@@ -55,7 +73,13 @@ export class BigCommerceRateLimitNoHeaders extends BaseError {
     }
 }
 
-export class BigCommerceRateLimitDelayTooLong extends BaseError {
+export class BCRateLimitDelayTooLongError extends BaseError<{
+    url: string;
+    method: string;
+    attempts: number;
+    maxDelay: number;
+    delay: number;
+}> {
     code = 'BC_RATE_LIMIT_DELAY_TOO_LONG';
 
     constructor(maxDelay: number, delay: number, attempts: number, request: KyRequest) {
@@ -69,13 +93,53 @@ export class BigCommerceRateLimitDelayTooLong extends BaseError {
     }
 }
 
-export class BigCommerceSchemaValidationError extends BaseError {
+export class BCSchemaValidationError extends BaseError<{
+    data: unknown;
+    error: StandardSchemaV1.FailureResult;
+}> {
     code = 'BC_SCHEMA_VALIDATION_FAILED';
 
     constructor(message: string, data: unknown, error: StandardSchemaV1.FailureResult) {
-        super(message, {
-            data,
-            error,
+        super(message, { data, error });
+    }
+}
+
+export class BCApiError extends BaseError<{
+    method: string;
+    url: string;
+    status: number;
+    statusMessage: string;
+    headers: Headers;
+    requestBody: string;
+    responseBody: string;
+}> {
+    code = 'BC_API_ERROR';
+
+    constructor(err: HTTPError, requestBody: string, responseBody: string) {
+        const { request, response } = err;
+
+        super('BigCommerce API request failed', {
+            method: request.method,
+            url: request.url,
+            status: response.status,
+            statusMessage: response.statusText,
+            headers: response.headers,
+            requestBody,
+            responseBody,
+        });
+    }
+}
+
+export class BCTimeoutError extends BaseError<{
+    method: string;
+    url: string;
+}> {
+    code = 'BC_TIMEOUT_ERROR';
+
+    constructor(err: KyTimeoutError) {
+        super('BigCommerce API request timed out', {
+            method: err.request.method,
+            url: err.request.url,
         });
     }
 }

@@ -1,13 +1,13 @@
-import { type AfterResponseHook, type BeforeRequestHook, type BeforeRetryHook, isHTTPError } from 'ky';
+import { type BeforeRequestHook, type BeforeRetryHook, isHTTPError } from 'ky';
 import { type Logger, rateLimitJitter } from './common';
-import { BigCommerceRateLimitDelayTooLong, BigCommerceRateLimitNoHeaders, BigCommerceUrlTooLong } from './errors';
+import { BCRateLimitDelayTooLongError, BCRateLimitNoHeadersError, BCUrlTooLongError } from './errors';
 import { extractRateLimitHeaders } from './util';
 
 const MAX_URL_LENGTH = 2048;
 
 export const validateUrlLength: BeforeRequestHook = (request) => {
     if (request.url.length > MAX_URL_LENGTH) {
-        throw new BigCommerceUrlTooLong(request.url, MAX_URL_LENGTH);
+        throw new BCUrlTooLongError(request.url, MAX_URL_LENGTH);
     }
 };
 
@@ -18,11 +18,11 @@ export const bcRateLimitRetry =
             const retryMeta = extractRateLimitHeaders(error.response.headers);
 
             if (!retryMeta) {
-                throw new BigCommerceRateLimitNoHeaders(retryCount, request);
+                throw new BCRateLimitNoHeadersError(retryCount, request);
             }
 
             if (options.retry.maxRetryAfter && retryMeta.resetIn > options.retry.maxRetryAfter) {
-                throw new BigCommerceRateLimitDelayTooLong(
+                throw new BCRateLimitDelayTooLongError(
                     options.retry.maxRetryAfter,
                     retryMeta.resetIn,
                     retryCount,
@@ -43,32 +43,5 @@ export const bcRateLimitRetry =
             await new Promise((resolve) => setTimeout(resolve, delay));
         } else {
             logger?.warn({ url: request.url, method: request.method, attempt: retryCount }, 'Retrying request');
-        }
-    };
-
-export const logResponse =
-    (logger?: Logger): AfterResponseHook =>
-    async (request, _options, response, { retryCount }) => {
-        if (!logger) {
-            return;
-        }
-
-        if (response.ok) {
-            logger.debug(
-                { method: request.method, url: request.url, status: response.status, retryCount },
-                'Successful request',
-            );
-        } else {
-            logger.error(
-                {
-                    status: response.status,
-                    statusText: response.statusText,
-                    method: request.method,
-                    url: request.url,
-                    retryCount,
-                    rawBody: await response.text(),
-                },
-                'Request failed',
-            );
         }
     };
