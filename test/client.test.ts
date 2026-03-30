@@ -1,9 +1,251 @@
+import {
+    BCCredentialsError,
+    BCRateLimitDelayTooLongError,
+    BCRateLimitNoHeadersError,
+    BCResponseParseError,
+    BCSchemaValidationError,
+    HEADERS,
+} from 'src';
 import { BigCommerceClient } from 'src/client';
-import { BCCredentialsError } from 'src/errors';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+import z from 'zod';
+import { createClient, getThrown, VALID_CREDENTIALS } from './util';
 
-describe('BigCommerceClient constructor', () => {
-    it('Fails to constuct the instance with invalid credentials', () => {
-        expect(() => new BigCommerceClient({ storeHash: '', accessToken: '' })).toThrow(BCCredentialsError);
+describe('BigCommerceClient', () => {
+    describe('constructor', () => {
+        it('Fails to constuct the instance with invalid credentials', () => {
+            const err = getThrown(() => new BigCommerceClient({ accessToken: '', storeHash: '' }));
+
+            expect(err).toBeInstanceOf(BCCredentialsError);
+
+            expect(err).toMatchObject({
+                name: 'BCCredentialsError',
+                message: 'Failed to initialize BigCommerceClient',
+                code: 'BC_CLIENT_CREDENTIALS_ERROR',
+                context: {
+                    errors: ['storeHash is empty', 'accessToken is empty'],
+                },
+            });
+        });
+
+        it('Fails to construct the instance with invalid prefixUrl', () => {
+            expect(() => new BigCommerceClient({ ...VALID_CREDENTIALS, prefixUrl: 'invalid' })).toThrow(
+                'Invalid prefixUrl',
+            );
+        });
+    });
+
+    describe('validation', () => {
+        const assertValidationError = (err: unknown, body: unknown, message: string) => {
+            expect(err).toBeInstanceOf(BCSchemaValidationError);
+
+            expect(err).toMatchObject({
+                name: 'BCSchemaValidationError',
+                code: 'BC_SCHEMA_VALIDATION_FAILED',
+                message,
+                context: {
+                    data: body,
+                },
+            });
+        };
+
+        it('Fails on invalid query', async () => {
+            const client = createClient();
+            const schema = z.object({
+                include: z.string().array(),
+                'id:in': z.int().positive().array(),
+            });
+
+            const invalid = {
+                include: 'variants,images',
+                'id:in': [213, '234'],
+            };
+
+            // @ts-expect-error Will not match schema type
+            const err = await client.get('/catalog/products', { querySchema: schema, query: invalid }).catch((e) => e);
+
+            assertValidationError(err, invalid, 'Invalid query parameters');
+        });
+
+        it('Fails on invalid body', async () => {
+            const client = createClient();
+
+            const schema = z.object({
+                sku: z.string().max(255),
+                categories: z.int().positive().array(),
+                price: z.float64().positive(),
+            });
+
+            const body = {
+                sku: 'long'.repeat(70),
+                categories: [0, undefined],
+                price: -3.14149,
+            };
+
+            const err = await client.post('/catalog/products', { bodySchema: schema, body }).catch((e) => e);
+
+            assertValidationError(err, body, 'Invalid POST request body');
+        });
+
+        it('Fails on invalid response', async () => {
+            const schema = z.object({
+                sku: z.string(),
+                sales_price: z.float64().positive(),
+                description: z.string(),
+            });
+
+            const data = {
+                sku: 'test',
+                sales_price: null,
+                // missing description
+            };
+
+            const client = createClient(data);
+
+            const err = await client.get('catalog/products', { responseSchema: schema }).catch((e) => e);
+
+            assertValidationError(err, data, 'Invalid API response');
+        });
+
+        it('Fails on invalid json', async () => {
+            const client = createClient(new Response('not json'));
+
+            const err = await client.get('/catalog/products').catch((e) => e);
+
+            expect(err).toBeInstanceOf(BCResponseParseError);
+
+            expect(err).toMatchObject({
+                name: 'BCResponseParseError',
+                message: 'Failed to parse BigCommerce API response',
+                code: 'BC_RESPONSE_PARSE_ERROR',
+                context: {
+                    method: 'GET',
+                    path: 'stores/test/v3/catalog/products',
+                    rawBody: 'not json',
+                },
+            });
+        });
+    });
+
+    describe('Retries and rate limits', () => {
+        it('Retries on failures', async () => {
+            const counter = vi.fn();
+
+            const client = new BigCommerceClient({
+                ...VALID_CREDENTIALS,
+                logger: false,
+                hooks: {
+                    beforeRequest: [
+                        () => {
+                            counter();
+
+                            return new Response('Internal Server Error', { status: 500 });
+                        },
+                    ],
+                },
+            });
+
+            await client.get('catalog/products').catch(() => {});
+
+            expect(counter).toHaveBeenCalledTimes(4);
+        });
+
+        it('Rate limit fails immediately without Reset header', async () => {
+            const client = createClient(new Response('rate limit', { status: 429 }));
+
+            const res = await client.get('/catalog/products').catch((e) => e);
+
+            expect(res).toBeInstanceOf(BCRateLimitNoHeadersError);
+
+            expect(res).toMatchObject({
+                name: 'BCRateLimitNoHeadersError',
+                message: 'Rate limit reached but the X-Rate-Limit-* headers were not returned. Unable to retry',
+                code: 'BC_RATE_LIMIT_NO_HEADERS',
+                context: {
+                    url: 'https://api.bigcommerce.com/stores/test/v3/catalog/products',
+                    method: 'GET',
+                    attempts: 1,
+                },
+            });
+        });
+
+        it('Rate limit fails immediately if the delay is too long', async () => {
+            const client = createClient(
+                new Response('rate limit', {
+                    status: 429,
+                    headers: {
+                        [HEADERS.RATE_LIMIT_RESET]: '120001',
+                    },
+                }),
+            );
+
+            const err = await client.get('/catalog/products').catch((e) => e);
+
+            expect(err).toBeInstanceOf(BCRateLimitDelayTooLongError);
+
+            expect(err).toMatchObject({
+                name: 'BCRateLimitDelayTooLongError',
+                message: 'Rate limit reached, and the rate limit reset window is too high.',
+                code: 'BC_RATE_LIMIT_DELAY_TOO_LONG',
+                context: {
+                    url: 'https://api.bigcommerce.com/stores/test/v3/catalog/products',
+                    method: 'GET',
+                    attempts: 1,
+                    maxDelay: 120000,
+                    delay: 120001,
+                },
+            });
+        });
+
+        it('Handles rate limits', async () => {
+            vi.useFakeTimers();
+            const counter = vi.fn();
+            let attempts = 0;
+
+            const client = new BigCommerceClient({
+                ...VALID_CREDENTIALS,
+                logger: false,
+                hooks: {
+                    beforeRequest: [
+                        () => {
+                            if (attempts === 2) {
+                                return new Response('{"status": "ok"}', { status: 200 });
+                            }
+
+                            attempts++;
+
+                            counter();
+
+                            return new Response('rate limited', {
+                                status: 429,
+                                headers: {
+                                    [HEADERS.RATE_LIMIT_LEFT]: '0',
+                                    [HEADERS.RATE_LIMIT_WINDOW]: '30000',
+                                    [HEADERS.RATE_LIMIT_RESET]: '3000',
+                                    [HEADERS.RATE_LIMIT_QUOTA]: '300',
+                                },
+                            });
+                        },
+                    ],
+                },
+            });
+
+            const start = vi.getMockedSystemTime();
+
+            if (!start) {
+                throw new Error('Unexpected null response from vi.getMockedSystemTime');
+            }
+
+            const request = client.get('catalog/products');
+            await vi.runAllTimersAsync();
+            await request;
+
+            const elapsed = Date.now() - start.valueOf();
+
+            expect(counter).toHaveBeenCalledTimes(2);
+            expect(elapsed).toBeGreaterThanOrEqual(6e3);
+
+            vi.useRealTimers();
+        });
     });
 });
