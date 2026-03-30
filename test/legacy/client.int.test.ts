@@ -1,7 +1,7 @@
 import { config } from 'dotenv';
 import { describe, expect, it } from 'vitest';
-import { BigCommerceClient } from '../../src/v2/client';
-import { bc } from '../../src/v2/endpoints';
+import { BigCommerceClient } from '../../src/legacy/client';
+import { bc } from '../../src/legacy/endpoints';
 
 config();
 

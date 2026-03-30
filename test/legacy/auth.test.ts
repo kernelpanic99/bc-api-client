@@ -2,7 +2,7 @@ import * as jose from 'jose';
 import ky from 'ky';
 import pino from 'pino';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { BigCommerceAuth, type Claims, type TokenResponse } from '../../src/v2/auth';
+import { BigCommerceAuth, type Claims, type TokenResponse } from '../../src/legacy/auth';
 
 vi.mock('ky');
 vi.mock('jose');

@@ -1,7 +1,7 @@
 import pino from 'pino';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { BigCommerceClient } from '../../src/v2/client';
-import { Methods, request } from '../../src/v2/net';
+import { BigCommerceClient } from '../../src/legacy/client';
+import { Methods, request } from '../../src/legacy/net';
 
 // Mock the request function
 vi.mock('../src/net', () => ({

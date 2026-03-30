@@ -1,6 +1,6 @@
 import ky, { HTTPError, type KyResponse } from 'ky';
 import { beforeEach, describe, expect, it, type Mock, vi } from 'vitest';
-import { RequestError, request } from '../../src/v2/net';
+import { RequestError, request } from '../../src/legacy/net';
 
 // Mock ky and HTTPError
 vi.mock('ky', () => {
