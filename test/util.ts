@@ -13,6 +13,7 @@ export const getThrown = (fn: () => void) => {
 export const VALID_CREDENTIALS = {
     accessToken: 'test',
     storeHash: 'test',
+    logger: false as const,
 };
 
 export const createClient = (response?: unknown, status?: number): BigCommerceClient => {

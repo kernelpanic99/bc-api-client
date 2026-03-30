@@ -1,9 +1,11 @@
 import {
+    BCApiError,
     BCCredentialsError,
     BCRateLimitDelayTooLongError,
     BCRateLimitNoHeadersError,
     BCResponseParseError,
     BCSchemaValidationError,
+    BCUrlTooLongError,
     HEADERS,
 } from 'src';
 import { BigCommerceClient } from 'src/client';
@@ -32,6 +34,20 @@ describe('BigCommerceClient', () => {
             expect(() => new BigCommerceClient({ ...VALID_CREDENTIALS, prefixUrl: 'invalid' })).toThrow(
                 'Invalid prefixUrl',
             );
+        });
+
+        it('Fails with only storeHash invalid', () => {
+            const err = getThrown(() => new BigCommerceClient({ accessToken: 'valid', storeHash: '' }));
+
+            expect(err).toBeInstanceOf(BCCredentialsError);
+            expect(err).toMatchObject({ context: { errors: ['storeHash is empty'] } });
+        });
+
+        it('Fails with only accessToken invalid', () => {
+            const err = getThrown(() => new BigCommerceClient({ accessToken: '', storeHash: 'valid' }));
+
+            expect(err).toBeInstanceOf(BCCredentialsError);
+            expect(err).toMatchObject({ context: { errors: ['accessToken is empty'] } });
         });
     });
 
@@ -67,7 +83,7 @@ describe('BigCommerceClient', () => {
             assertValidationError(err, invalid, 'Invalid query parameters');
         });
 
-        it('Fails on invalid body', async () => {
+        it('Fails on invalid POST body', async () => {
             const client = createClient();
 
             const schema = z.object({
@@ -85,6 +101,18 @@ describe('BigCommerceClient', () => {
             const err = await client.post('/catalog/products', { bodySchema: schema, body }).catch((e) => e);
 
             assertValidationError(err, body, 'Invalid POST request body');
+        });
+
+        it('Fails on invalid PUT body', async () => {
+            const client = createClient();
+
+            const schema = z.object({ name: z.string() });
+            const body = { name: 123 };
+
+            // @ts-expect-error Will not match schema type
+            const err = await client.put('/catalog/products/1', { bodySchema: schema, body }).catch((e) => e);
+
+            assertValidationError(err, body, 'Invalid PUT request body');
         });
 
         it('Fails on invalid response', async () => {
@@ -105,6 +133,73 @@ describe('BigCommerceClient', () => {
             const err = await client.get('catalog/products', { responseSchema: schema }).catch((e) => e);
 
             assertValidationError(err, data, 'Invalid API response');
+        });
+
+        it('Returns parsed response body on success', async () => {
+            const data = { id: 1, name: 'Test Product' };
+            const client = createClient(data);
+
+            const result = await client.get('/catalog/products/1');
+
+            expect(result).toEqual(data);
+        });
+
+        it('Uses v2 path when version is specified', async () => {
+            const client = createClient(new Response('not json'));
+
+            const err = await client.get('/orders', { version: 'v2' }).catch((e) => e);
+
+            expect(err).toBeInstanceOf(BCResponseParseError);
+            expect(err).toMatchObject({
+                context: { path: 'stores/test/v2/orders' },
+            });
+        });
+
+        it('Throws BCApiError on HTTP error responses', async () => {
+            const client = createClient({ message: 'Not found' }, 404);
+
+            const err = await client.get('/catalog/products/1').catch((e) => e);
+
+            expect(err).toBeInstanceOf(BCApiError);
+            expect(err).toMatchObject({
+                name: 'BCApiError',
+                code: 'BC_API_ERROR',
+                message: 'BigCommerce API request failed',
+                context: {
+                    method: 'GET',
+                    status: 404,
+                    url: 'https://api.bigcommerce.com/stores/test/v3/catalog/products/1',
+                    responseBody: '{"message":"Not found"}',
+                },
+            });
+        });
+
+        it('Throws BCUrlTooLongError when URL exceeds 2048 chars without retrying', async () => {
+            const requestCount = vi.fn();
+
+            const client = new BigCommerceClient({
+                ...VALID_CREDENTIALS,
+                hooks: { beforeRequest: [requestCount] },
+                logger: false,
+            });
+
+            const err = await client.get('a'.repeat(2048)).catch((e) => e);
+
+            const longUrl = `https://api.bigcommerce.com/stores/test/v3/${'a'.repeat(2048)}`;
+
+            expect(err).toBeInstanceOf(BCUrlTooLongError);
+            expect(err).toMatchObject({
+                name: 'BCUrlTooLongError',
+                code: 'BC_URL_TOO_LONG',
+                message: `Url length (${longUrl.length}) exceeds max allowed length of 2048`,
+                context: {
+                    url: longUrl,
+                    max: 2048,
+                    len: longUrl.length,
+                },
+            });
+
+            expect(requestCount).toHaveBeenCalledTimes(1);
         });
 
         it('Fails on invalid json', async () => {
