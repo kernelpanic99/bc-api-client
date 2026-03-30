@@ -38,7 +38,7 @@ export class BCClientError extends BaseError<Record<string, string>> {
 export class BCCredentialsError extends BaseError<{
     errors: string[];
 }> {
-    code = 'BC_CLIENT_INIT_ERROR';
+    code = 'BC_CLIENT_CREDENTIALS_ERROR';
 
     constructor(errors: string[]) {
         super('Failed to initialize BigCommerceClient', { errors });
@@ -141,5 +141,21 @@ export class BCTimeoutError extends BaseError<{
             method: err.request.method,
             url: err.request.url,
         });
+    }
+}
+
+export class BCResponseParseError extends BaseError<{ method: string; path: string; rawBody?: string }> {
+    code = 'BC_RESPONSE_PARSE_ERROR';
+
+    constructor(method: string, path: string, cause: unknown, rawBody?: string) {
+        super(
+            'Failed to parse BigCommerce API response',
+            {
+                method,
+                path,
+                rawBody,
+            },
+            { cause },
+        );
     }
 }
