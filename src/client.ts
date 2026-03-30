@@ -1,4 +1,4 @@
-import ky, { isHTTPError, isKyError, isTimeoutError, type KyInstance } from 'ky';
+import ky, { isHTTPError, isKyError, isTimeoutError, type KyInstance, type KyResponse } from 'ky';
 import {
     type ApiVersion,
     BASE_KY_CONFIG,
@@ -13,7 +13,15 @@ import {
     type RequestOptions,
     toUrlSearchParams,
 } from './common';
-import { BCApiError, BCClientError, BCCredentialsError, BCSchemaValidationError, BCTimeoutError } from './errors';
+import {
+    BaseError,
+    BCApiError,
+    BCClientError,
+    BCCredentialsError,
+    BCResponseParseError,
+    BCSchemaValidationError,
+    BCTimeoutError,
+} from './errors';
 import { bcRateLimitRetry, validateUrlLength } from './hooks';
 import { initLogger } from './logger';
 import type { StandardSchemaV1 } from './standard-schema';
@@ -29,6 +37,14 @@ export class BigCommerceClient {
         this.validateCredentials();
 
         const { storeHash, accessToken, logger, ...kyOptions } = config;
+
+        if (kyOptions.prefixUrl) {
+            try {
+                new URL(kyOptions.prefixUrl);
+            } catch (err) {
+                throw new BCClientError('Invalid prefixUrl', err);
+            }
+        }
 
         this.logger = initLogger(logger);
         this.storeHash = storeHash;
@@ -52,7 +68,7 @@ export class BigCommerceClient {
         });
     }
 
-    async get<TRes, TQuery extends Query = Query>(path: string, options: GetOptions<TRes, TQuery>): Promise<TRes> {
+    async get<TRes, TQuery extends Query = Query>(path: string, options?: GetOptions<TRes, TQuery>): Promise<TRes> {
         return this.request<never, TRes, TQuery>(path, {
             method: 'GET',
             ...options,
@@ -61,7 +77,7 @@ export class BigCommerceClient {
 
     async post<TBody, TRes, TQuery extends Query = Query>(
         path: string,
-        options: PostOptions<TBody, TRes, TQuery>,
+        options?: PostOptions<TBody, TRes, TQuery>,
     ): Promise<TRes> {
         return this.request<TBody, TRes, TQuery>(path, {
             method: 'POST',
@@ -71,7 +87,7 @@ export class BigCommerceClient {
 
     async put<TBody, TRes, TQuery extends Query = Query>(
         path: string,
-        options: PutOptions<TBody, TRes, TQuery>,
+        options?: PutOptions<TBody, TRes, TQuery>,
     ): Promise<TRes> {
         return this.request<TBody, TRes, TQuery>(path, {
             method: 'PUT',
@@ -81,7 +97,7 @@ export class BigCommerceClient {
 
     async delete<TRes = never, TQuery extends Query = Query>(
         path: string,
-        options: DeleteOptions<TRes, TQuery>,
+        options?: DeleteOptions<TRes, TQuery>,
     ): Promise<TRes> {
         return this.request<never, TRes, TQuery>(path, {
             method: 'DELETE',
@@ -99,34 +115,35 @@ export class BigCommerceClient {
         const validQuery = await this.validate(query, querySchema, 'Invalid query parameters');
         const validBody = await this.validate(body, bodySchema, `Invalid ${options.method} request body`);
 
-        let res: TRes | undefined;
+        let response: KyResponse;
 
         try {
-            const response = await this.client(path, {
+            response = await this.client(path, {
                 ...kyOptions,
                 method: options.method,
                 searchParams: toUrlSearchParams(validQuery),
                 json: validBody,
             });
-
-            res = await response.json<TRes>();
-
-            this.logger?.debug(
-                { method: options.method, url: response.url, status: response.status },
-                'Successful request',
-            );
         } catch (err) {
+            if (err instanceof BaseError) {
+                throw err;
+            }
+
             if (isHTTPError(err)) {
                 const requestBody = await err.request.text().catch(() => '');
                 const responseBody = await err.response.text().catch(() => '');
                 const error = new BCApiError(err, requestBody, responseBody);
+
                 this.logger?.error(error.context, 'Request failed');
+
                 throw error;
             }
 
             if (isTimeoutError(err)) {
                 const error = new BCTimeoutError(err);
+
                 this.logger?.error(error.context, 'Request timed out');
+
                 throw error;
             }
 
@@ -136,6 +153,27 @@ export class BigCommerceClient {
 
             throw new BCClientError('Unknown error', err);
         }
+
+        let text: string;
+
+        try {
+            text = await response.text();
+        } catch (err) {
+            throw new BCResponseParseError(options.method, path, err, '');
+        }
+
+        let res: TRes;
+
+        try {
+            res = JSON.parse(text);
+        } catch (err) {
+            throw new BCResponseParseError(options.method, path, err, text);
+        }
+
+        this.logger?.debug(
+            { method: options.method, url: response.url, status: response.status },
+            'Successful request',
+        );
 
         return this.validate(res, responseSchema, 'Invalid API response');
     }
