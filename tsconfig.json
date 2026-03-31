@@ -12,6 +12,7 @@
         "skipLibCheck": true,
         "forceConsistentCasingInFileNames": true,
         "resolveJsonModule": true,
+        "declarationMap": true,
         "paths": {
             "*": ["./*"],
             "@/*": ["./src/*"]
