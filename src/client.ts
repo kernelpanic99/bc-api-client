@@ -25,6 +25,7 @@ import {
 import { bcRateLimitRetry, validateUrlLength } from './hooks';
 import { initLogger } from './logger';
 import type { StandardSchemaV1 } from './standard-schema';
+import { stripKeys } from './util';
 
 const LEADING_SLASHES = /^\/+/;
 
@@ -78,8 +79,8 @@ export class BigCommerceClient {
 
     async get<TRes, TQuery extends Query = Query>(path: string, options?: GetOptions<TRes, TQuery>): Promise<TRes> {
         return this.request<never, TRes, TQuery>(path, {
+            ...stripKeys(options, ['body', 'bodySchema']),
             method: 'GET',
-            ...options,
         });
     }
 
@@ -88,8 +89,8 @@ export class BigCommerceClient {
         options?: PostOptions<TBody, TRes, TQuery>,
     ): Promise<TRes> {
         return this.request<TBody, TRes, TQuery>(path, {
-            method: 'POST',
             ...options,
+            method: 'POST',
         });
     }
 
@@ -98,8 +99,8 @@ export class BigCommerceClient {
         options?: PutOptions<TBody, TRes, TQuery>,
     ): Promise<TRes> {
         return this.request<TBody, TRes, TQuery>(path, {
-            method: 'PUT',
             ...options,
+            method: 'PUT',
         });
     }
 
@@ -109,8 +110,8 @@ export class BigCommerceClient {
     ): Promise<void> {
         try {
             await this.request<never, TRes, TQuery>(path, {
+                ...stripKeys(options, ['body', 'bodySchema', 'responseSchema']),
                 method: 'DELETE',
-                ...options,
             });
         } catch (err) {
             if (err instanceof BCResponseParseError && err.context.rawBody === '') {
