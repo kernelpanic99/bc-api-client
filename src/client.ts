@@ -105,12 +105,31 @@ export class BigCommerceClient {
 
     async delete<TRes = never, TQuery extends Query = Query>(
         path: string,
-        options?: DeleteOptions<TRes, TQuery>,
-    ): Promise<TRes> {
-        return this.request<never, TRes, TQuery>(path, {
-            method: 'DELETE',
-            ...options,
-        });
+        options?: DeleteOptions<TQuery>,
+    ): Promise<void> {
+        try {
+            await this.request<never, TRes, TQuery>(path, {
+                method: 'DELETE',
+                ...options,
+            });
+        } catch (err) {
+            if (err instanceof BCResponseParseError && err.context.rawBody === '') {
+                return;
+            }
+
+            // Do not throw on delete for resources that are already gone.
+            if (err instanceof BCApiError && err.context.status === 404) {
+                // A guard for typo'd paths. If path is invalid, the api will return plain text "Route not found".
+                // If the resource is genuinely missing, the api will return proper json error
+                if (err.context.headers[HEADERS.CONTENT_TYPE.toLowerCase()] === 'application/json') {
+                    this.logger?.warn({ err }, 'Attempted to delete the resource that is already gone');
+
+                    return;
+                }
+            }
+
+            throw err;
+        }
     }
 
     private async request<TBody, TRes, TQuery extends Query = Query>(

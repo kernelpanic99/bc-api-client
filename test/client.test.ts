@@ -1,4 +1,5 @@
 import {
+    BASE_KY_CONFIG,
     BCApiError,
     BCCredentialsError,
     BCRateLimitDelayTooLongError,
@@ -202,6 +203,21 @@ describe('BigCommerceClient', () => {
             expect(requestCount).toHaveBeenCalledTimes(1);
         });
 
+        it('Throws BCResponseParseError on empty body (e.g. v2 orders past last page)', async () => {
+            const client = createClient(new Response(null, { status: 204 }));
+
+            const err = await client.get('/orders', { version: 'v2' }).catch((e) => e);
+
+            expect(err).toBeInstanceOf(BCResponseParseError);
+            expect(err).toMatchObject({
+                context: {
+                    method: 'GET',
+                    path: 'stores/test/v2/orders',
+                    rawBody: '',
+                },
+            });
+        });
+
         it('Fails on invalid json', async () => {
             const client = createClient(new Response('not json'));
 
@@ -222,12 +238,62 @@ describe('BigCommerceClient', () => {
         });
     });
 
+    describe('delete()', () => {
+        it('Resolves on success with empty body', async () => {
+            const client = createClient(new Response(null, { status: 204 }));
+            await expect(client.delete('/catalog/products/1')).resolves.toBeUndefined();
+        });
+
+        it('Resolves on success with empty body and non-204 status', async () => {
+            const client = createClient(new Response('', { status: 200 }));
+            await expect(client.delete('/catalog/products/1')).resolves.toBeUndefined();
+        });
+
+        it('Silently swallows 404 with JSON content-type (resource already gone)', async () => {
+            const client = createClient(
+                new Response(JSON.stringify({ title: 'Not Found' }), {
+                    status: 404,
+                    headers: { 'content-type': 'application/json' },
+                }),
+            );
+
+            await expect(client.delete('/catalog/products/1')).resolves.toBeUndefined();
+        });
+
+        it("Re-throws 404 without JSON content-type (typo'd path)", async () => {
+            const client = createClient(
+                new Response('Route not found', {
+                    status: 404,
+                    headers: { 'content-type': 'text/plain' },
+                }),
+            );
+
+            const err = await client.delete('/catalog/prducts/1').catch((e) => e);
+
+            expect(err).toBeInstanceOf(BCApiError);
+            expect(err).toMatchObject({ context: { status: 404 } });
+        });
+
+        it('Re-throws non-404 HTTP errors', async () => {
+            const client = createClient({ message: 'Server Error' }, 500);
+
+            const err = await client.delete('/catalog/products/1').catch((e) => e);
+
+            expect(err).toBeInstanceOf(BCApiError);
+            expect(err).toMatchObject({ context: { status: 500 } });
+        });
+    });
+
     describe('Retries and rate limits', () => {
         it('Retries on failures', async () => {
             const counter = vi.fn();
 
             const client = new BigCommerceClient({
                 ...VALID_CREDENTIALS,
+                retry: {
+                    ...BASE_KY_CONFIG.retry,
+                    backoffLimit: 1,
+                },
                 logger: false,
                 hooks: {
                     beforeRequest: [

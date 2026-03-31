@@ -109,7 +109,7 @@ export class BCApiError extends BaseError<{
     url: string;
     status: number;
     statusMessage: string;
-    headers: Headers;
+    headers: Record<string, string>;
     requestBody: string;
     responseBody: string;
 }> {
@@ -123,7 +123,7 @@ export class BCApiError extends BaseError<{
             url: request.url,
             status: response.status,
             statusMessage: response.statusText,
-            headers: response.headers,
+            headers: Object.fromEntries(response.headers as unknown as Iterable<[string, string]>),
             requestBody,
             responseBody,
         });

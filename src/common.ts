@@ -48,7 +48,7 @@ export type RateLimitMeta = {
     window?: number;
 };
 
-export const BASE_KY_CONFIG: KyOptions = {
+export const BASE_KY_CONFIG = {
     prefixUrl: 'https://api.bigcommerce.com',
     // Some BC endpoints may take a while.
     // For example /catalog/product/options* endpoints may fully
@@ -117,7 +117,7 @@ export type GetOptions<TRes, TQuery extends Query> = Omit<
 
 export type PostOptions<TBody, TRes, TQuery extends Query> = Omit<RequestOptions<TBody, TRes, TQuery>, 'method'>;
 export type PutOptions<TBody, TRes, TQuery extends Query> = PostOptions<TBody, TRes, TQuery>;
-export type DeleteOptions<TRes, TQuery extends Query> = Omit<
-    RequestOptions<never, TRes, TQuery>,
-    'body' | 'bodySchema' | 'method'
+export type DeleteOptions<TQuery extends Query> = Omit<
+    RequestOptions<never, never, TQuery>,
+    'body' | 'bodySchema' | 'method' | 'responseSchema'
 >;

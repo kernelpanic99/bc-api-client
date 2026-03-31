@@ -1,4 +1,4 @@
-import { BigCommerceClient } from 'src';
+import { BASE_KY_CONFIG, BigCommerceClient } from 'src';
 
 export const getThrown = (fn: () => void) => {
     try {
@@ -31,6 +31,10 @@ export const createClient = (response?: unknown, status?: number): BigCommerceCl
 
     return new BigCommerceClient({
         ...VALID_CREDENTIALS,
+        retry: {
+            ...BASE_KY_CONFIG.retry,
+            backoffLimit: 1,
+        },
         hooks: {
             beforeRequest: [
                 () => {
