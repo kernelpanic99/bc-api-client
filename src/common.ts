@@ -19,7 +19,20 @@ export const LOG_LEVELS = ['debug', 'info', 'warn', 'error'] as const;
 
 export type LogLevel = (typeof LOG_LEVELS)[number];
 
-export interface ClientConfig extends KyOptions {
+export type ConcurrencyOptions = {
+    concurrency?: number;
+    backoff?: ((concurrency: number, status: number) => number) | number;
+    rateLimitBackoff?: number;
+    backoffRecover?: ((concurrency: number) => number) | number;
+};
+
+export const MAX_CONCURRENCY = 1000;
+export const DEFAULT_CONCURRENCY = 10;
+export const DEFAULT_RATE_LIMIT_BACKOFF = 1;
+export const DEFAULT_BACKOFF_RATE = 2;
+export const DEFAULT_BACKOFF_RECOVER = 1;
+
+export interface ClientConfig extends KyOptions, ConcurrencyOptions {
     storeHash: string;
     accessToken: string;
     logger?: Logger | LogLevel | boolean;
@@ -121,3 +134,24 @@ export type DeleteOptions<TQuery extends Query> = Omit<
     RequestOptions<never, never, TQuery>,
     'body' | 'bodySchema' | 'method' | 'responseSchema'
 >;
+
+export type Ok<T> = {
+    ok: true;
+    data: T;
+    err: undefined;
+};
+
+export type Err<E> = {
+    ok: false;
+    data: undefined;
+    err: E;
+};
+
+export type Result<T, E> = Ok<T> | Err<E>;
+
+export const Ok = <T, E>(data: T): Result<T, E> => ({ ok: true, data, err: undefined });
+export const Err = <T, E>(err: E): Result<T, E> => ({ ok: false, data: undefined, err });
+
+export type BatchRequestOptions<TBody, TRes, TQuery extends Query> = {
+    path: string;
+} & RequestOptions<TBody, TRes, TQuery>;

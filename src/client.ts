@@ -1,16 +1,27 @@
 import ky, { isHTTPError, isKyError, isTimeoutError, type KyInstance, type KyResponse } from 'ky';
+import pLimit from 'p-limit';
 import {
     type ApiVersion,
     BASE_KY_CONFIG,
+    type BatchRequestOptions,
     type ClientConfig,
+    type ConcurrencyOptions,
+    DEFAULT_BACKOFF_RATE,
+    DEFAULT_BACKOFF_RECOVER,
+    DEFAULT_CONCURRENCY,
+    DEFAULT_RATE_LIMIT_BACKOFF,
     type DeleteOptions,
+    Err,
     type GetOptions,
     HEADERS,
     type Logger,
+    MAX_CONCURRENCY,
+    Ok,
     type PostOptions,
     type PutOptions,
     type Query,
     type RequestOptions,
+    type Result,
     toUrlSearchParams,
 } from './common';
 import {
@@ -35,17 +46,9 @@ export class BigCommerceClient {
     private readonly storeHash: string;
 
     constructor(private readonly config: ClientConfig) {
-        this.validateCredentials();
+        this.validateConfig();
 
-        const { storeHash, accessToken, logger, ...kyOptions } = config;
-
-        if (kyOptions.prefixUrl) {
-            try {
-                new URL(kyOptions.prefixUrl);
-            } catch (err) {
-                throw new BCClientError('Invalid prefixUrl', err);
-            }
-        }
+        const { storeHash, accessToken, logger, concurrency: _, ...kyOptions } = config;
 
         this.logger = initLogger(logger);
         this.storeHash = storeHash;
@@ -133,9 +136,122 @@ export class BigCommerceClient {
         }
     }
 
+    async *stream<TBody, TRes, TQuery extends Query>(
+        requests: BatchRequestOptions<TBody, TRes, TQuery>[],
+        options?: ConcurrencyOptions,
+    ): AsyncGenerator<Result<TRes, BaseError>> {
+        const concurrency = options?.concurrency ?? this.config.concurrency ?? DEFAULT_CONCURRENCY;
+        const rateLimitBackoff =
+            options?.rateLimitBackoff ?? this.config.rateLimitBackoff ?? DEFAULT_RATE_LIMIT_BACKOFF;
+        const backoff = options?.backoff ?? this.config.backoff ?? DEFAULT_BACKOFF_RATE;
+        const backoffRecover = options?.backoffRecover ?? this.config.backoffRecover ?? DEFAULT_BACKOFF_RECOVER;
+
+        const limit = pLimit(concurrency);
+        const client = this.client.extend({
+            hooks: {
+                beforeRetry: [
+                    ({ error }) => {
+                        if (isHTTPError(error)) {
+                            if (error.response.status === 429) {
+                                const previousConcurrency = limit.concurrency;
+                                limit.concurrency = rateLimitBackoff;
+
+                                this.logger?.warn(
+                                    { previousConcurrency, newConcurrency: limit.concurrency },
+                                    'Rate limit reached, limiting concurrency',
+                                );
+                            } else {
+                                const rate =
+                                    typeof backoff === 'function'
+                                        ? backoff(limit.concurrency, error.response.status)
+                                        : backoff;
+
+                                const previousConcurrency = limit.concurrency;
+
+                                limit.concurrency = Math.ceil(limit.concurrency / rate);
+
+                                this.logger?.warn(
+                                    { previousConcurrency, newConcurrency: limit.concurrency },
+                                    'Intermittent errors, limiting concurrency to compensate',
+                                );
+                            }
+                        }
+                    },
+                ],
+                afterResponse: [
+                    (_request, _options, response) => {
+                        if (response.ok && limit.concurrency < concurrency) {
+                            const recover =
+                                typeof backoffRecover === 'function'
+                                    ? backoffRecover(limit.concurrency)
+                                    : backoffRecover;
+
+                            limit.concurrency = Math.min(concurrency, limit.concurrency + recover);
+                        }
+                    },
+                ],
+            },
+        });
+
+        const queue: Result<TRes, BaseError>[] = [];
+        let notify: (() => void) | null = null;
+        let done: boolean = false;
+
+        const wait = () =>
+            new Promise<void>((r) => {
+                if (queue.length > 0) {
+                    return r();
+                }
+
+                notify = r;
+            });
+
+        const push = (item: Result<TRes, BaseError>) => {
+            queue.push(item);
+            notify?.();
+            notify = null;
+        };
+
+        try {
+            const all = Promise.all(
+                requests.map((req) =>
+                    limit(() =>
+                        this.request(req.path, req, client).then(
+                            (val) => push(Ok(val)),
+                            (err) => push(Err(err)),
+                        ),
+                    ),
+                ),
+            ).finally(() => {
+                done = true;
+                notify?.();
+                notify = null;
+            });
+
+            while (!done || queue.length > 0) {
+                if (queue.length === 0) {
+                    await wait();
+                }
+
+                while (queue.length > 0) {
+                    const item = queue.shift();
+
+                    if (item) {
+                        yield item;
+                    }
+                }
+            }
+
+            await all;
+        } finally {
+            limit.clearQueue();
+        }
+    }
+
     private async request<TBody, TRes, TQuery extends Query = Query>(
         _path: string,
         options: RequestOptions<TBody, TRes, TQuery>,
+        client?: KyInstance,
     ) {
         const { version, query, body, bodySchema, querySchema, responseSchema, ...kyOptions } = options;
 
@@ -146,7 +262,7 @@ export class BigCommerceClient {
         let response: KyResponse;
 
         try {
-            response = await this.client(path, {
+            response = await (client ?? this.client)(path, {
                 ...kyOptions,
                 method: options.method,
                 searchParams: toUrlSearchParams(validQuery),
@@ -176,10 +292,10 @@ export class BigCommerceClient {
             }
 
             if (isKyError(err)) {
-                throw new BCClientError('Client error', err);
+                throw new BCClientError('Client error', undefined, err);
             }
 
-            throw new BCClientError('Unknown error', err);
+            throw new BCClientError('Unknown error', undefined, err);
         }
 
         let text: string;
@@ -224,7 +340,7 @@ export class BigCommerceClient {
         return `stores/${this.storeHash}/${version}/${route.replace(LEADING_SLASHES, '')}`;
     }
 
-    private validateCredentials() {
+    private validateConfig() {
         const { accessToken, storeHash } = this.config;
         const errors: string[] = [];
 
@@ -239,8 +355,36 @@ export class BigCommerceClient {
             errors.push('accessToken is empty');
         }
 
+        if (this.config.prefixUrl) {
+            try {
+                new URL(this.config.prefixUrl);
+            } catch (err) {
+                throw new BCClientError('Invalid prefixUrl', undefined, err);
+            }
+        }
+
+        try {
+            this.validateConcurrency(this.config.concurrency);
+        } catch (err) {
+            if (err instanceof BCClientError) {
+                errors.push(err.message);
+            } else {
+                throw err;
+            }
+        }
+
         if (errors.length > 0) {
             throw new BCCredentialsError(errors);
+        }
+    }
+
+    private validateConcurrency(concurrency: number | undefined) {
+        if (concurrency === undefined) {
+            return;
+        }
+
+        if (concurrency <= 0 || concurrency > MAX_CONCURRENCY) {
+            throw new BCClientError(`Invalid concurrency: allowed range (1:${MAX_CONCURRENCY})`, undefined);
         }
     }
 }

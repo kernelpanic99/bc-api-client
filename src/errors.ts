@@ -30,8 +30,8 @@ export abstract class BaseError<TContext extends ErrorContext = ErrorContext> ex
 export class BCClientError extends BaseError<Record<string, string>> {
     code = 'BC_GENERIC_ERROR';
 
-    constructor(message: string, cause: unknown) {
-        super(message, {}, { cause });
+    constructor(message: string, context?: Record<string, string>, cause?: unknown) {
+        super(message, context ?? {}, { cause });
     }
 }
 
