@@ -53,7 +53,7 @@ describe('BigCommerceClient', () => {
     });
 
     describe('validation', () => {
-        const assertValidationError = (err: unknown, body: unknown, message: string) => {
+        const assertValidationError = (err: unknown, body: unknown, message: string, method: string, path: string) => {
             expect(err).toBeInstanceOf(BCSchemaValidationError);
 
             expect(err).toMatchObject({
@@ -61,6 +61,8 @@ describe('BigCommerceClient', () => {
                 code: 'BC_SCHEMA_VALIDATION_FAILED',
                 message,
                 context: {
+                    method,
+                    path,
                     data: body,
                 },
             });
@@ -81,7 +83,7 @@ describe('BigCommerceClient', () => {
             // @ts-expect-error Will not match schema type
             const err = await client.get('/catalog/products', { querySchema: schema, query: invalid }).catch((e) => e);
 
-            assertValidationError(err, invalid, 'Invalid query parameters');
+            assertValidationError(err, invalid, 'Invalid query parameters', 'GET', 'stores/test/v3/catalog/products');
         });
 
         it('Fails on invalid POST body', async () => {
@@ -101,7 +103,7 @@ describe('BigCommerceClient', () => {
 
             const err = await client.post('/catalog/products', { bodySchema: schema, body }).catch((e) => e);
 
-            assertValidationError(err, body, 'Invalid POST request body');
+            assertValidationError(err, body, 'Invalid POST request body', 'POST', 'stores/test/v3/catalog/products');
         });
 
         it('Fails on invalid PUT body', async () => {
@@ -113,7 +115,7 @@ describe('BigCommerceClient', () => {
             // @ts-expect-error Will not match schema type
             const err = await client.put('/catalog/products/1', { bodySchema: schema, body }).catch((e) => e);
 
-            assertValidationError(err, body, 'Invalid PUT request body');
+            assertValidationError(err, body, 'Invalid PUT request body', 'PUT', 'stores/test/v3/catalog/products/1');
         });
 
         it('Fails on invalid response', async () => {
@@ -133,7 +135,7 @@ describe('BigCommerceClient', () => {
 
             const err = await client.get('catalog/products', { responseSchema: schema }).catch((e) => e);
 
-            assertValidationError(err, data, 'Invalid API response');
+            assertValidationError(err, data, 'Invalid API response', 'GET', 'stores/test/v3/catalog/products');
         });
 
         it('Returns parsed response body on success', async () => {

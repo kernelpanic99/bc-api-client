@@ -233,8 +233,14 @@ export class BigCommerceClient {
         const { version, query, body, bodySchema, querySchema, responseSchema, ...kyOptions } = options;
 
         const path = this.makePath(options.version ?? 'v3', _path);
-        const validQuery = await this.validate(query, querySchema, 'Invalid query parameters');
-        const validBody = await this.validate(body, bodySchema, `Invalid ${options.method} request body`);
+        const validQuery = await this.validate(query, querySchema, options.method, path, 'Invalid query parameters');
+        const validBody = await this.validate(
+            body,
+            bodySchema,
+            options.method,
+            path,
+            `Invalid ${options.method} request body`,
+        );
 
         let response: KyResponse;
 
@@ -296,10 +302,16 @@ export class BigCommerceClient {
             'Successful request',
         );
 
-        return this.validate(res, responseSchema, 'Invalid API response');
+        return this.validate(res, responseSchema, options.method, path, 'Invalid API response');
     }
 
-    private async validate<T>(data: unknown, schema?: StandardSchemaV1<T>, message?: string): Promise<T> {
+    private async validate<T>(
+        data: unknown,
+        schema: StandardSchemaV1<T> | undefined,
+        method: string,
+        path: string,
+        message?: string,
+    ): Promise<T> {
         if (!schema) {
             return data as T;
         }
@@ -307,7 +319,7 @@ export class BigCommerceClient {
         const result = await schema['~standard'].validate(data);
 
         if (result.issues) {
-            throw new BCSchemaValidationError(message ?? 'Validation failed', data, result);
+            throw new BCSchemaValidationError(message ?? 'Validation failed', method, path, data, result);
         }
 
         return result.value;

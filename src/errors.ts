@@ -94,13 +94,15 @@ export class BCRateLimitDelayTooLongError extends BaseError<{
 }
 
 export class BCSchemaValidationError extends BaseError<{
+    method: string;
+    path: string;
     data: unknown;
     error: StandardSchemaV1.FailureResult;
 }> {
     code = 'BC_SCHEMA_VALIDATION_FAILED';
 
-    constructor(message: string, data: unknown, error: StandardSchemaV1.FailureResult) {
-        super(message, { data, error });
+    constructor(message: string, method: string, path: string, data: unknown, error: StandardSchemaV1.FailureResult) {
+        super(message, { method, path, data, error });
     }
 }
 
