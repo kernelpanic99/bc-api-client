@@ -1,5 +1,5 @@
 import ky, { isHTTPError, isKyError, isTimeoutError, type KyInstance, type KyResponse } from 'ky';
-import pLimit from 'p-limit';
+import pLimit, { type LimitFunction } from 'p-limit';
 import {
     type ApiVersion,
     BASE_KY_CONFIG,
@@ -21,6 +21,7 @@ import {
     type PutOptions,
     type Query,
     type RequestOptions,
+    type ResolvedConcurrencyOptions,
     type Result,
     toUrlSearchParams,
 } from './common';
@@ -36,10 +37,9 @@ import {
 import { bcRateLimitRetry, validateUrlLength } from './hooks';
 import { initLogger } from './logger';
 import type { StandardSchemaV1 } from './standard-schema';
-import { stripKeys } from './util';
+import { AsyncChannel, stripKeys } from './util';
 
 const LEADING_SLASHES = /^\/+/;
-
 export class BigCommerceClient {
     private readonly logger?: Logger;
     private readonly client: KyInstance;
@@ -140,41 +140,72 @@ export class BigCommerceClient {
         requests: BatchRequestOptions<TBody, TRes, TQuery>[],
         options?: ConcurrencyOptions,
     ): AsyncGenerator<Result<TRes, BaseError>> {
-        const concurrency = options?.concurrency ?? this.config.concurrency ?? DEFAULT_CONCURRENCY;
-        const rateLimitBackoff =
-            options?.rateLimitBackoff ?? this.config.rateLimitBackoff ?? DEFAULT_RATE_LIMIT_BACKOFF;
-        const backoff = options?.backoff ?? this.config.backoff ?? DEFAULT_BACKOFF_RATE;
-        const backoffRecover = options?.backoffRecover ?? this.config.backoffRecover ?? DEFAULT_BACKOFF_RECOVER;
+        const resolved = this.resolveStreamOptions(options);
+        const limit = pLimit(resolved.concurrency);
+        const client = this.makeStreamClient(limit, resolved);
+        const channel = new AsyncChannel<Result<TRes, BaseError>>();
 
-        const limit = pLimit(concurrency);
-        const client = this.client.extend({
+        try {
+            Promise.all(
+                requests.map((req) =>
+                    limit(() =>
+                        this.request(req.path, req, client).then(
+                            (val) => channel.push(Ok(val)),
+                            (err) => channel.push(Err(err)),
+                        ),
+                    ),
+                ),
+            ).finally(() => channel.close());
+
+            for await (const item of channel) {
+                yield item;
+            }
+        } finally {
+            limit.clearQueue();
+        }
+    }
+
+    private resolveStreamOptions(options?: ConcurrencyOptions): ResolvedConcurrencyOptions {
+        return {
+            concurrency: options?.concurrency ?? this.config.concurrency ?? DEFAULT_CONCURRENCY,
+            rateLimitBackoff: options?.rateLimitBackoff ?? this.config.rateLimitBackoff ?? DEFAULT_RATE_LIMIT_BACKOFF,
+            backoff: options?.backoff ?? this.config.backoff ?? DEFAULT_BACKOFF_RATE,
+            backoffRecover: options?.backoffRecover ?? this.config.backoffRecover ?? DEFAULT_BACKOFF_RECOVER,
+        };
+    }
+
+    private makeStreamClient(limit: LimitFunction, options: ResolvedConcurrencyOptions): KyInstance {
+        const { concurrency, rateLimitBackoff, backoff, backoffRecover } = options;
+
+        return this.client.extend({
             hooks: {
                 beforeRetry: [
                     ({ error }) => {
-                        if (isHTTPError(error)) {
-                            if (error.response.status === 429) {
-                                const previousConcurrency = limit.concurrency;
-                                limit.concurrency = rateLimitBackoff;
+                        if (!isHTTPError(error)) {
+                            return;
+                        }
 
-                                this.logger?.warn(
-                                    { previousConcurrency, newConcurrency: limit.concurrency },
-                                    'Rate limit reached, limiting concurrency',
-                                );
-                            } else {
-                                const rate =
-                                    typeof backoff === 'function'
-                                        ? backoff(limit.concurrency, error.response.status)
-                                        : backoff;
+                        const previousConcurrency = limit.concurrency;
 
-                                const previousConcurrency = limit.concurrency;
+                        if (error.response.status === 429) {
+                            limit.concurrency = rateLimitBackoff;
 
-                                limit.concurrency = Math.ceil(limit.concurrency / rate);
+                            this.logger?.warn(
+                                { previousConcurrency, newConcurrency: limit.concurrency },
+                                'Rate limit reached, limiting concurrency',
+                            );
+                        } else {
+                            const rate =
+                                typeof backoff === 'function'
+                                    ? backoff(limit.concurrency, error.response.status)
+                                    : backoff;
 
-                                this.logger?.warn(
-                                    { previousConcurrency, newConcurrency: limit.concurrency },
-                                    'Intermittent errors, limiting concurrency to compensate',
-                                );
-                            }
+                            limit.concurrency = Math.ceil(limit.concurrency / rate);
+
+                            this.logger?.warn(
+                                { previousConcurrency, newConcurrency: limit.concurrency },
+                                'Intermittent errors, limiting concurrency to compensate',
+                            );
                         }
                     },
                 ],
@@ -192,60 +223,6 @@ export class BigCommerceClient {
                 ],
             },
         });
-
-        const queue: Result<TRes, BaseError>[] = [];
-        let notify: (() => void) | null = null;
-        let done: boolean = false;
-
-        const wait = () =>
-            new Promise<void>((r) => {
-                if (queue.length > 0) {
-                    return r();
-                }
-
-                notify = r;
-            });
-
-        const push = (item: Result<TRes, BaseError>) => {
-            queue.push(item);
-            notify?.();
-            notify = null;
-        };
-
-        try {
-            const all = Promise.all(
-                requests.map((req) =>
-                    limit(() =>
-                        this.request(req.path, req, client).then(
-                            (val) => push(Ok(val)),
-                            (err) => push(Err(err)),
-                        ),
-                    ),
-                ),
-            ).finally(() => {
-                done = true;
-                notify?.();
-                notify = null;
-            });
-
-            while (!done || queue.length > 0) {
-                if (queue.length === 0) {
-                    await wait();
-                }
-
-                while (queue.length > 0) {
-                    const item = queue.shift();
-
-                    if (item) {
-                        yield item;
-                    }
-                }
-            }
-
-            await all;
-        } finally {
-            limit.clearQueue();
-        }
     }
 
     private async request<TBody, TRes, TQuery extends Query = Query>(

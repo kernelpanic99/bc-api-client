@@ -155,3 +155,5 @@ export const Err = <T, E>(err: E): Result<T, E> => ({ ok: false, data: undefined
 export type BatchRequestOptions<TBody, TRes, TQuery extends Query> = {
     path: string;
 } & RequestOptions<TBody, TRes, TQuery>;
+
+export type ResolvedConcurrencyOptions = Required<ConcurrencyOptions>;

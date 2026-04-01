@@ -38,3 +38,43 @@ export const extractRateLimitHeaders = (headers: Headers): RateLimitMeta | undef
         window: parseIntHeader(headers, HEADERS.RATE_LIMIT_WINDOW),
     };
 };
+
+export class AsyncChannel<T> {
+    private readonly queue: T[] = [];
+    private notify: (() => void) | null = null;
+    private done = false;
+
+    push(item: T) {
+        this.queue.push(item);
+        this.notify?.();
+        this.notify = null;
+    }
+
+    close() {
+        this.done = true;
+        this.notify?.();
+        this.notify = null;
+    }
+
+    async *[Symbol.asyncIterator](): AsyncGenerator<T> {
+        while (!this.done || this.queue.length > 0) {
+            if (this.queue.length === 0) {
+                await new Promise<void>((r) => {
+                    if (this.queue.length > 0) {
+                        return r();
+                    }
+
+                    this.notify = r;
+                });
+            }
+
+            while (this.queue.length > 0) {
+                const item = this.queue.shift();
+
+                if (item !== undefined) {
+                    yield item;
+                }
+            }
+        }
+    }
+}
