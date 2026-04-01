@@ -47,7 +47,7 @@ importers:
         version: 0.21.7(@arethetypeswrong/core@0.18.2)(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@typescript/native-preview@7.0.0-dev.20260331.1)(typescript@6.0.2)
       vitest:
         specifier: 4.1.2
-        version: 4.1.2(@types/node@22.19.15)(vite@6.3.4(@types/node@22.19.15))
+        version: 4.1.2(@types/node@22.19.15)(vite@6.3.4(@types/node@22.19.15)(yaml@2.8.3))
       zod:
         specifier: 4.3.6
         version: 4.3.6
@@ -1104,6 +1104,11 @@ packages:
     engines: {node: '>=8'}
     hasBin: true
 
+  yaml@2.8.3:
+    resolution: {integrity: sha512-AvbaCLOO2Otw/lW5bmh9d/WEdcDFdQp2Z2ZUH3pX9U2ihyUY0nvLv7J6TrWowklRGPYbB/IuIMfYgxaCPg5Bpg==}
+    engines: {node: '>= 14.6'}
+    hasBin: true
+
   yocto-queue@1.2.2:
     resolution: {integrity: sha512-4LCcse/U2MHZ63HAJVE+v71o7yOdIe4cZ70Wpf8D/IyjDKYQLV5GD46B+hSTjJsvV5PztjvHoU580EftxjDZFQ==}
     engines: {node: '>=12.20'}
@@ -1512,13 +1517,13 @@ snapshots:
       chai: 6.2.2
       tinyrainbow: 3.1.0
 
-  '@vitest/mocker@4.1.2(vite@6.3.4(@types/node@22.19.15))':
+  '@vitest/mocker@4.1.2(vite@6.3.4(@types/node@22.19.15)(yaml@2.8.3))':
     dependencies:
       '@vitest/spy': 4.1.2
       estree-walker: 3.0.3
       magic-string: 0.30.21
     optionalDependencies:
-      vite: 6.3.4(@types/node@22.19.15)
+      vite: 6.3.4(@types/node@22.19.15)(yaml@2.8.3)
 
   '@vitest/pretty-format@4.1.2':
     dependencies:
@@ -1898,7 +1903,7 @@ snapshots:
 
   validate-npm-package-name@5.0.1: {}
 
-  vite@6.3.4(@types/node@22.19.15):
+  vite@6.3.4(@types/node@22.19.15)(yaml@2.8.3):
     dependencies:
       esbuild: 0.25.12
       fdir: 6.5.0(picomatch@4.0.4)
@@ -1909,11 +1914,12 @@ snapshots:
     optionalDependencies:
       '@types/node': 22.19.15
       fsevents: 2.3.3
+      yaml: 2.8.3
 
-  vitest@4.1.2(@types/node@22.19.15)(vite@6.3.4(@types/node@22.19.15)):
+  vitest@4.1.2(@types/node@22.19.15)(vite@6.3.4(@types/node@22.19.15)(yaml@2.8.3)):
     dependencies:
       '@vitest/expect': 4.1.2
-      '@vitest/mocker': 4.1.2(vite@6.3.4(@types/node@22.19.15))
+      '@vitest/mocker': 4.1.2(vite@6.3.4(@types/node@22.19.15)(yaml@2.8.3))
       '@vitest/pretty-format': 4.1.2
       '@vitest/runner': 4.1.2
       '@vitest/snapshot': 4.1.2
@@ -1930,7 +1936,7 @@ snapshots:
       tinyexec: 1.0.4
       tinyglobby: 0.2.15
       tinyrainbow: 3.1.0
-      vite: 6.3.4(@types/node@22.19.15)
+      vite: 6.3.4(@types/node@22.19.15)(yaml@2.8.3)
       why-is-node-running: 2.3.0
     optionalDependencies:
       '@types/node': 22.19.15
@@ -1941,6 +1947,9 @@ snapshots:
     dependencies:
       siginfo: 2.0.0
       stackback: 0.0.2
+
+  yaml@2.8.3:
+    optional: true
 
   yocto-queue@1.2.2: {}
 
