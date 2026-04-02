@@ -93,17 +93,27 @@ export class BCRateLimitDelayTooLongError extends BaseError<{
     }
 }
 
-export class BCSchemaValidationError extends BaseError<{
+export abstract class BCSchemaValidationError extends BaseError<{
     method: string;
     path: string;
     data: unknown;
     error: StandardSchemaV1.FailureResult;
 }> {
-    code = 'BC_SCHEMA_VALIDATION_FAILED';
-
     constructor(message: string, method: string, path: string, data: unknown, error: StandardSchemaV1.FailureResult) {
         super(message, { method, path, data, error });
     }
+}
+
+export class BCQueryValidationError extends BCSchemaValidationError {
+    code = 'BC_QUERY_VALIDATION_FAILED';
+}
+
+export class BCRequestBodyValidationError extends BCSchemaValidationError {
+    code = 'BC_REQUEST_BODY_VALIDATION_FAILED';
+}
+
+export class BCResponseValidationError extends BCSchemaValidationError {
+    code = 'BC_RESPONSE_VALIDATION_FAILED';
 }
 
 export class BCApiError extends BaseError<{

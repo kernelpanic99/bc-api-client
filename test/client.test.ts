@@ -2,9 +2,12 @@ import {
     BASE_KY_CONFIG,
     BCApiError,
     BCCredentialsError,
+    BCQueryValidationError,
     BCRateLimitDelayTooLongError,
     BCRateLimitNoHeadersError,
+    BCRequestBodyValidationError,
     BCResponseParseError,
+    BCResponseValidationError,
     BCSchemaValidationError,
     BCUrlTooLongError,
     HEADERS,
@@ -53,18 +56,24 @@ describe('BigCommerceClient', () => {
     });
 
     describe('validation', () => {
-        const assertValidationError = (err: unknown, body: unknown, message: string, method: string, path: string) => {
+        const assertValidationError = (
+            err: unknown,
+            ErrorClass:
+                | typeof BCQueryValidationError
+                | typeof BCRequestBodyValidationError
+                | typeof BCResponseValidationError,
+            body: unknown,
+            message: string,
+            method: string,
+            path: string,
+        ) => {
             expect(err).toBeInstanceOf(BCSchemaValidationError);
+            expect(err).toBeInstanceOf(ErrorClass);
 
             expect(err).toMatchObject({
-                name: 'BCSchemaValidationError',
-                code: 'BC_SCHEMA_VALIDATION_FAILED',
+                name: ErrorClass.name,
                 message,
-                context: {
-                    method,
-                    path,
-                    data: body,
-                },
+                context: { method, path, data: body },
             });
         };
 
@@ -83,7 +92,14 @@ describe('BigCommerceClient', () => {
             // @ts-expect-error Will not match schema type
             const err = await client.get('/catalog/products', { querySchema: schema, query: invalid }).catch((e) => e);
 
-            assertValidationError(err, invalid, 'Invalid query parameters', 'GET', 'stores/test/v3/catalog/products');
+            assertValidationError(
+                err,
+                BCQueryValidationError,
+                invalid,
+                'Invalid query parameters',
+                'GET',
+                'stores/test/v3/catalog/products',
+            );
         });
 
         it('Fails on invalid POST body', async () => {
@@ -103,7 +119,14 @@ describe('BigCommerceClient', () => {
 
             const err = await client.post('/catalog/products', { bodySchema: schema, body }).catch((e) => e);
 
-            assertValidationError(err, body, 'Invalid POST request body', 'POST', 'stores/test/v3/catalog/products');
+            assertValidationError(
+                err,
+                BCRequestBodyValidationError,
+                body,
+                'Invalid POST request body',
+                'POST',
+                'stores/test/v3/catalog/products',
+            );
         });
 
         it('Fails on invalid PUT body', async () => {
@@ -115,7 +138,14 @@ describe('BigCommerceClient', () => {
             // @ts-expect-error Will not match schema type
             const err = await client.put('/catalog/products/1', { bodySchema: schema, body }).catch((e) => e);
 
-            assertValidationError(err, body, 'Invalid PUT request body', 'PUT', 'stores/test/v3/catalog/products/1');
+            assertValidationError(
+                err,
+                BCRequestBodyValidationError,
+                body,
+                'Invalid PUT request body',
+                'PUT',
+                'stores/test/v3/catalog/products/1',
+            );
         });
 
         it('Fails on invalid response', async () => {
@@ -135,7 +165,14 @@ describe('BigCommerceClient', () => {
 
             const err = await client.get('catalog/products', { responseSchema: schema }).catch((e) => e);
 
-            assertValidationError(err, data, 'Invalid API response', 'GET', 'stores/test/v3/catalog/products');
+            assertValidationError(
+                err,
+                BCResponseValidationError,
+                data,
+                'Invalid API response',
+                'GET',
+                'stores/test/v3/catalog/products',
+            );
         });
 
         it('Returns parsed response body on success', async () => {

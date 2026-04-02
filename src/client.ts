@@ -30,8 +30,11 @@ import {
     BCApiError,
     BCClientError,
     BCCredentialsError,
+    BCQueryValidationError,
+    BCRequestBodyValidationError,
     BCResponseParseError,
-    BCSchemaValidationError,
+    BCResponseValidationError,
+    type BCSchemaValidationError,
     BCTimeoutError,
 } from './errors';
 import { bcRateLimitRetry, validateUrlLength } from './hooks';
@@ -233,10 +236,18 @@ export class BigCommerceClient {
         const { version, query, body, bodySchema, querySchema, responseSchema, ...kyOptions } = options;
 
         const path = this.makePath(options.version ?? 'v3', _path);
-        const validQuery = await this.validate(query, querySchema, options.method, path, 'Invalid query parameters');
+        const validQuery = await this.validate(
+            query,
+            querySchema,
+            BCQueryValidationError,
+            options.method,
+            path,
+            'Invalid query parameters',
+        );
         const validBody = await this.validate(
             body,
             bodySchema,
+            BCRequestBodyValidationError,
             options.method,
             path,
             `Invalid ${options.method} request body`,
@@ -302,12 +313,26 @@ export class BigCommerceClient {
             'Successful request',
         );
 
-        return this.validate(res, responseSchema, options.method, path, 'Invalid API response');
+        return this.validate(
+            res,
+            responseSchema,
+            BCResponseValidationError,
+            options.method,
+            path,
+            'Invalid API response',
+        );
     }
 
     private async validate<T>(
         data: unknown,
         schema: StandardSchemaV1<T> | undefined,
+        ErrorClass: new (
+            message: string,
+            method: string,
+            path: string,
+            data: unknown,
+            error: StandardSchemaV1.FailureResult,
+        ) => BCSchemaValidationError,
         method: string,
         path: string,
         message?: string,
@@ -319,7 +344,7 @@ export class BigCommerceClient {
         const result = await schema['~standard'].validate(data);
 
         if (result.issues) {
-            throw new BCSchemaValidationError(message ?? 'Validation failed', method, path, data, result);
+            throw new ErrorClass(message ?? 'Validation failed', method, path, data, result);
         }
 
         return result.value;
