@@ -116,6 +116,10 @@ export class BCResponseValidationError extends BCSchemaValidationError {
     code = 'BC_RESPONSE_VALIDATION_FAILED';
 }
 
+export class BCPaginatedItemValidationError extends BCSchemaValidationError {
+    code = 'BC_PAGINATED_ITEM_VALIDATION_FAILED';
+}
+
 export class BCApiError extends BaseError<{
     method: string;
     url: string;
@@ -169,5 +173,21 @@ export class BCResponseParseError extends BaseError<{ method: string; path: stri
             },
             { cause },
         );
+    }
+}
+
+export class BCPaginationOptionError extends BaseError<{ path: string; value: unknown }> {
+    code = 'BC_PAGINATION_OPTION_ERROR';
+
+    constructor(path: string, value: unknown, option: string) {
+        super(`The pagination option ${option} must be a positive number`, { path, value });
+    }
+}
+
+export class BCPaginatedResponseError extends BaseError<{ path: string; data: unknown }> {
+    code = 'BC_PAGINATED_RESPONSE_ERROR';
+
+    constructor(path: string, data: unknown, message: string) {
+        super(message, { path, data });
     }
 }

@@ -5,6 +5,7 @@ import {
     BASE_KY_CONFIG,
     type BatchRequestOptions,
     type ClientConfig,
+    type CollectOptions,
     type ConcurrencyOptions,
     DEFAULT_BACKOFF_RATE,
     DEFAULT_BACKOFF_RECOVER,
@@ -24,12 +25,16 @@ import {
     type ResolvedConcurrencyOptions,
     type Result,
     toUrlSearchParams,
+    type V3Resource,
 } from './common';
 import {
     BaseError,
     BCApiError,
     BCClientError,
     BCCredentialsError,
+    BCPaginatedItemValidationError,
+    BCPaginatedResponseError,
+    BCPaginationOptionError,
     BCQueryValidationError,
     BCRequestBodyValidationError,
     BCResponseParseError,
@@ -139,6 +144,110 @@ export class BigCommerceClient {
         }
     }
 
+    async *collectStream<TItem, TQuery extends Query>(
+        path: string,
+        options?: CollectOptions<TItem, TQuery>,
+    ): AsyncGenerator<Result<TItem, BaseError>> {
+        let limit = this.validatePaginationOption(path, 'limit', options?.query?.limit ?? 250);
+        const page = this.validatePaginationOption(path, 'page', options?.query?.page ?? 1);
+
+        stripKeys(options, ['responseSchema']);
+
+        const itemSchema = options?.itemSchema;
+
+        let firstPageMeta: V3Resource<unknown[]>['meta'];
+
+        try {
+            const firstPage = await this.get(path, {
+                ...options,
+                query: {
+                    ...options?.query,
+                    page,
+                    limit,
+                } as unknown as TQuery,
+            });
+
+            const { data, meta } = this.assertPaginatedResponse(path, firstPage);
+
+            firstPageMeta = meta;
+
+            // Validate and return the first page
+            for (const item of data) {
+                yield this.validatePaginatedItem(path, item, itemSchema);
+            }
+        } catch (err) {
+            if (err instanceof BaseError) {
+                yield Err(err);
+            } else {
+                yield Err(new BCClientError('Unknown error occurred fetching first page', {}, { cause: err }));
+            }
+
+            return;
+        }
+
+        // Query would be validated by the request above
+        stripKeys(options, ['itemSchema', 'querySchema']);
+
+        const { total_pages, per_page } = firstPageMeta.pagination;
+
+        if (limit !== per_page) {
+            this.logger?.warn({ limit, actual: per_page }, 'API enforces alternate limit on this endpoint');
+            limit = per_page;
+        }
+
+        // Fetch other pages using stream
+        const requests = Array.from({ length: total_pages - page }, (_, i) => i + page + 1).map((page) => ({
+            method: 'GET' as const,
+            path,
+            query: {
+                ...options?.query,
+                limit,
+                page,
+            },
+        }));
+
+        for await (const pageRes of this.stream(requests, options)) {
+            const { data: page, err } = pageRes;
+
+            if (err) {
+                yield Err(err);
+                continue;
+            }
+
+            try {
+                const { data } = this.assertPaginatedResponse(path, page);
+
+                for (const item of data) {
+                    yield this.validatePaginatedItem(path, item, itemSchema);
+                }
+            } catch (err) {
+                if (err instanceof BaseError) {
+                    yield Err(err);
+                } else {
+                    yield Err(new BCClientError('Unknown error occured processing page', {}, { cause: err }));
+                }
+            }
+        }
+    }
+
+    private async validatePaginatedItem<TItem>(
+        path: string,
+        item: unknown,
+        schema?: StandardSchemaV1<TItem>,
+    ): Promise<Result<TItem, BaseError>> {
+        if (!schema) {
+            return Ok(item as TItem);
+        }
+
+        const result = await schema['~standard'].validate(item);
+
+        if (result.issues) {
+            return Err(new BCPaginatedItemValidationError('Page item validation failed', 'GET', path, item, result));
+        } else {
+            return Ok(result.value);
+        }
+    }
+
     async *stream<TBody, TRes, TQuery extends Query>(
         requests: BatchRequestOptions<TBody, TRes, TQuery>[],
         options?: ConcurrencyOptions,
@@ -166,6 +275,58 @@ export class BigCommerceClient {
         } finally {
             limit.clearQueue();
         }
+    }
+
+    private assertPaginatedResponse(path: string, res: unknown): V3Resource<unknown[]> {
+        if (typeof res !== 'object' || res === null) {
+            throw new BCPaginatedResponseError(path, res, 'Response is invalid');
+        }
+
+        if (!('data' in res) || !Array.isArray(res.data)) {
+            throw new BCPaginatedResponseError(
+                path,
+                res,
+                'response.data must be an array, ensure this endpoint returns a v3 collection',
+            );
+        }
+
+        if (!('meta' in res) || typeof res.meta !== 'object' || res.meta === null || !('pagination' in res.meta)) {
+            throw new BCPaginatedResponseError(path, res, 'response.meta is invalid unable to paginate');
+        }
+
+        const pagination = res.meta.pagination;
+
+        if (typeof pagination !== 'object' || pagination === null) {
+            throw new BCPaginatedResponseError(path, res, 'response.meta.pagination is invalid unable to paginate');
+        }
+
+        const requiredFields: Array<[string, (v: unknown) => boolean]> = [
+            ['total', (v) => typeof v === 'number' && v >= 0],
+            ['count', (v) => typeof v === 'number' && v >= 0],
+            ['per_page', (v) => typeof v === 'number' && v > 0],
+            ['current_page', (v) => typeof v === 'number' && v > 0],
+            ['total_pages', (v) => typeof v === 'number' && v >= 0],
+        ];
+
+        for (const [field, isValid] of requiredFields) {
+            if (!(field in pagination) || !isValid(pagination[field as keyof typeof pagination])) {
+                throw new BCPaginatedResponseError(
+                    path,
+                    res,
+                    `response.meta.pagination.${field} is missing or invalid`,
+                );
+            }
+        }
+
+        return res as V3Resource<unknown[]>;
+    }
+
+    private validatePaginationOption(path: string, key: string, value: unknown): number {
+        if (typeof value !== 'number' || value <= 0) {
+            throw new BCPaginationOptionError(path, value, key);
+        }
+
+        return value;
     }
 
     private resolveStreamOptions(options?: ConcurrencyOptions): ResolvedConcurrencyOptions {
