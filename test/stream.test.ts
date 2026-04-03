@@ -27,7 +27,7 @@ const rateLimitResponse = () =>
     });
 
 describe('BigCommerceClient', () => {
-    describe('stream', () => {
+    describe('batchStream', () => {
         it('yields Ok for each successful request', async () => {
             const items = Array.from({ length: 10 }, (_, i) => ({ id: i + 1 }));
             const client = bcClientStream(items.map((it) => echo(it)));
@@ -35,7 +35,7 @@ describe('BigCommerceClient', () => {
 
             const count = vi.fn();
 
-            for await (const result of client.stream(requests)) {
+            for await (const result of client.batchStream(requests)) {
                 count();
                 expect(result.ok).toBe(true);
                 expect(result.err).toBeUndefined();
@@ -55,7 +55,7 @@ describe('BigCommerceClient', () => {
 
             const results = [];
 
-            for await (const result of client.stream(requests)) {
+            for await (const result of client.batchStream(requests)) {
                 results.push(result);
             }
 
@@ -76,7 +76,7 @@ describe('BigCommerceClient', () => {
             const ok: unknown[] = [];
             const err: unknown[] = [];
 
-            for await (const result of client.stream(requests)) {
+            for await (const result of client.batchStream(requests)) {
                 if (result.ok) {
                     ok.push(result.data);
                 } else {
@@ -96,7 +96,7 @@ describe('BigCommerceClient', () => {
             const client = bcClientStream([]);
             const count = vi.fn();
 
-            for await (const _ of client.stream([])) {
+            for await (const _ of client.batchStream([])) {
                 count();
             }
 
@@ -131,7 +131,7 @@ describe('BigCommerceClient', () => {
                 path: `/test/${i}`,
             }));
 
-            for await (const _ of client.stream(requests, { concurrency })) {
+            for await (const _ of client.batchStream(requests, { concurrency })) {
                 /* drain */
             }
 
@@ -145,7 +145,7 @@ describe('BigCommerceClient', () => {
 
             let yielded = 0;
 
-            for await (const _ of client.stream(requests, { concurrency: 1 })) {
+            for await (const _ of client.batchStream(requests, { concurrency: 1 })) {
                 yielded++;
                 break;
             }
@@ -164,7 +164,7 @@ describe('BigCommerceClient', () => {
                 },
             });
 
-            for await (const _ of client.stream([{ method: 'GET' as const, path: '/test' }], {
+            for await (const _ of client.batchStream([{ method: 'GET' as const, path: '/test' }], {
                 concurrency: 5,
                 backoff,
             })) {
@@ -197,7 +197,7 @@ describe('BigCommerceClient', () => {
                 },
             });
 
-            for await (const _ of client.stream([{ method: 'GET' as const, path: '/test' }], {
+            for await (const _ of client.batchStream([{ method: 'GET' as const, path: '/test' }], {
                 concurrency,
                 rateLimitBackoff,
                 backoffRecover,
@@ -230,7 +230,7 @@ describe('BigCommerceClient', () => {
                 },
             });
 
-            for await (const _ of client.stream([{ method: 'GET' as const, path: '/test' }], {
+            for await (const _ of client.batchStream([{ method: 'GET' as const, path: '/test' }], {
                 concurrency,
                 backoffRecover,
             })) {

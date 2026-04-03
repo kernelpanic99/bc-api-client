@@ -144,7 +144,41 @@ export class BigCommerceClient {
         }
     }
 
-    async *collectStream<TItem, TQuery extends Query>(
+    async collect<TItem, TQuery extends Query>(
+        path: string,
+        options?: CollectOptions<TItem, TQuery>,
+    ): Promise<TItem[]> {
+        const items: TItem[] = [];
+
+        for await (const { data, err } of this.stream(path, options)) {
+            if (err) {
+                throw err;
+            } else {
+                items.push(data);
+            }
+        }
+
+        return items;
+    }
+
+    async batch<TBody, TRes, TQuery extends Query>(
+        requests: BatchRequestOptions<TBody, TRes, TQuery>[],
+        options?: ConcurrencyOptions,
+    ): Promise<TRes[]> {
+        const results: TRes[] = [];
+
+        for await (const { data, err } of this.batchStream(requests, options)) {
+            if (err) {
+                throw err;
+            } else {
+                results.push(data);
+            }
+        }
+
+        return results;
+    }
+
+    async *stream<TItem, TQuery extends Query>(
         path: string,
         options?: CollectOptions<TItem, TQuery>,
     ): AsyncGenerator<Result<TItem, BaseError>> {
@@ -195,7 +229,7 @@ export class BigCommerceClient {
             limit = per_page;
         }
 
-        // Fetch other pages using stream
+        // Fetch other pages using batchStream
         const requests = Array.from({ length: total_pages - page }, (_, i) => i + page + 1).map((page) => ({
             method: 'GET' as const,
             path,
@@ -206,7 +240,7 @@ export class BigCommerceClient {
             },
         }));
 
-        for await (const pageRes of this.stream(requests, options)) {
+        for await (const pageRes of this.batchStream(requests, options)) {
             const { data: page, err } = pageRes;
 
             if (err) {
@@ -248,7 +282,7 @@ export class BigCommerceClient {
         }
     }
 
-    async *stream<TBody, TRes, TQuery extends Query>(
+    async *batchStream<TBody, TRes, TQuery extends Query>(
         requests: BatchRequestOptions<TBody, TRes, TQuery>[],
         options?: ConcurrencyOptions,
     ): AsyncGenerator<Result<TRes, BaseError>> {
