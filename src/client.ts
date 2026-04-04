@@ -1,31 +1,17 @@
 import ky, { isHTTPError, isKyError, isTimeoutError, type KyInstance, type KyResponse } from 'ky';
 import pLimit, { type LimitFunction } from 'p-limit';
 import {
-    type ApiVersion,
     BASE_KY_CONFIG,
-    type BatchRequestOptions,
     type ClientConfig,
-    type CollectOptions,
     type ConcurrencyOptions,
     DEFAULT_BACKOFF_RATE,
     DEFAULT_BACKOFF_RECOVER,
     DEFAULT_CONCURRENCY,
     DEFAULT_RATE_LIMIT_BACKOFF,
-    type DeleteOptions,
-    Err,
-    type GetOptions,
     HEADERS,
     type Logger,
     MAX_CONCURRENCY,
-    Ok,
-    type PostOptions,
-    type PutOptions,
-    type Query,
-    type RequestOptions,
     type ResolvedConcurrencyOptions,
-    type Result,
-    toUrlSearchParams,
-    type V3Resource,
 } from './common';
 import {
     BaseError,
@@ -44,6 +30,20 @@ import {
 } from './errors';
 import { bcRateLimitRetry, validateUrlLength } from './hooks';
 import { initLogger } from './logger';
+import type { V3Resource } from './pagination';
+import {
+    type ApiVersion,
+    type BatchRequestOptions,
+    type CollectOptions,
+    type DeleteOptions,
+    type GetOptions,
+    type PostOptions,
+    type PutOptions,
+    type Query,
+    type RequestOptions,
+    toUrlSearchParams,
+} from './request';
+import { Err, Ok, type Result } from './result';
 import type { StandardSchemaV1 } from './standard-schema';
 import { AsyncChannel, stripKeys } from './util';
 
@@ -297,7 +297,7 @@ export class BigCommerceClient {
                     limit(() =>
                         this.request(req.path, req, client).then(
                             (val) => channel.push(Ok(val)),
-                            (err) => channel.push(Err(err)),
+                            (err) => channel.push(err(err)),
                         ),
                     ),
                 ),
