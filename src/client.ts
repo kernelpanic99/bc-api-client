@@ -148,6 +148,23 @@ export class BigCommerceClient {
         }
     }
 
+    async query<TItem, TQuery extends Query = Query>(
+        path: string,
+        options: QueryOptions<TItem, TQuery>,
+    ): Promise<TItem[]> {
+        const results: TItem[] = [];
+
+        for await (const { data, err } of this.queryStream(path, options)) {
+            if (err) {
+                throw err;
+            } else {
+                results.push(data);
+            }
+        }
+
+        return results;
+    }
+
     async *queryStream<TItem, TQuery extends Query = Query>(
         path: string,
         options: QueryOptions<TItem, TQuery>,
