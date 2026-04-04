@@ -3,7 +3,6 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
     test: {
-        exclude: ['./test/legacy/**'],
         include: ['./test/**.test.ts'],
     },
     resolve: {
