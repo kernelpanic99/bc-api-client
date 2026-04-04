@@ -38,7 +38,7 @@ describe('Logger init', () => {
 
     it('Fails if invalid level provided', () => {
         // @ts-expect-error Passing invalid level on purpose
-        expect(() => initLogger('invalid')).toThrowError(Error);
+        expect(() => initLogger('invalid')).toThrow(Error);
     });
 
     it('Uses fallback logger with info level if nothing provided', () => {
