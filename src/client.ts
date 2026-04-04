@@ -96,7 +96,7 @@ export class BigCommerceClient {
 
     async get<TRes, TQuery extends Query = Query>(path: string, options?: GetOptions<TRes, TQuery>): Promise<TRes> {
         return this.request<never, TRes, TQuery>(path, {
-            ...stripKeys(options, ['body', 'bodySchema']),
+            ...options,
             method: 'GET',
         });
     }
@@ -127,7 +127,7 @@ export class BigCommerceClient {
     ): Promise<void> {
         try {
             await this.request<never, TRes, TQuery>(path, {
-                ...stripKeys(options, ['body', 'bodySchema', 'responseSchema']),
+                ...options,
                 method: 'DELETE',
             });
         } catch (err) {
@@ -172,12 +172,19 @@ export class BigCommerceClient {
         options: QueryOptions<TItem, TQuery>,
     ): AsyncGenerator<Result<TItem, BaseError>> {
         const limit = this.validatePaginationOption(path, 'limit', options?.query?.limit ?? DEFAULT_LIMIT);
-        stripKeys(options, ['responseSchema']);
-
         const itemSchema = options?.itemSchema;
 
+        const validatedQuery = await this.validate(
+            options.query,
+            options.querySchema,
+            BCQueryValidationError,
+            'GET',
+            path,
+            'Invalid query parameters',
+        );
+
         const newQuery: Query = {
-            ...options.query,
+            ...validatedQuery,
             limit,
         };
 
@@ -187,7 +194,7 @@ export class BigCommerceClient {
                 'The provided key is already in the query params, this param will be ignored',
             );
 
-            stripKeys(newQuery, [options.key]);
+            delete newQuery[options.key];
         }
 
         const url = this.config.prefixUrl ?? options.prefixUrl ?? BASE_KY_CONFIG.prefixUrl;
@@ -260,12 +267,22 @@ export class BigCommerceClient {
         const page = this.validatePaginationOption(path, 'page', options?.query?.page ?? 1);
         const limit = this.validatePaginationOption(path, 'limit', options?.query?.limit ?? DEFAULT_LIMIT);
 
+        const validatedQuery = await this.validate(
+            options?.query,
+            options?.querySchema,
+            BCQueryValidationError,
+            'GET',
+            path,
+            'Invalid query parameters',
+        );
+
         const requests = Array.from({ length: Math.ceil(count / limit) - page + 1 }, (_, i) => i + page).map(
             (page) => ({
                 method: 'GET' as const,
+                version: 'v2' as const,
                 path,
                 query: {
-                    ...options?.query,
+                    ...validatedQuery,
                     limit,
                     page,
                 },
@@ -329,18 +346,27 @@ export class BigCommerceClient {
     ): AsyncGenerator<Result<TItem, BaseError>> {
         let limit = this.validatePaginationOption(path, 'limit', options?.query?.limit ?? DEFAULT_LIMIT);
         const page = this.validatePaginationOption(path, 'page', options?.query?.page ?? 1);
-
-        stripKeys(options, ['responseSchema']);
-
         const itemSchema = options?.itemSchema;
+
+        const validatedQuery = await this.validate(
+            options?.query,
+            options?.querySchema,
+            BCQueryValidationError,
+            'GET',
+            path,
+            'Invalid query parameters',
+        );
+
+        // Strip querySchema — validated above, don't re-validate against the augmented query in sub-calls
+        const pageOptions = stripKeys(options, ['querySchema']);
 
         let firstPageMeta: V3Resource<unknown[]>['meta'];
 
         try {
             const firstPage = await this.get(path, {
-                ...options,
+                ...pageOptions,
                 query: {
-                    ...options?.query,
+                    ...validatedQuery,
                     page,
                     limit,
                 } as unknown as TQuery,
@@ -364,9 +390,6 @@ export class BigCommerceClient {
             return;
         }
 
-        // Query would be validated by the request above
-        stripKeys(options, ['itemSchema', 'querySchema']);
-
         const { total_pages, per_page } = firstPageMeta.pagination;
 
         if (limit !== per_page) {
@@ -374,18 +397,21 @@ export class BigCommerceClient {
             limit = per_page;
         }
 
+        // itemSchema consumed above — strip before passing to batchStream (querySchema already stripped in pageOptions)
+        const batchOptions = stripKeys(pageOptions, ['itemSchema']);
+
         // Fetch other pages using batchStream
         const requests = Array.from({ length: total_pages - page }, (_, i) => i + page + 1).map((page) => ({
             method: 'GET' as const,
             path,
             query: {
-                ...options?.query,
+                ...validatedQuery,
                 limit,
                 page,
             },
         }));
 
-        for await (const pageRes of requests.length > 0 ? this.batchStream(requests, options) : []) {
+        for await (const pageRes of requests.length > 0 ? this.batchStream(requests, batchOptions) : []) {
             const { data: page, err } = pageRes;
 
             if (err) {

@@ -471,8 +471,8 @@ describe('streamCount', () => {
 
             expect(batchSpy).toHaveBeenCalledWith(
                 [
-                    { method: 'GET', path: '/legacy', query: { limit: 250, page: 1 } },
-                    { method: 'GET', path: '/legacy', query: { limit: 250, page: 2 } },
+                    { method: 'GET', version: 'v2', path: '/legacy', query: { limit: 250, page: 1 } },
+                    { method: 'GET', version: 'v2', path: '/legacy', query: { limit: 250, page: 2 } },
                 ],
                 expect.anything(),
             );
@@ -496,7 +496,7 @@ describe('streamCount', () => {
             await drain(client.streamCount('/legacy', { count: 500, query: { limit: 250, page: 2 } }));
 
             expect(batchSpy).toHaveBeenCalledWith(
-                [{ method: 'GET', path: '/legacy', query: { limit: 250, page: 2 } }],
+                [{ method: 'GET', version: 'v2', path: '/legacy', query: { limit: 250, page: 2 } }],
                 expect.anything(),
             );
         });
@@ -518,7 +518,7 @@ describe('streamCount', () => {
             await drain(client.streamCount('/legacy', { count: 250, query: { limit: 250, category_id: 5 } }));
 
             expect(batchSpy).toHaveBeenCalledWith(
-                [{ method: 'GET', path: '/legacy', query: { limit: 250, page: 1, category_id: 5 } }],
+                [{ method: 'GET', version: 'v2', path: '/legacy', query: { limit: 250, page: 1, category_id: 5 } }],
                 expect.anything(),
             );
         });
