@@ -23,6 +23,7 @@ export abstract class BaseError<TContext extends ErrorContext = ErrorContext> ex
         this.name = this.constructor.name;
     }
 
+    /** @internal */
     toJSON() {
         return {
             name: this.name,

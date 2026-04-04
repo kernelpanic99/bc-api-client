@@ -1,0 +1,16 @@
+{
+    "plugin": ["typedoc-plugin-markdown"],
+    "entryPoints": ["src/index.ts"],
+    "out": "docs",
+    "outputFileStrategy": "modules",
+    "entryFileName": "API",
+    "readme": "none",
+    "excludeExternals": true,
+    "expandObjects": false,
+    "parametersFormat": "table",
+    "propertiesFormat": "table",
+    "typeDeclarationFormat": "table",
+    "hideGroupHeadings": true,
+    "typeDeclarationVisibility": "compact",
+    "excludeInternal": true
+}
