@@ -240,7 +240,7 @@ export class BigCommerceClient {
             },
         }));
 
-        for await (const pageRes of this.batchStream(requests, options)) {
+        for await (const pageRes of requests.length > 0 ? this.batchStream(requests, options) : []) {
             const { data: page, err } = pageRes;
 
             if (err) {
@@ -335,10 +335,7 @@ export class BigCommerceClient {
         }
 
         const requiredFields: Array<[string, (v: unknown) => boolean]> = [
-            ['total', (v) => typeof v === 'number' && v >= 0],
-            ['count', (v) => typeof v === 'number' && v >= 0],
             ['per_page', (v) => typeof v === 'number' && v > 0],
-            ['current_page', (v) => typeof v === 'number' && v > 0],
             ['total_pages', (v) => typeof v === 'number' && v >= 0],
         ];
 
@@ -350,6 +347,30 @@ export class BigCommerceClient {
                     `response.meta.pagination.${field} is missing or invalid`,
                 );
             }
+        }
+
+        const { links } = pagination as { links?: unknown };
+
+        if (typeof links !== 'object' || links === null) {
+            throw new BCPaginatedResponseError(path, res, 'response.meta.pagination.links is missing or invalid');
+        }
+
+        const isNullableString = (v: unknown) => v === null || typeof v === 'string';
+
+        if (!('current' in links) || typeof links.current !== 'string') {
+            throw new BCPaginatedResponseError(
+                path,
+                res,
+                'response.meta.pagination.links.current is missing or invalid',
+            );
+        }
+
+        if ('next' in links && !isNullableString(links.next)) {
+            throw new BCPaginatedResponseError(path, res, 'response.meta.pagination.links.next is invalid');
+        }
+
+        if ('previous' in links && !isNullableString(links.previous)) {
+            throw new BCPaginatedResponseError(path, res, 'response.meta.pagination.links.previous is invalid');
         }
 
         return res as V3Resource<unknown[]>;
