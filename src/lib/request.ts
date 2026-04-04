@@ -79,7 +79,7 @@ export const req = {
 };
 
 export type CollectOptions<TItem, TQuery extends Query> = ConcurrencyOptions &
-    Omit<GetOptions<TItem, TQuery>, 'responseSchema'> & {
+    Omit<GetOptions<TItem, TQuery>, 'responseSchema' | 'version'> & {
         itemSchema?: StandardSchemaV1<TItem>;
     };
 
