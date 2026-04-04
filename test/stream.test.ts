@@ -9,7 +9,7 @@ import { Err, Ok } from 'src/lib/result';
 import type { StandardSchemaV1 } from 'src/lib/standard-schema';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const makeClient = () => new BigCommerceClient({ storeHash: 'abc', accessToken: 'tok' });
+const makeClient = () => new BigCommerceClient({ storeHash: 'abc', accessToken: 'tok', logger: false });
 
 function makePage(
     items: unknown[],

@@ -1,4 +1,5 @@
 import { BigCommerceClient } from 'src';
+import { BASE_KY_CONFIG } from 'src/lib/common';
 import { describe, expect, it, vi } from 'vitest';
 import { BCApiError } from '../src/lib/errors';
 import { VALID_CREDENTIALS } from './util';
@@ -8,6 +9,10 @@ const bcClientStream = (responses: Response[]) => {
 
     return new BigCommerceClient({
         ...VALID_CREDENTIALS,
+        retry: {
+            ...BASE_KY_CONFIG.retry,
+            backoffLimit: 1,
+        },
         hooks: {
             beforeRequest: [
                 () => {
@@ -252,6 +257,61 @@ describe('BigCommerceClient', () => {
             }
 
             expect(backoffRecover).toHaveBeenCalledWith(Math.ceil(concurrency / 2));
+        });
+    });
+
+    describe('batchSafe', () => {
+        it('returns an array of Ok results for all successful requests', async () => {
+            const items = [{ id: 1 }, { id: 2 }, { id: 3 }];
+            const client = bcClientStream(items.map((it) => echo(it)));
+            const requests = items.map((it) => ({ method: 'GET' as const, path: `/items/${it.id}` }));
+
+            const results = await client.batchSafe(requests);
+
+            expect(results).toHaveLength(3);
+
+            for (const [i, result] of results.entries()) {
+                expect(result.ok).toBe(true);
+                expect(result.data).toEqual(items[i]);
+            }
+        });
+
+        it('returns Err for failed requests without throwing', async () => {
+            const client = bcClientStream([errResponse(500), errResponse(404)]);
+            const requests = [
+                { method: 'GET' as const, path: '/a' },
+                { method: 'GET' as const, path: '/b' },
+            ];
+
+            const results = await client.batchSafe(requests);
+
+            expect(results).toHaveLength(2);
+
+            for (const result of results) {
+                expect(result.ok).toBe(false);
+                expect(result.err).toBeInstanceOf(BCApiError);
+            }
+        });
+
+        it('returns mixed Ok and Err for mixed responses', async () => {
+            const responses = [echo({ id: 1 }), errResponse(422), echo({ id: 3 })];
+            const client = bcClientStream(responses);
+            const requests = responses.map((_, i) => ({ method: 'GET' as const, path: `/items/${i}` }));
+
+            const results = await client.batchSafe(requests, { concurrency: false });
+
+            expect(results).toHaveLength(3);
+            expect(results[0].ok).toBe(true);
+            expect(results[1].ok).toBe(false);
+            expect(results[2].ok).toBe(true);
+        });
+
+        it('returns an empty array for an empty request list', async () => {
+            const client = bcClientStream([]);
+
+            const results = await client.batchSafe([]);
+
+            expect(results).toEqual([]);
         });
     });
 });

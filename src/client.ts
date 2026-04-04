@@ -250,18 +250,14 @@ export class BigCommerceClient {
         return items;
     }
 
-    async batch<TBody, TRes, TQuery extends Query>(
+    async batchSafe<TBody, TRes, TQuery extends Query>(
         requests: BatchRequestOptions<TBody, TRes, TQuery>[],
         options?: ConcurrencyOptions,
-    ): Promise<TRes[]> {
-        const results: TRes[] = [];
+    ): Promise<Result<TRes, BaseError>[]> {
+        const results: Result<TRes, BaseError>[] = [];
 
-        for await (const { data, err } of this.batchStream(requests, options)) {
-            if (err) {
-                throw err;
-            } else {
-                results.push(data);
-            }
+        for await (const res of this.batchStream(requests, options)) {
+            results.push(res);
         }
 
         return results;

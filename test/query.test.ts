@@ -1,4 +1,5 @@
 import { BigCommerceClient } from 'src';
+import { BASE_KY_CONFIG } from 'src/lib/common';
 import { describe, expect, it, vi } from 'vitest';
 import { BCApiError, BCPaginatedResponseError } from '../src/lib/errors';
 import { VALID_CREDENTIALS } from './util';
@@ -34,6 +35,10 @@ const bcClientQuery = (responses: Response[]) => {
 
     return new BigCommerceClient({
         ...VALID_CREDENTIALS,
+        retry: {
+            ...BASE_KY_CONFIG.retry,
+            backoffLimit: 1,
+        },
         hooks: {
             beforeRequest: [() => responses[index++] ?? new Response('{}', { status: 404 })],
         },
