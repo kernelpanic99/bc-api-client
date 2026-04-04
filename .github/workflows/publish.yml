@@ -24,8 +24,5 @@ jobs:
       - name: Quality checks
         run: mise x -- pnpm qa
 
-      - name: Build
-        run: mise x -- pnpm build
-
-      - name: Build and publish
+      - name: Publish
         run: mise x -- pnpm publish --provenance
