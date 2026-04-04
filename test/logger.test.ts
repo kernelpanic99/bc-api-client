@@ -36,9 +36,17 @@ describe('Logger init', () => {
         expect((logger as FallbackLogger).level).toBe('warn');
     });
 
-    it('Fails if invalid level provided', () => {
+    it('Falls back to info level if invalid level is provided', () => {
+        const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
         // @ts-expect-error Passing invalid level on purpose
-        expect(() => initLogger('invalid')).toThrow(Error);
+        const logger = initLogger('invalid');
+
+        expect(logger).toBeInstanceOf(FallbackLogger);
+        expect((logger as FallbackLogger).level).toBe('info');
+        expect(warnSpy).toHaveBeenCalled();
+
+        warnSpy.mockRestore();
     });
 
     it('Uses fallback logger with info level if nothing provided', () => {

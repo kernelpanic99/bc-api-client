@@ -71,9 +71,11 @@ export const initLogger = (logger: ClientConfig['logger']): Logger | undefined =
         if (LOG_LEVELS.includes(logger)) {
             return new FallbackLogger(logger);
         } else {
-            throw new Error(
-                `Invalid log level value provided for logger option: ${logger}. Allowed levels: ${LOG_LEVELS.join()}`,
-            );
+            const logger = new FallbackLogger('info');
+
+            logger.warn({ level: logger }, 'Unknown log level passed, using info');
+
+            return logger;
         }
     }
 
