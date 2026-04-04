@@ -341,27 +341,44 @@ export class BigCommerceClient {
         options?: ConcurrencyOptions,
     ): AsyncGenerator<Result<TRes, BaseError>> {
         const resolved = this.resolveStreamOptions(options);
-        const limit = pLimit(resolved.concurrency);
-        const client = this.makeStreamClient(limit, resolved);
-        const channel = new AsyncChannel<Result<TRes, BaseError>>();
 
-        try {
-            Promise.all(
-                requests.map((req) =>
-                    limit(() =>
-                        this.request(req.path, req, client).then(
-                            (val) => channel.push(Ok(val)),
-                            (err) => channel.push(Err(err)),
+        if (resolved.concurrency) {
+            const limit = pLimit(resolved.concurrency);
+            const client = this.makeStreamClient(limit, resolved);
+            const channel = new AsyncChannel<Result<TRes, BaseError>>();
+
+            try {
+                Promise.all(
+                    requests.map((req) =>
+                        limit(() =>
+                            this.request(req.path, req, client).then(
+                                (val) => channel.push(Ok(val)),
+                                (err) => channel.push(Err(err)),
+                            ),
                         ),
                     ),
-                ),
-            ).finally(() => channel.close());
+                ).finally(() => channel.close());
 
-            for await (const item of channel) {
-                yield item;
+                for await (const item of channel) {
+                    yield item;
+                }
+            } finally {
+                limit.clearQueue();
             }
-        } finally {
-            limit.clearQueue();
+        } else {
+            for (const request of requests) {
+                try {
+                    const res = await this.request(request.path, request);
+
+                    yield Ok(res);
+                } catch (err) {
+                    if (err instanceof BaseError) {
+                        yield Err(err);
+                    } else {
+                        yield Err(new BCClientError('Unknown error in batchStream', {}, { cause: err }));
+                    }
+                }
+            }
         }
     }
 
@@ -467,6 +484,10 @@ export class BigCommerceClient {
 
     private makeStreamClient(limit: LimitFunction, options: ResolvedConcurrencyOptions): KyInstance {
         const { concurrency, rateLimitBackoff, backoff, backoffRecover } = options;
+
+        if (concurrency === false) {
+            return this.client;
+        }
 
         return this.client.extend({
             hooks: {
@@ -680,9 +701,13 @@ export class BigCommerceClient {
         }
     }
 
-    private validateConcurrency(concurrency: number | undefined) {
+    private validateConcurrency(concurrency: number | undefined | false) {
         if (concurrency === undefined) {
             return;
+        }
+
+        if (concurrency === false) {
+            return concurrency;
         }
 
         if (concurrency <= 0 || concurrency > MAX_CONCURRENCY) {

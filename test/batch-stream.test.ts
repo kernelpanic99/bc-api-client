@@ -138,6 +138,21 @@ describe('BigCommerceClient', () => {
             expect(maxActive).toBeLessThanOrEqual(concurrency);
         });
 
+        it('yields results in request order when concurrency is false', async () => {
+            const items = Array.from({ length: 5 }, (_, i) => ({ id: i + 1 }));
+            const client = bcClientStream(items.map((it) => echo(it)));
+            const requests = items.map((it) => ({ method: 'GET' as const, path: `/items/${it.id}` }));
+
+            const results: unknown[] = [];
+
+            for await (const result of client.batchStream(requests, { concurrency: false })) {
+                expect(result.ok).toBe(true);
+                results.push(result.data);
+            }
+
+            expect(results).toEqual(items);
+        });
+
         it('can be exited early without hanging', async () => {
             const items = Array.from({ length: 50 }, (_, i) => ({ id: i }));
             const client = bcClientStream(items.map((it) => echo(it)));

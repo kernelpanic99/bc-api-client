@@ -4,7 +4,7 @@ import type { Logger, LogLevel } from './logger';
 export type { Logger, LogLevel };
 
 export type ConcurrencyOptions = {
-    concurrency?: number;
+    concurrency?: number | false;
     backoff?: ((concurrency: number, status: number) => number) | number;
     rateLimitBackoff?: number;
     backoffRecover?: ((concurrency: number) => number) | number;
