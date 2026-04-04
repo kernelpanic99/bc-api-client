@@ -51,7 +51,7 @@
     },
     "author": "Arthur Nikolaienko",
     "license": "MIT",
-    "packageManager": "pnpm@10.10.0",
+    "packageManager": "pnpm@10.33.0",
     "devDependencies": {
         "@arethetypeswrong/core": "0.18.2",
         "@aws-lambda-powertools/logger": "2.32.0",
