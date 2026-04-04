@@ -1,6 +1,7 @@
 import { type BeforeRequestHook, type BeforeRetryHook, isHTTPError } from 'ky';
-import { type Logger, rateLimitJitter } from './common';
+import { rateLimitJitter } from './common';
 import { BCRateLimitDelayTooLongError, BCRateLimitNoHeadersError, BCUrlTooLongError } from './errors';
+import type { Logger } from './logger';
 import { extractRateLimitHeaders } from './util';
 
 const MAX_URL_LENGTH = 2048;

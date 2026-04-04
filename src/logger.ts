@@ -1,4 +1,22 @@
-import { type ClientConfig, LOG_LEVELS, type Logger, type LogLevel, type PowertoolsLikeLogger } from './common';
+import type { ClientConfig } from './common';
+
+export interface Logger {
+    debug(data: Record<string, unknown>, message?: string): void;
+    info(data: Record<string, unknown>, message?: string): void;
+    warn(data: Record<string, unknown>, message?: string): void;
+    error(data: Record<string, unknown>, message?: string): void;
+}
+
+export type PowertoolsLikeLogger = {
+    debug(message: string, ...data: Record<string, unknown>[]): void;
+    info(message: string, ...data: Record<string, unknown>[]): void;
+    warn(message: string, ...data: Record<string, unknown>[]): void;
+    error(message: string, ...data: Record<string, unknown>[]): void;
+};
+
+export const LOG_LEVELS = ['debug', 'info', 'warn', 'error'] as const;
+
+export type LogLevel = (typeof LOG_LEVELS)[number];
 
 export const fromAwsPowertoolsLogger = (logger: PowertoolsLikeLogger): Logger => ({
     debug: (data, message) => logger.debug(message ?? '', data),

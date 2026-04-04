@@ -1,23 +1,8 @@
 import type { Options as KyOptions } from 'ky';
+import type { Logger, LogLevel } from './logger';
 import type { StandardSchemaV1 } from './standard-schema';
 
-export interface Logger {
-    debug(data: Record<string, unknown>, message?: string): void;
-    info(data: Record<string, unknown>, message?: string): void;
-    warn(data: Record<string, unknown>, message?: string): void;
-    error(data: Record<string, unknown>, message?: string): void;
-}
-
-export type PowertoolsLikeLogger = {
-    debug(message: string, ...data: Record<string, unknown>[]): void;
-    info(message: string, ...data: Record<string, unknown>[]): void;
-    warn(message: string, ...data: Record<string, unknown>[]): void;
-    error(message: string, ...data: Record<string, unknown>[]): void;
-};
-
-export const LOG_LEVELS = ['debug', 'info', 'warn', 'error'] as const;
-
-export type LogLevel = (typeof LOG_LEVELS)[number];
+export type { Logger, LogLevel };
 
 export type ConcurrencyOptions = {
     concurrency?: number;
