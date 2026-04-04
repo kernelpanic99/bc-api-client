@@ -22,7 +22,7 @@ jobs:
         run: mise x -- pnpm install --frozen-lockfile
 
       - name: Quality checks
-        run: mise x -- pnpm test && mise x -- pnpm lint && mise x -- pnpm typecheck
+        run: mise x -- pnpm qa
 
       - name: Build
         run: mise x -- pnpm build
