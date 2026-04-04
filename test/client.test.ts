@@ -287,7 +287,7 @@ describe('BigCommerceClient', () => {
             await expect(client.delete('/catalog/products/1')).resolves.toBeUndefined();
         });
 
-        it('Silently swallows 404 with JSON content-type (resource already gone)', async () => {
+        it('Silently swallows 404 (resource already gone)', async () => {
             const client = createClient(
                 new Response(JSON.stringify({ title: 'Not Found' }), {
                     status: 404,
@@ -298,7 +298,7 @@ describe('BigCommerceClient', () => {
             await expect(client.delete('/catalog/products/1')).resolves.toBeUndefined();
         });
 
-        it("Re-throws 404 without JSON content-type (typo'd path)", async () => {
+        it('Silently swallows 404 with plain text body', async () => {
             const client = createClient(
                 new Response('Route not found', {
                     status: 404,
@@ -306,10 +306,7 @@ describe('BigCommerceClient', () => {
                 }),
             );
 
-            const err = await client.delete('/catalog/prducts/1').catch((e) => e);
-
-            expect(err).toBeInstanceOf(BCApiError);
-            expect(err).toMatchObject({ context: { status: 404 } });
+            await expect(client.delete('/catalog/products/1')).resolves.toBeUndefined();
         });
 
         it('Re-throws non-404 HTTP errors', async () => {

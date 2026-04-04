@@ -137,13 +137,9 @@ export class BigCommerceClient {
 
             // Do not throw on delete for resources that are already gone.
             if (err instanceof BCApiError && err.context.status === 404) {
-                // A guard for typo'd paths. If path is invalid, the api will return plain text "Route not found".
-                // If the resource is genuinely missing, the api will return proper json error
-                if (err.context.headers[HEADERS.CONTENT_TYPE.toLowerCase()] === 'application/json') {
-                    this.logger?.warn({ err }, 'Attempted to delete the resource that is already gone');
+                this.logger?.warn({ err }, 'Attempted to delete the resource that is already gone');
 
-                    return;
-                }
+                return;
             }
 
             throw err;
