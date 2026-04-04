@@ -33,8 +33,8 @@ import {
     BCClientError,
     BCCredentialsError,
     BCPaginatedItemValidationError,
+    BCPaginatedOptionError,
     BCPaginatedResponseError,
-    BCPaginationOptionError,
     BCQueryValidationError,
     BCRequestBodyValidationError,
     BCResponseParseError,
@@ -357,7 +357,7 @@ export class BigCommerceClient {
 
     private validatePaginationOption(path: string, key: string, value: unknown): number {
         if (typeof value !== 'number' || value <= 0) {
-            throw new BCPaginationOptionError(path, value, key);
+            throw new BCPaginatedOptionError(path, value, key);
         }
 
         return value;

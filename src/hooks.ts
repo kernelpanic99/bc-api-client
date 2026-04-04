@@ -18,15 +18,15 @@ export const bcRateLimitRetry =
             const retryMeta = extractRateLimitHeaders(error.response.headers);
 
             if (!retryMeta) {
-                throw new BCRateLimitNoHeadersError(retryCount, request);
+                throw new BCRateLimitNoHeadersError(request, retryCount);
             }
 
             if (options.retry.maxRetryAfter && retryMeta.resetIn > options.retry.maxRetryAfter) {
                 throw new BCRateLimitDelayTooLongError(
+                    request,
+                    retryCount,
                     options.retry.maxRetryAfter,
                     retryMeta.resetIn,
-                    retryCount,
-                    request,
                 );
             }
 

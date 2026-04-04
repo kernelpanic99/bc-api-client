@@ -28,7 +28,7 @@ export abstract class BaseError<TContext extends ErrorContext = ErrorContext> ex
 }
 
 export class BCClientError extends BaseError<Record<string, string>> {
-    code = 'BC_GENERIC_ERROR';
+    code = 'BC_CLIENT_ERROR';
 
     constructor(message: string, context?: Record<string, string>, cause?: unknown) {
         super(message, context ?? {}, { cause });
@@ -64,7 +64,7 @@ export class BCRateLimitNoHeadersError extends BaseError<{
 }> {
     code = 'BC_RATE_LIMIT_NO_HEADERS';
 
-    constructor(attempts: number, request: KyRequest) {
+    constructor(request: KyRequest, attempts: number) {
         super('Rate limit reached but the X-Rate-Limit-* headers were not returned. Unable to retry', {
             url: request.url,
             method: request.method,
@@ -82,7 +82,7 @@ export class BCRateLimitDelayTooLongError extends BaseError<{
 }> {
     code = 'BC_RATE_LIMIT_DELAY_TOO_LONG';
 
-    constructor(maxDelay: number, delay: number, attempts: number, request: KyRequest) {
+    constructor(request: KyRequest, attempts: number, maxDelay: number, delay: number) {
         super('Rate limit reached, and the rate limit reset window is too high.', {
             url: request.url,
             method: request.method,
@@ -176,18 +176,18 @@ export class BCResponseParseError extends BaseError<{ method: string; path: stri
     }
 }
 
-export class BCPaginationOptionError extends BaseError<{ path: string; value: unknown }> {
-    code = 'BC_PAGINATION_OPTION_ERROR';
+export class BCPaginatedOptionError extends BaseError<{ path: string; option: string; value: unknown }> {
+    code = 'BC_PAGINATED_OPTION_ERROR';
 
     constructor(path: string, value: unknown, option: string) {
-        super(`The pagination option ${option} must be a positive number`, { path, value });
+        super('The pagination option must be a positive number', { path, option, value });
     }
 }
 
-export class BCPaginatedResponseError extends BaseError<{ path: string; data: unknown }> {
+export class BCPaginatedResponseError extends BaseError<{ path: string; data: unknown; reason: string }> {
     code = 'BC_PAGINATED_RESPONSE_ERROR';
 
-    constructor(path: string, data: unknown, message: string) {
-        super(message, { path, data });
+    constructor(path: string, data: unknown, reason: string) {
+        super('Paginated response structure is invalid', { path, data, reason });
     }
 }
