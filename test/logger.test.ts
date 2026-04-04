@@ -1,7 +1,7 @@
 import { Logger as AWSLogger } from '@aws-lambda-powertools/logger';
 import pino from 'pino';
-import type { Logger } from 'src/common';
-import { FallbackLogger, fromAwsPowertoolsLogger, initLogger } from 'src/logger';
+import type { Logger } from 'src/lib/common';
+import { FallbackLogger, fromAwsPowertoolsLogger, initLogger } from 'src/lib/logger';
 import { assertType, describe, expect, it, vi } from 'vitest';
 
 describe('Logger interface', () => {

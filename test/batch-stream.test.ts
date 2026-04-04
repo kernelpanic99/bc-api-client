@@ -1,6 +1,6 @@
 import { BigCommerceClient } from 'src';
 import { describe, expect, it, vi } from 'vitest';
-import { BCApiError } from '../src/errors';
+import { BCApiError } from '../src/lib/errors';
 import { VALID_CREDENTIALS } from './util';
 
 const bcClientStream = (responses: Response[]) => {

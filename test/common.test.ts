@@ -1,4 +1,4 @@
-import { rateLimitJitter } from 'src/common';
+import { rateLimitJitter } from 'src/lib/common';
 import { describe, expect, it } from 'vitest';
 
 describe('Default jitter', () => {

@@ -12,7 +12,7 @@ import {
     type Logger,
     MAX_CONCURRENCY,
     type ResolvedConcurrencyOptions,
-} from './common';
+} from './lib/common';
 import {
     BaseError,
     BCApiError,
@@ -27,10 +27,10 @@ import {
     BCResponseValidationError,
     type BCSchemaValidationError,
     BCTimeoutError,
-} from './errors';
-import { bcRateLimitRetry, validateUrlLength } from './hooks';
-import { initLogger } from './logger';
-import type { V3Resource } from './pagination';
+} from './lib/errors';
+import { bcRateLimitRetry, validateUrlLength } from './lib/hooks';
+import { initLogger } from './lib/logger';
+import type { V3Resource } from './lib/pagination';
 import {
     type ApiVersion,
     type BatchRequestOptions,
@@ -42,10 +42,10 @@ import {
     type Query,
     type RequestOptions,
     toUrlSearchParams,
-} from './request';
-import { Err, Ok, type Result } from './result';
-import type { StandardSchemaV1 } from './standard-schema';
-import { AsyncChannel, stripKeys } from './util';
+} from './lib/request';
+import { Err, Ok, type Result } from './lib/result';
+import type { StandardSchemaV1 } from './lib/standard-schema';
+import { AsyncChannel, stripKeys } from './lib/util';
 
 const LEADING_SLASHES = /^\/+/;
 export class BigCommerceClient {

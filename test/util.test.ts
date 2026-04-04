@@ -1,4 +1,4 @@
-import { extractRateLimitHeaders } from 'src/util';
+import { extractRateLimitHeaders } from 'src/lib/util';
 import { describe, expect, it } from 'vitest';
 
 const makeHeaders = (entries: Record<string, string>) => new Headers(entries);
