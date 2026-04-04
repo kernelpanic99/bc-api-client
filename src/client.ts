@@ -203,7 +203,7 @@ export class BigCommerceClient {
             chunkLength: limit,
             maxLength: MAX_URL_LENGTH,
             offset: fullUrl.length + keyOverhead,
-            separatorSize: 1,
+            separatorSize: encodeURIComponent(',').length,
         });
 
         const requests = chunks.map((chunk) =>

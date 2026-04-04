@@ -73,7 +73,7 @@ export const chunkStrLength = (
         }
 
         currentChunk.push(item);
-        currentStrLength += totalItemLength;
+        currentStrLength += itemLength + (currentChunk.length > 1 ? separatorSize : 0);
     }
 
     if (currentChunk.length > 0) {

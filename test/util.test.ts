@@ -86,11 +86,17 @@ describe('chunkStrLength', () => {
         });
 
         it('no separator counted for first item in each chunk', () => {
-            // With separatorSize 2, second item costs itemLen + 2
-            const result = chunkStrLength(['ab', 'cd', 'ef'], { maxLength: 4, separatorSize: 2 });
+            // separatorSize=2, maxLength=7
+            // 'ab'=2; 'cd'=2+2=4 → total 6 ≤ 7; 'ef'=2+2=4 → total 10 > 7 → new chunk
+            // First item of new chunk: 'ef' should cost 2 (no separator), NOT 2+2=4
+            // If the bug existed, 'ef' would be strLen=4 and 'gh' (4+4=8>7) would start a third chunk
+            // Correct: 'ef' strLen=2, 'gh' 2+2+2=6 ≤ 7 → fits in same chunk
+            const result = chunkStrLength(['ab', 'cd', 'ef', 'gh'], { maxLength: 7, separatorSize: 2 });
 
-            // 'ab'=2 fits; 'cd'=2+2=4 would total 6, too big → new chunk
-            expect(result).toEqual([['ab'], ['cd'], ['ef']]);
+            expect(result).toEqual([
+                ['ab', 'cd'],
+                ['ef', 'gh'],
+            ]);
         });
 
         it('packs multiple items when they fit', () => {
@@ -180,17 +186,19 @@ describe('chunkStrLength', () => {
 
             const skus = Array.from({ length: 300 }, (_, i) => `SKU-${String(i).padStart(5, '0')}`);
 
+            // separatorSize matches client.ts: URLSearchParams encodes ',' as '%2C' (3 chars)
             const chunks = chunkStrLength(skus.map(String), {
                 chunkLength: 250,
                 maxLength: 2048,
                 offset,
-                separatorSize: 1,
+                separatorSize: encodeURIComponent(',').length,
             });
 
-            // Every chunk must produce a URL within MAX_URL_LENGTH
+            // Every chunk must produce a URL within MAX_URL_LENGTH.
+            // URLSearchParams encodes commas as %2C (3 chars), so measure encoded length.
             for (const chunk of chunks) {
-                const chunkParam = chunk.join(',');
-                const totalLength = offset + chunkParam.length;
+                const encodedParam = chunk.map(encodeURIComponent).join('%2C');
+                const totalLength = offset + encodedParam.length;
 
                 expect(totalLength).toBeLessThanOrEqual(2048);
             }
