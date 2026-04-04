@@ -9,14 +9,17 @@ export type {
     ApiVersion,
     BatchRequestOptions,
     CollectOptions,
+    CountedCollectOptions,
     DeleteOptions,
     GetOptions,
     HttpMethod,
     PostOptions,
     PutOptions,
     Query,
+    QueryOptions,
     QueryValue,
     RequestOptions,
 } from './lib/request';
 export { req } from './lib/request';
 export * from './lib/result';
+export type { StandardSchemaV1 } from './lib/standard-schema';

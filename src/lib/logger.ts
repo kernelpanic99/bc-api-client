@@ -14,6 +14,7 @@ export type PowertoolsLikeLogger = {
     error(message: string, ...data: Record<string, unknown>[]): void;
 };
 
+/** @internal */
 export const LOG_LEVELS = ['debug', 'info', 'warn', 'error'] as const;
 
 export type LogLevel = (typeof LOG_LEVELS)[number];

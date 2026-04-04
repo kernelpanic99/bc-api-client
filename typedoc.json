@@ -11,5 +11,11 @@
     "propertiesFormat": "table",
     "typeDeclarationFormat": "table",
     "hideGroupHeadings": true,
-    "typeDeclarationVisibility": "compact"
+    "typeDeclarationVisibility": "compact",
+    "intentionallyNotExported": [
+        "src/lib/logger.ts:LOG_LEVELS",
+        "src/lib/request.ts:BaseKyRequest",
+        "src/lib/request.ts:QuerySchemaOptions",
+        "src/lib/request.ts:BodySchemaOptions"
+    ]
 }

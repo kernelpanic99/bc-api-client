@@ -24,7 +24,7 @@ Creates a new BigCommerceAuth instance for handling OAuth authentication
 
 | Parameter | Type | Description |
 | ------ | ------ | ------ |
-| `config` | `Config` | Configuration options for BigCommerce authentication |
+| `config` | [`BigCommerceAuthConfig`](../type-aliases/BigCommerceAuthConfig.md) | Configuration options for BigCommerce authentication |
 
 #### Returns
 
@@ -48,7 +48,7 @@ Exchanges an OAuth authorization code for an access token.
 
 | Parameter | Type | Description |
 | ------ | ------ | ------ |
-| `data` | `string` \| `AuthQuery` \| `URLSearchParams` | The auth callback payload: a raw query string, `URLSearchParams`, or a pre-parsed object with `code`, `scope`, and `context`. |
+| `data` | `string` \| [`BigCommerceAuthQuery`](../type-aliases/BigCommerceAuthQuery.md) \| `URLSearchParams` | The auth callback payload: a raw query string, `URLSearchParams`, or a pre-parsed object with `code`, `scope`, and `context`. |
 
 #### Returns
 

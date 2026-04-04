@@ -8,13 +8,13 @@
 
 > **BatchRequestOptions**\<`TBody`, `TRes`, `TQuery`\> = `object` & [`RequestOptions`](RequestOptions.md)\<`TBody`, `TRes`, `TQuery`\>
 
-Defined in: lib/request.ts:64
+Defined in: lib/request.ts:67
 
 ## Type Declaration
 
 | Name | Type | Defined in |
 | ------ | ------ | ------ |
-| `path` | `string` | lib/request.ts:65 |
+| `path` | `string` | lib/request.ts:68 |
 
 ## Type Parameters
 

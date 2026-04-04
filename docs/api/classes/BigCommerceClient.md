@@ -43,7 +43,7 @@ Creates a new BigCommerceClient.
 
 > **batchSafe**\<`TBody`, `TRes`, `TQuery`\>(`requests`, `options?`): `Promise`\<[`Result`](../type-aliases/Result.md)\<`TRes`, [`BaseError`](BaseError.md)\<[`ErrorContext`](../type-aliases/ErrorContext.md)\>\>[]\>
 
-Defined in: client.ts:638
+Defined in: client.ts:626
 
 Executes multiple requests concurrently and returns all results as [Result](../type-aliases/Result.md) values,
 never throwing. Errors from individual requests are captured as `Err` results.
@@ -77,7 +77,7 @@ Results in the order requests complete (not necessarily input order).
 
 > **batchStream**\<`TBody`, `TRes`, `TQuery`\>(`requests`, `options?`): `AsyncGenerator`\<[`Result`](../type-aliases/Result.md)\<`TRes`, [`BaseError`](BaseError.md)\<[`ErrorContext`](../type-aliases/ErrorContext.md)\>\>\>
 
-Defined in: client.ts:788
+Defined in: client.ts:773
 
 Executes multiple requests with configurable concurrency, yielding each result as a
 [Result](../type-aliases/Result.md) as it completes. Errors from individual requests are yielded as `Err`
@@ -111,7 +111,7 @@ Use [batchSafe](#batchsafe) to collect all results into an array.
 
 > **collect**\<`TItem`, `TQuery`\>(`path`, `options?`): `Promise`\<`TItem`[]\>
 
-Defined in: client.ts:465
+Defined in: client.ts:455
 
 Fetches all pages from a v3 paginated endpoint and collects items into an array.
 
@@ -129,7 +129,7 @@ Use [stream](#stream) to process items lazily without buffering the full result 
 | Parameter | Type | Description |
 | ------ | ------ | ------ |
 | `path` | `string` | API path relative to the store's versioned base URL. |
-| `options?` | [`CollectOptions`](../type-aliases/CollectOptions.md)\<`TItem`, `TQuery`\> | Ky options are forwarded to page requests. |
+| `options?` | [`CollectOptions`](../type-aliases/CollectOptions.md)\<`TItem`, `TQuery`\> | Ky options are forwarded to page requests. - `query` – Query parameters. `query.limit` controls page size (default 250, must be > 0). `query.page` sets the starting page (default 1, must be > 0). - `querySchema` – Schema to validate `query`. Requires `query` to be provided. - `itemSchema` – Schema to validate each returned item. - `concurrency` – Max concurrent page requests after the first. Must be 1–1000. `false` for sequential. Defaults to `config.concurrency`, or 10 if not set on the client. - `rateLimitBackoff` – Concurrency cap on 429 responses. Defaults to `config.rateLimitBackoff`, or 1 if not set on the client. - `backoff` – Divisor (or function) applied to concurrency on error responses. Defaults to `config.backoff`, or 2 if not set on the client. - `backoffRecover` – Amount (or function) added to concurrency per successful response. Defaults to `config.backoffRecover`, or 1 if not set on the client. |
 
 #### Returns
 
@@ -188,7 +188,7 @@ All items across all pages.
 
 > **collectCount**\<`TItem`, `TQuery`\>(`path`, `options?`): `Promise`\<`TItem`[]\>
 
-Defined in: client.ts:603
+Defined in: client.ts:591
 
 Fetches items from a v2 paginated endpoint using a known total item `count` and collects
 them into an array.
@@ -208,7 +208,7 @@ to process items lazily.
 | Parameter | Type | Description |
 | ------ | ------ | ------ |
 | `path` | `string` | API path relative to the store's versioned base URL. |
-| `options?` | `CountedCollectOptions`\<`TItem`, `TQuery`\> | Ky options are forwarded to page requests. |
+| `options?` | [`CountedCollectOptions`](../type-aliases/CountedCollectOptions.md)\<`TItem`, `TQuery`\> | Ky options are forwarded to page requests. - `count` – Total items expected. Used to compute page range as `ceil(count / limit) - page + 1` requests. Must be > 0. Defaults to 2000. - `query` – Query parameters. `query.limit` controls page size (default 250, must be > 0). `query.page` sets the starting page (default 1, must be > 0). - `querySchema` – Schema to validate `query`. Requires `query` to be provided. - `itemSchema` – Schema to validate each returned item. - `concurrency` – Max concurrent page requests. Must be 1–1000. `false` for sequential. Defaults to `config.concurrency`, or 10 if not set on the client. - `rateLimitBackoff` – Concurrency cap on 429 responses. Defaults to `config.rateLimitBackoff`, or 1 if not set on the client. - `backoff` – Divisor (or function) applied to concurrency on error responses. Defaults to `config.backoff`, or 2 if not set on the client. - `backoffRecover` – Amount (or function) added to concurrency per successful response. Defaults to `config.backoffRecover`, or 1 if not set on the client. |
 
 #### Returns
 
@@ -264,7 +264,7 @@ All items across the computed page range.
 
 > **delete**\<`TRes`, `TQuery`\>(`path`, `options?`): `Promise`\<`void`\>
 
-Defined in: client.ts:250
+Defined in: client.ts:244
 
 Sends a DELETE request to the given path.
 
@@ -282,7 +282,7 @@ Silently suppresses 404 responses (resource already gone) and empty response bod
 | Parameter | Type | Description |
 | ------ | ------ | ------ |
 | `path` | `string` | API path relative to the store's versioned base URL. |
-| `options?` | [`DeleteOptions`](../type-aliases/DeleteOptions.md)\<`TQuery`\> | Ky options are forwarded to the underlying request. |
+| `options?` | [`DeleteOptions`](../type-aliases/DeleteOptions.md)\<`TQuery`\> | Ky options are forwarded to the underlying request. - `version` – API version inserted into the URL. Defaults to `'v3'`. - `query` – Query parameters to append to the URL. - `querySchema` – Schema to validate `query` before sending. Requires `query` to be provided. |
 
 #### Returns
 
@@ -327,7 +327,7 @@ Silently suppresses 404 responses (resource already gone) and empty response bod
 
 > **get**\<`TRes`, `TQuery`\>(`path`, `options?`): `Promise`\<`TRes`\>
 
-Defined in: client.ts:145
+Defined in: client.ts:144
 
 Sends a GET request to the given path.
 
@@ -343,7 +343,7 @@ Sends a GET request to the given path.
 | Parameter | Type | Description |
 | ------ | ------ | ------ |
 | `path` | `string` | API path relative to the store's versioned base URL (e.g. `catalog/products`). |
-| `options?` | [`GetOptions`](../type-aliases/GetOptions.md)\<`TRes`, `TQuery`\> | Ky options are forwarded to the underlying request. |
+| `options?` | [`GetOptions`](../type-aliases/GetOptions.md)\<`TRes`, `TQuery`\> | Ky options are forwarded to the underlying request. - `version` – API version inserted into the URL. Defaults to `'v3'`. - `query` – Query parameters to append to the URL. - `querySchema` – Schema to validate `query` before sending. Requires `query` to be provided. - `responseSchema` – Schema to validate the parsed response body. |
 
 #### Returns
 
@@ -394,7 +394,7 @@ Parsed and optionally validated response body.
 
 > **post**\<`TRes`, `TBody`, `TQuery`\>(`path`, `options?`): `Promise`\<`TRes`\>
 
-Defined in: client.ts:180
+Defined in: client.ts:177
 
 Sends a POST request to the given path.
 
@@ -411,7 +411,7 @@ Sends a POST request to the given path.
 | Parameter | Type | Description |
 | ------ | ------ | ------ |
 | `path` | `string` | API path relative to the store's versioned base URL. |
-| `options?` | [`PostOptions`](../type-aliases/PostOptions.md)\<`TBody`, `TRes`, `TQuery`\> | Ky options are forwarded to the underlying request. |
+| `options?` | [`PostOptions`](../type-aliases/PostOptions.md)\<`TBody`, `TRes`, `TQuery`\> | Ky options are forwarded to the underlying request. - `version` – API version inserted into the URL. Defaults to `'v3'`. - `body` – Request body, serialized as JSON. - `bodySchema` – Schema to validate `body` before sending. Requires `body` to be provided. - `query` – Query parameters to append to the URL. - `querySchema` – Schema to validate `query` before sending. Requires `query` to be provided. - `responseSchema` – Schema to validate the parsed response body. |
 
 #### Returns
 
@@ -466,7 +466,7 @@ Parsed and optionally validated response body.
 
 > **put**\<`TRes`, `TBody`, `TQuery`\>(`path`, `options?`): `Promise`\<`TRes`\>
 
-Defined in: client.ts:218
+Defined in: client.ts:213
 
 Sends a PUT request to the given path.
 
@@ -483,7 +483,7 @@ Sends a PUT request to the given path.
 | Parameter | Type | Description |
 | ------ | ------ | ------ |
 | `path` | `string` | API path relative to the store's versioned base URL. |
-| `options?` | [`PutOptions`](../type-aliases/PutOptions.md)\<`TBody`, `TRes`, `TQuery`\> | Ky options are forwarded to the underlying request. |
+| `options?` | [`PutOptions`](../type-aliases/PutOptions.md)\<`TBody`, `TRes`, `TQuery`\> | Ky options are forwarded to the underlying request. - `version` – API version inserted into the URL. Defaults to `'v3'`. - `body` – Request body, serialized as JSON. - `bodySchema` – Schema to validate `body` before sending. Requires `body` to be provided. - `query` – Query parameters to append to the URL. - `querySchema` – Schema to validate `query` before sending. Requires `query` to be provided. - `responseSchema` – Schema to validate the parsed response body. |
 
 #### Returns
 
@@ -538,7 +538,7 @@ Parsed and optionally validated response body.
 
 > **query**\<`TItem`, `TQuery`\>(`path`, `options`): `Promise`\<`TItem`[]\>
 
-Defined in: client.ts:313
+Defined in: client.ts:306
 
 Fetches items from a v3 paginated endpoint by splitting `values` across multiple requests
 using the given `key` query param, chunking to stay within URL length limits.
@@ -557,7 +557,7 @@ Collects all results into an array. Use [queryStream](#querystream) to process i
 | Parameter | Type | Description |
 | ------ | ------ | ------ |
 | `path` | `string` | API path relative to the store's versioned base URL. |
-| `options` | `QueryOptions`\<`TItem`, `TQuery`\> | - |
+| `options` | [`QueryOptions`](../type-aliases/QueryOptions.md)\<`TItem`, `TQuery`\> | Query options: - `key` – Query parameter name used for value filtering (e.g. `'id:in'`). - `values` – Values to filter by. Automatically chunked to stay within URL length limits. - `query` – Additional query parameters. `query.limit` controls page size (default 250, must be > 0). If `options.key` is present in `query` it will be ignored. - `querySchema` – Schema to validate `query`. Requires `query` to be provided. - `itemSchema` – Schema to validate each returned item. - `concurrency` – Max concurrent chunk requests. Must be 1–1000. `false` for sequential. Defaults to `config.concurrency`, or 10 if not set on the client. - `rateLimitBackoff` – Concurrency cap on 429 responses. Defaults to `config.rateLimitBackoff`, or 1 if not set on the client. - `backoff` – Divisor (or function) applied to concurrency on error responses. Defaults to `config.backoff`, or 2 if not set on the client. - `backoffRecover` – Amount (or function) added to concurrency per successful response. Defaults to `config.backoffRecover`, or 1 if not set on the client. |
 
 #### Returns
 
@@ -616,7 +616,7 @@ All matching items across all chunked requests.
 
 > **queryStream**\<`TItem`, `TQuery`\>(`path`, `options`): `AsyncGenerator`\<[`Result`](../type-aliases/Result.md)\<`TItem`, [`BaseError`](BaseError.md)\<[`ErrorContext`](../type-aliases/ErrorContext.md)\>\>\>
 
-Defined in: client.ts:356
+Defined in: client.ts:348
 
 Streaming variant of [query](#query). Yields each item individually as results arrive,
 splitting `values` into URL-length-safe chunks across concurrent requests.
@@ -635,7 +635,7 @@ Each yielded value is a [Result](../type-aliases/Result.md) — check `err` befo
 | Parameter | Type | Description |
 | ------ | ------ | ------ |
 | `path` | `string` | API path relative to the store's versioned base URL. |
-| `options` | `QueryOptions`\<`TItem`, `TQuery`\> | - |
+| `options` | [`QueryOptions`](../type-aliases/QueryOptions.md)\<`TItem`, `TQuery`\> | Query options: - `key` – Query parameter name used for value filtering (e.g. `'id:in'`). - `values` – Values to filter by. Automatically chunked to stay within URL length limits. - `query` – Additional query parameters. `query.limit` controls page size (default 250, must be > 0). If `options.key` is present in `query` it will be ignored. - `querySchema` – Schema to validate `query`. Requires `query` to be provided. - `itemSchema` – Schema to validate each returned item. - `concurrency` – Max concurrent chunk requests. Must be 1–1000. `false` for sequential. Defaults to `config.concurrency`, or 10 if not set on the client. - `rateLimitBackoff` – Concurrency cap on 429 responses. Defaults to `config.rateLimitBackoff`, or 1 if not set on the client. - `backoff` – Divisor (or function) applied to concurrency on error responses. Defaults to `config.backoff`, or 2 if not set on the client. - `backoffRecover` – Amount (or function) added to concurrency per successful response. Defaults to `config.backoffRecover`, or 1 if not set on the client. |
 
 #### Returns
 
@@ -655,7 +655,7 @@ Each yielded value is a [Result](../type-aliases/Result.md) — check `err` befo
 
 > **stream**\<`TItem`, `TQuery`\>(`path`, `options?`): `AsyncGenerator`\<[`Result`](../type-aliases/Result.md)\<`TItem`, [`BaseError`](BaseError.md)\<[`ErrorContext`](../type-aliases/ErrorContext.md)\>\>\>
 
-Defined in: client.ts:679
+Defined in: client.ts:664
 
 Streams all items from a v3 paginated endpoint, fetching the first page sequentially
 and remaining pages concurrently via [batchStream](#batchstream).
@@ -675,7 +675,7 @@ Each yielded value is a [Result](../type-aliases/Result.md) — check `err` befo
 | Parameter | Type | Description |
 | ------ | ------ | ------ |
 | `path` | `string` | API path relative to the store's versioned base URL. |
-| `options?` | [`CollectOptions`](../type-aliases/CollectOptions.md)\<`TItem`, `TQuery`\> | Ky options are forwarded to page requests. |
+| `options?` | [`CollectOptions`](../type-aliases/CollectOptions.md)\<`TItem`, `TQuery`\> | Ky options are forwarded to page requests. - `query` – Query parameters. `query.limit` controls page size (default 250, must be > 0). `query.page` sets the starting page (default 1, must be > 0). If the API enforces a different limit, the actual `per_page` from the first response is used for subsequent pages. - `querySchema` – Schema to validate `query`. Requires `query` to be provided. - `itemSchema` – Schema to validate each returned item. - `concurrency` – Max concurrent page requests after the first. Must be 1–1000. `false` for sequential. Defaults to `config.concurrency`, or 10 if not set on the client. - `rateLimitBackoff` – Concurrency cap on 429 responses. Defaults to `config.rateLimitBackoff`, or 1 if not set on the client. - `backoff` – Divisor (or function) applied to concurrency on error responses. Defaults to `config.backoff`, or 2 if not set on the client. - `backoffRecover` – Amount (or function) added to concurrency per successful response. Defaults to `config.backoffRecover`, or 1 if not set on the client. |
 
 #### Returns
 
@@ -695,7 +695,7 @@ Each yielded value is a [Result](../type-aliases/Result.md) — check `err` befo
 
 > **streamCount**\<`TItem`, `TQuery`\>(`path`, `options?`): `AsyncGenerator`\<[`Result`](../type-aliases/Result.md)\<`TItem`, [`BaseError`](BaseError.md)\<[`ErrorContext`](../type-aliases/ErrorContext.md)\>\>\>
 
-Defined in: client.ts:510
+Defined in: client.ts:499
 
 Streams items from a v2 paginated endpoint using a known total item `count`.
 
@@ -715,7 +715,7 @@ collect all results into an array.
 | Parameter | Type | Description |
 | ------ | ------ | ------ |
 | `path` | `string` | API path relative to the store's versioned base URL. |
-| `options?` | `CountedCollectOptions`\<`TItem`, `TQuery`\> | Ky options are forwarded to page requests. |
+| `options?` | [`CountedCollectOptions`](../type-aliases/CountedCollectOptions.md)\<`TItem`, `TQuery`\> | Ky options are forwarded to page requests. - `count` – Total items expected. Used to compute page range as `ceil(count / limit) - page + 1` requests. Must be > 0. Defaults to 2000. - `query` – Query parameters. `query.limit` controls page size (default 250, must be > 0). `query.page` sets the starting page (default 1, must be > 0). - `querySchema` – Schema to validate `query`. Requires `query` to be provided. - `itemSchema` – Schema to validate each returned item. - `concurrency` – Max concurrent page requests. Must be 1–1000. `false` for sequential. Defaults to `config.concurrency`, or 10 if not set on the client. - `rateLimitBackoff` – Concurrency cap on 429 responses. Defaults to `config.rateLimitBackoff`, or 1 if not set on the client. - `backoff` – Divisor (or function) applied to concurrency on error responses. Defaults to `config.backoff`, or 2 if not set on the client. - `backoffRecover` – Amount (or function) added to concurrency per successful response. Defaults to `config.backoffRecover`, or 1 if not set on the client. |
 
 #### Returns
 

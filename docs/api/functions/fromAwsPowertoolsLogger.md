@@ -8,7 +8,7 @@
 
 > **fromAwsPowertoolsLogger**(`logger`): [`Logger`](../interfaces/Logger.md)
 
-Defined in: lib/logger.ts:31
+Defined in: lib/logger.ts:32
 
 Adapts an AWS Lambda Powertools logger to the [Logger](../interfaces/Logger.md) interface expected by
 [BigCommerceClient](../classes/BigCommerceClient.md) and [BigCommerceAuth](../classes/BigCommerceAuth.md).

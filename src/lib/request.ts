@@ -28,15 +28,18 @@ export const toUrlSearchParams = (query?: Query): URLSearchParams | undefined =>
 
 export type HttpMethod = 'POST' | 'GET' | 'PUT' | 'DELETE';
 
+/** @internal */
 type BaseKyRequest = Omit<
     KyOptions,
     'json' | 'method' | 'searchQueryParams' | 'body' | 'throwHttpErrors' | 'parseJson'
 >;
 
+/** @internal */
 type QuerySchemaOptions<TQuery extends Query> =
     | { query: TQuery; querySchema: StandardSchemaV1<TQuery> }
     | { query?: TQuery; querySchema?: never };
 
+/** @internal */
 type BodySchemaOptions<TBody> =
     | { body: TBody; bodySchema: StandardSchemaV1<TBody> }
     | { body?: TBody; bodySchema?: never };

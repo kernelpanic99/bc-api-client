@@ -8,7 +8,7 @@
 
 > **DeleteOptions**\<`TQuery`\> = `Omit`\<[`RequestOptions`](RequestOptions.md)\<`never`, `never`, `TQuery`\>, `"body"` \| `"bodySchema"` \| `"method"` \| `"responseSchema"`\>
 
-Defined in: lib/request.ts:59
+Defined in: lib/request.ts:62
 
 ## Type Parameters
 

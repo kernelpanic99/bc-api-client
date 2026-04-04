@@ -13,7 +13,7 @@ validation and the schema `error` result. Use specific subclasses for `instanceo
 
 ## Extends
 
-- [`BaseError`](BaseError.md)\<\{ `data`: `unknown`; `error`: `StandardSchemaV1.FailureResult`; `method`: `string`; `path`: `string`; \}\>
+- [`BaseError`](BaseError.md)\<\{ `data`: `unknown`; `error`: [`FailureResult`](../bc-api-client/namespaces/StandardSchemaV1/interfaces/FailureResult.md); `method`: `string`; `path`: `string`; \}\>
 
 ## Extended by
 
@@ -38,7 +38,7 @@ Defined in: lib/errors.ts:125
 | `method` | `string` |
 | `path` | `string` |
 | `data` | `unknown` |
-| `error` | `FailureResult` |
+| `error` | [`FailureResult`](../bc-api-client/namespaces/StandardSchemaV1/interfaces/FailureResult.md) |
 
 #### Returns
 
@@ -55,6 +55,6 @@ Defined in: lib/errors.ts:125
 | <a id="code"></a> `code` | `abstract` | `string` | Machine-readable error code. Unique per subclass. | [`BaseError`](BaseError.md).[`code`](BaseError.md#code) | lib/errors.ts:14 |
 | <a id="context"></a> `context` | `readonly` | `object` | - | [`BaseError`](BaseError.md).[`context`](BaseError.md#context) | lib/errors.ts:18 |
 | `context.data` | `public` | `unknown` | - | - | lib/errors.ts:122 |
-| `context.error` | `public` | `FailureResult` | - | - | lib/errors.ts:123 |
+| `context.error` | `public` | [`FailureResult`](../bc-api-client/namespaces/StandardSchemaV1/interfaces/FailureResult.md) | - | - | lib/errors.ts:123 |
 | `context.method` | `public` | `string` | - | - | lib/errors.ts:120 |
 | `context.path` | `public` | `string` | - | - | lib/errors.ts:121 |

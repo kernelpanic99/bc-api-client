@@ -6,7 +6,7 @@
 
 # Class: FallbackLogger
 
-Defined in: lib/logger.ts:49
+Defined in: lib/logger.ts:50
 
 Console-based [Logger](../interfaces/Logger.md) that filters messages below a minimum level.
 
@@ -29,7 +29,7 @@ new BigCommerceClient({ ..., logger: new FallbackLogger('debug') });
 
 > **new FallbackLogger**(`level`): `FallbackLogger`
 
-Defined in: lib/logger.ts:53
+Defined in: lib/logger.ts:54
 
 #### Parameters
 
@@ -45,7 +45,7 @@ Defined in: lib/logger.ts:53
 
 | Property | Modifier | Type | Description | Defined in |
 | ------ | ------ | ------ | ------ | ------ |
-| <a id="level"></a> `level` | `readonly` | `"debug"` \| `"info"` \| `"warn"` \| `"error"` | Minimum level to output. Messages below this level are silently dropped. | lib/logger.ts:53 |
+| <a id="level"></a> `level` | `readonly` | `"debug"` \| `"info"` \| `"warn"` \| `"error"` | Minimum level to output. Messages below this level are silently dropped. | lib/logger.ts:54 |
 
 ## Methods
 
@@ -53,7 +53,7 @@ Defined in: lib/logger.ts:53
 
 > **debug**(`data`, `message?`): `void`
 
-Defined in: lib/logger.ts:55
+Defined in: lib/logger.ts:56
 
 #### Parameters
 
@@ -76,7 +76,7 @@ Defined in: lib/logger.ts:55
 
 > **error**(`data`, `message?`): `void`
 
-Defined in: lib/logger.ts:67
+Defined in: lib/logger.ts:68
 
 #### Parameters
 
@@ -99,7 +99,7 @@ Defined in: lib/logger.ts:67
 
 > **info**(`data`, `message?`): `void`
 
-Defined in: lib/logger.ts:59
+Defined in: lib/logger.ts:60
 
 #### Parameters
 
@@ -122,7 +122,7 @@ Defined in: lib/logger.ts:59
 
 > **warn**(`data`, `message?`): `void`
 
-Defined in: lib/logger.ts:63
+Defined in: lib/logger.ts:64
 
 #### Parameters
 

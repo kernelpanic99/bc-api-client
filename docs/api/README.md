@@ -4,6 +4,10 @@
 
 # bc-api-client
 
+## Namespaces
+
+- [StandardSchemaV1](bc-api-client/namespaces/StandardSchemaV1/README.md)
+
 ## Classes
 
 - [BaseError](classes/BaseError.md)
@@ -34,14 +38,18 @@
 
 - [ClientConfig](interfaces/ClientConfig.md)
 - [Logger](interfaces/Logger.md)
+- [StandardSchemaV1](interfaces/StandardSchemaV1.md)
 
 ## Type Aliases
 
 - [ApiVersion](type-aliases/ApiVersion.md)
 - [BatchRequestOptions](type-aliases/BatchRequestOptions.md)
+- [BigCommerceAuthConfig](type-aliases/BigCommerceAuthConfig.md)
+- [BigCommerceAuthQuery](type-aliases/BigCommerceAuthQuery.md)
 - [Claims](type-aliases/Claims.md)
 - [CollectOptions](type-aliases/CollectOptions.md)
 - [ConcurrencyOptions](type-aliases/ConcurrencyOptions.md)
+- [CountedCollectOptions](type-aliases/CountedCollectOptions.md)
 - [DeleteOptions](type-aliases/DeleteOptions.md)
 - [Err](type-aliases/Err.md)
 - [ErrorContext](type-aliases/ErrorContext.md)
@@ -54,6 +62,7 @@
 - [PowertoolsLikeLogger](type-aliases/PowertoolsLikeLogger.md)
 - [PutOptions](type-aliases/PutOptions.md)
 - [Query](type-aliases/Query.md)
+- [QueryOptions](type-aliases/QueryOptions.md)
 - [QueryValue](type-aliases/QueryValue.md)
 - [RequestOptions](type-aliases/RequestOptions.md)
 - [Result](type-aliases/Result.md)

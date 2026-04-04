@@ -30,7 +30,7 @@ Defined in: lib/errors.ts:125
 | `method` | `string` |
 | `path` | `string` |
 | `data` | `unknown` |
-| `error` | `FailureResult` |
+| `error` | [`FailureResult`](../bc-api-client/namespaces/StandardSchemaV1/interfaces/FailureResult.md) |
 
 #### Returns
 
@@ -47,6 +47,6 @@ Defined in: lib/errors.ts:125
 | <a id="code"></a> `code` | `public` | `string` | `'BC_REQUEST_BODY_VALIDATION_FAILED'` | Machine-readable error code. Unique per subclass. | [`BCSchemaValidationError`](BCSchemaValidationError.md).[`code`](BCSchemaValidationError.md#code) | - | lib/errors.ts:137 |
 | <a id="context"></a> `context` | `readonly` | `object` | `undefined` | - | - | [`BCSchemaValidationError`](BCSchemaValidationError.md).[`context`](BCSchemaValidationError.md#context) | lib/errors.ts:18 |
 | `context.data` | `public` | `unknown` | `undefined` | - | - | - | lib/errors.ts:122 |
-| `context.error` | `public` | `FailureResult` | `undefined` | - | - | - | lib/errors.ts:123 |
+| `context.error` | `public` | [`FailureResult`](../bc-api-client/namespaces/StandardSchemaV1/interfaces/FailureResult.md) | `undefined` | - | - | - | lib/errors.ts:123 |
 | `context.method` | `public` | `string` | `undefined` | - | - | - | lib/errors.ts:120 |
 | `context.path` | `public` | `string` | `undefined` | - | - | - | lib/errors.ts:121 |

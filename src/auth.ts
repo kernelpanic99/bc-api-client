@@ -15,7 +15,7 @@ import { initLogger, type Logger, type LogLevel } from './lib/logger';
 /**
  * Configuration options for BigCommerce authentication
  */
-type Config = {
+export type BigCommerceAuthConfig = {
     /** The OAuth client ID from BigCommerce */
     clientId: string;
     /** The OAuth client secret from BigCommerce */
@@ -35,7 +35,7 @@ const ISSUER = 'bc';
 /**
  * Query parameters received from BigCommerce auth callback
  */
-type AuthQuery = {
+export type BigCommerceAuthQuery = {
     /** The authorization code from BigCommerce */
     code: string;
     /** The granted OAuth scopes */
@@ -139,7 +139,7 @@ export class BigCommerceAuth {
      * @param config.logger - Optional logger instance for debugging and error tracking
      * @throws {BCAuthInvalidRedirectUriError} If the redirect URI is invalid
      */
-    constructor(private readonly config: Config) {
+    constructor(private readonly config: BigCommerceAuthConfig) {
         try {
             new URL(this.config.redirectUri);
         } catch (error) {
@@ -171,7 +171,7 @@ export class BigCommerceAuth {
      * @throws {@link BCTimeoutError} if the token request times out.
      * @throws {@link BCClientError} on any other error.
      */
-    async requestToken(data: string | AuthQuery | URLSearchParams): Promise<TokenResponse> {
+    async requestToken(data: string | BigCommerceAuthQuery | URLSearchParams): Promise<TokenResponse> {
         const query = typeof data === 'string' || data instanceof URLSearchParams ? this.parseQueryString(data) : data;
 
         this.validateScopes(query.scope);
@@ -266,7 +266,7 @@ export class BigCommerceAuth {
      * @returns The parsed auth query parameters
      * @throws {BCAuthMissingParamError} If required parameters are missing
      */
-    private parseQueryString(queryString: string | URLSearchParams): AuthQuery {
+    private parseQueryString(queryString: string | URLSearchParams): BigCommerceAuthQuery {
         const params = typeof queryString === 'string' ? new URLSearchParams(queryString) : queryString;
 
         const code = params.get('code');
