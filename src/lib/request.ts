@@ -28,7 +28,10 @@ export const toUrlSearchParams = (query?: Query): URLSearchParams | undefined =>
 
 export type HttpMethod = 'POST' | 'GET' | 'PUT' | 'DELETE';
 
-type BaseKyRequest = Omit<KyOptions, 'json' | 'method' | 'searchQueryParams' | 'body'>;
+type BaseKyRequest = Omit<
+    KyOptions,
+    'json' | 'method' | 'searchQueryParams' | 'body' | 'throwHttpErrors' | 'parseJson'
+>;
 
 type QuerySchemaOptions<TQuery extends Query> =
     | { query: TQuery; querySchema: StandardSchemaV1<TQuery> }

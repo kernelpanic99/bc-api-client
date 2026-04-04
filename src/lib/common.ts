@@ -20,7 +20,9 @@ export const MAX_URL_LENGTH = 2048;
 export const DEFAULT_BLIND_COUNT = 2000;
 export const LEADING_SLASHES = /^\/+/;
 
-export interface ClientConfig extends KyOptions, ConcurrencyOptions {
+export interface ClientConfig
+    extends Omit<KyOptions, 'throwHttpErrors' | 'parseJson' | 'method' | 'body' | 'json' | 'searchParams'>,
+        ConcurrencyOptions {
     storeHash: string;
     accessToken: string;
     logger?: Logger | LogLevel | boolean;
@@ -51,6 +53,7 @@ export type RateLimitMeta = {
 
 export const BASE_KY_CONFIG = {
     prefixUrl: 'https://api.bigcommerce.com',
+    throwHttpErrors: true,
     // Some BC endpoints may take a while.
     // For example /catalog/product/options* endpoints may fully
     // recreate all variants in some cases
