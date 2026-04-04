@@ -17,6 +17,7 @@ export const DEFAULT_BACKOFF_RATE = 2;
 export const DEFAULT_BACKOFF_RECOVER = 1;
 export const DEFAULT_LIMIT = 250;
 export const MAX_URL_LENGTH = 2048;
+export const DEFAULT_BLIND_COUNT = 2000;
 
 export interface ClientConfig extends KyOptions, ConcurrencyOptions {
     storeHash: string;

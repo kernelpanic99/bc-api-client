@@ -83,6 +83,10 @@ export type CollectOptions<TItem, TQuery extends Query> = ConcurrencyOptions &
         itemSchema?: StandardSchemaV1<TItem>;
     };
 
+export type CountedCollectOptions<TItem, TQuery extends Query> = CollectOptions<TItem, TQuery> & {
+    count: number;
+};
+
 export type QueryOptions<TItem, TQuery extends Query> = CollectOptions<TItem, TQuery> & {
     key: string;
     values: (string | number)[];

@@ -6,6 +6,7 @@ import {
     type ConcurrencyOptions,
     DEFAULT_BACKOFF_RATE,
     DEFAULT_BACKOFF_RECOVER,
+    DEFAULT_BLIND_COUNT,
     DEFAULT_CONCURRENCY,
     DEFAULT_LIMIT,
     DEFAULT_RATE_LIMIT_BACKOFF,
@@ -37,6 +38,7 @@ import {
     type ApiVersion,
     type BatchRequestOptions,
     type CollectOptions,
+    type CountedCollectOptions,
     type DeleteOptions,
     type GetOptions,
     type PostOptions,
@@ -240,6 +242,64 @@ export class BigCommerceClient {
         const items: TItem[] = [];
 
         for await (const { data, err } of this.stream(path, options)) {
+            if (err) {
+                throw err;
+            } else {
+                items.push(data);
+            }
+        }
+
+        return items;
+    }
+
+    async *streamCount<TItem, TQuery extends Query>(
+        path: string,
+        options?: CountedCollectOptions<TItem, TQuery>,
+    ): AsyncGenerator<Result<TItem, BaseError>> {
+        const count = this.validatePaginationOption(path, 'count', options?.count ?? DEFAULT_BLIND_COUNT);
+        const page = this.validatePaginationOption(path, 'page', options?.query?.page ?? 1);
+        const limit = this.validatePaginationOption(path, 'limit', options?.query?.limit ?? DEFAULT_LIMIT);
+
+        const requests = Array.from({ length: Math.ceil(count / limit) - page + 1 }, (_, i) => i + page).map(
+            (page) => ({
+                method: 'GET' as const,
+                path,
+                query: {
+                    ...options?.query,
+                    limit,
+                    page,
+                },
+            }),
+        );
+
+        for await (const { err, data } of this.batchStream(requests, options)) {
+            if (err) {
+                yield Err(err);
+            } else {
+                if (!Array.isArray(data)) {
+                    yield Err(
+                        new BCClientError('Received non-array response from paginated endpoint', {
+                            path,
+                            count: count.toString(),
+                            limit: limit.toString(),
+                        }),
+                    );
+                } else {
+                    for (const item of data) {
+                        yield this.validatePaginatedItem(path, item, options?.itemSchema);
+                    }
+                }
+            }
+        }
+    }
+
+    async collectCount<TItem, TQuery extends Query>(
+        path: string,
+        options?: CountedCollectOptions<TItem, TQuery>,
+    ): Promise<TItem[]> {
+        const items: TItem[] = [];
+
+        for await (const { data, err } of this.streamCount(path, options)) {
             if (err) {
                 throw err;
             } else {
