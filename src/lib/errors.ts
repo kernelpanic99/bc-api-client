@@ -191,3 +191,39 @@ export class BCPaginatedResponseError extends BaseError<{ path: string; data: un
         super('Paginated response structure is invalid', { path, data, reason });
     }
 }
+
+export class BCAuthInvalidRedirectUriError extends BaseError<{ redirectUri: string }> {
+    code = 'BC_AUTH_INVALID_REDIRECT_URI';
+
+    constructor(redirectUri: string, cause: unknown) {
+        super('Invalid redirect URI', { redirectUri }, { cause });
+    }
+}
+
+export class BCAuthMissingParamError extends BaseError<{ param: string }> {
+    code = 'BC_AUTH_MISSING_PARAM';
+
+    constructor(param: string) {
+        super(`Missing required auth callback parameter: ${param}`, { param });
+    }
+}
+
+export class BCAuthScopeMismatchError extends BaseError<{
+    granted: string[];
+    expected: string[];
+    missing: string[];
+}> {
+    code = 'BC_AUTH_SCOPE_MISMATCH';
+
+    constructor(granted: string[], expected: string[], missing: string[]) {
+        super('Granted scopes do not match expected scopes', { granted, expected, missing });
+    }
+}
+
+export class BCAuthInvalidJwtError extends BaseError<{ storeHash: string }> {
+    code = 'BC_AUTH_INVALID_JWT';
+
+    constructor(storeHash: string, cause: unknown) {
+        super('Invalid JWT payload', { storeHash }, { cause });
+    }
+}

@@ -1,3 +1,4 @@
+export * from './auth';
 export * from './client';
 export type { ClientConfig, ConcurrencyOptions } from './lib/common';
 export * from './lib/errors';

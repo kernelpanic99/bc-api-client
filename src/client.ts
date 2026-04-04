@@ -11,6 +11,7 @@ import {
     DEFAULT_LIMIT,
     DEFAULT_RATE_LIMIT_BACKOFF,
     HEADERS,
+    LEADING_SLASHES,
     type Logger,
     MAX_CONCURRENCY,
     MAX_URL_LENGTH,
@@ -53,7 +54,6 @@ import { Err, Ok, type Result } from './lib/result';
 import type { StandardSchemaV1 } from './lib/standard-schema';
 import { AsyncChannel, chunkStrLength, stripKeys } from './lib/util';
 
-const LEADING_SLASHES = /^\/+/;
 export class BigCommerceClient {
     private readonly logger?: Logger;
     private readonly client: KyInstance;
