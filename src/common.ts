@@ -156,6 +156,28 @@ export type BatchRequestOptions<TBody, TRes, TQuery extends Query> = {
     path: string;
 } & RequestOptions<TBody, TRes, TQuery>;
 
+export const req = {
+    get: <TRes, TQuery extends Query = Query>(
+        path: string,
+        options?: GetOptions<TRes, TQuery>,
+    ): BatchRequestOptions<never, TRes, TQuery> => ({ method: 'GET', path, ...options }),
+
+    post: <TRes, TBody = unknown, TQuery extends Query = Query>(
+        path: string,
+        options?: PostOptions<TBody, TRes, TQuery>,
+    ): BatchRequestOptions<TBody, TRes, TQuery> => ({ method: 'POST', path, ...options }),
+
+    put: <TRes, TBody = unknown, TQuery extends Query = Query>(
+        path: string,
+        options?: PutOptions<TBody, TRes, TQuery>,
+    ): BatchRequestOptions<TBody, TRes, TQuery> => ({ method: 'PUT', path, ...options }),
+
+    delete: <TQuery extends Query = Query>(
+        path: string,
+        options?: DeleteOptions<TQuery>,
+    ): BatchRequestOptions<never, never, TQuery> => ({ method: 'DELETE', path, ...options }),
+};
+
 export type CollectOptions<TItem, TQuery extends Query> = ConcurrencyOptions &
     Omit<GetOptions<TItem, TQuery>, 'responseSchema'> & {
         itemSchema?: StandardSchemaV1<TItem>;

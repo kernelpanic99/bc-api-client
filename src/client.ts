@@ -95,7 +95,7 @@ export class BigCommerceClient {
         });
     }
 
-    async post<TBody, TRes, TQuery extends Query = Query>(
+    async post<TRes, TBody = unknown, TQuery extends Query = Query>(
         path: string,
         options?: PostOptions<TBody, TRes, TQuery>,
     ): Promise<TRes> {
@@ -105,7 +105,7 @@ export class BigCommerceClient {
         });
     }
 
-    async put<TBody, TRes, TQuery extends Query = Query>(
+    async put<TRes, TBody = unknown, TQuery extends Query = Query>(
         path: string,
         options?: PutOptions<TBody, TRes, TQuery>,
     ): Promise<TRes> {
