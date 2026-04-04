@@ -52,13 +52,38 @@ import {
 } from './lib/request';
 import { Err, Ok, type Result } from './lib/result';
 import type { StandardSchemaV1 } from './lib/standard-schema';
-import { AsyncChannel, chunkStrLength, stripKeys } from './lib/util';
+import { AsyncChannel, chunkStrLength } from './lib/util';
 
 export class BigCommerceClient {
     private readonly logger?: Logger;
     private readonly client: KyInstance;
     private readonly storeHash: string;
 
+    /**
+     * Creates a new BigCommerceClient.
+     *
+     * @param config - Client configuration. Ky options (e.g. `prefixUrl`, `timeout`, `retry`,
+     *   `hooks`) are forwarded to the underlying ky instance.
+     * @param config.storeHash - BigCommerce store hash. Must be a non-empty string.
+     * @param config.accessToken - BigCommerce API access token. Must be a non-empty string.
+     * @param config.logger - A {@link Logger} instance, a log level string
+     *   (`'debug' | 'info' | 'warn' | 'error'`), `true` to enable console logging at `'info'`
+     *   level, or `false` to disable logging entirely. Omitting also defaults to `'info'` level.
+     * @param config.concurrency - Default max concurrent requests for batch/stream operations.
+     *   Must be between 1 and 1000. Pass `false` to disable concurrency (sequential execution).
+     *   Defaults to 10.
+     * @param config.rateLimitBackoff - Concurrency cap applied when a 429 response is received.
+     *   Defaults to 1.
+     * @param config.backoff - Divisor (or `(concurrency, status) => number` function) applied to
+     *   concurrency on non-429 error responses. Defaults to 2.
+     * @param config.backoffRecover - Amount (or `(concurrency) => number` function) added to
+     *   concurrency per successful response while below the configured max. Defaults to 1.
+     *
+     * @throws {@link BCCredentialsError} if `storeHash` or `accessToken` are missing or if
+     *   `concurrency` is out of range.
+     * @throws {@link BCClientError} if `prefixUrl` is not a valid URL.
+     * @throws Does not throw for unknown string log levels; falls back to `'info'` and logs a warning.
+     */
     constructor(private readonly config: ClientConfig) {
         this.validateConfig();
 
@@ -94,6 +119,30 @@ export class BigCommerceClient {
         });
     }
 
+    /**
+     * Sends a GET request to the given path.
+     *
+     * @param path - API path relative to the store's versioned base URL (e.g. `catalog/products`).
+     * @param options - Ky options are forwarded to the underlying request.
+     * @param options.version - API version segment inserted into the URL. Defaults to `'v3'`.
+     * @param options.query - Query parameters to append to the URL.
+     * @param options.querySchema - StandardSchemaV1 schema to validate `query` before the request
+     *   is sent. Requires `query` to be provided.
+     * @param options.responseSchema - StandardSchemaV1 schema to validate the parsed response body.
+     *
+     * @returns Parsed and optionally validated response body.
+     *
+     * @throws {@link BCApiError} on HTTP error responses.
+     * @throws {@link BCTimeoutError} if the request times out.
+     * @throws {@link BCResponseParseError} if the response body cannot be parsed.
+     * @throws {@link BCUrlTooLongError} if the constructed URL exceeds 2048 characters.
+     * @throws {@link BCRateLimitNoHeadersError} if a 429 is received without rate-limit headers.
+     * @throws {@link BCRateLimitDelayTooLongError} if the rate-limit reset window exceeds
+     *   `config.retry.maxRetryAfter`.
+     * @throws {@link BCQueryValidationError} if `querySchema` validation fails.
+     * @throws {@link BCResponseValidationError} if `responseSchema` validation fails.
+     * @throws {@link BCClientError} on any other ky or unknown error.
+     */
     async get<TRes, TQuery extends Query = Query>(path: string, options?: GetOptions<TRes, TQuery>): Promise<TRes> {
         return this.request<never, TRes, TQuery>(path, {
             ...options,
@@ -101,6 +150,34 @@ export class BigCommerceClient {
         } as RequestOptions<never, TRes, TQuery>);
     }
 
+    /**
+     * Sends a POST request to the given path.
+     *
+     * @param path - API path relative to the store's versioned base URL.
+     * @param options - Ky options are forwarded to the underlying request.
+     * @param options.version - API version segment inserted into the URL. Defaults to `'v3'`.
+     * @param options.body - Request body, serialized as JSON.
+     * @param options.bodySchema - StandardSchemaV1 schema to validate `body` before the request
+     *   is sent. Requires `body` to be provided.
+     * @param options.query - Query parameters to append to the URL.
+     * @param options.querySchema - StandardSchemaV1 schema to validate `query` before the request
+     *   is sent. Requires `query` to be provided.
+     * @param options.responseSchema - StandardSchemaV1 schema to validate the parsed response body.
+     *
+     * @returns Parsed and optionally validated response body.
+     *
+     * @throws {@link BCApiError} on HTTP error responses.
+     * @throws {@link BCTimeoutError} if the request times out.
+     * @throws {@link BCResponseParseError} if the response body cannot be parsed.
+     * @throws {@link BCUrlTooLongError} if the constructed URL exceeds 2048 characters.
+     * @throws {@link BCRateLimitNoHeadersError} if a 429 is received without rate-limit headers.
+     * @throws {@link BCRateLimitDelayTooLongError} if the rate-limit reset window exceeds
+     *   `config.retry.maxRetryAfter`.
+     * @throws {@link BCQueryValidationError} if `querySchema` validation fails.
+     * @throws {@link BCRequestBodyValidationError} if `bodySchema` validation fails.
+     * @throws {@link BCResponseValidationError} if `responseSchema` validation fails.
+     * @throws {@link BCClientError} on any other ky or unknown error.
+     */
     async post<TRes, TBody = unknown, TQuery extends Query = Query>(
         path: string,
         options?: PostOptions<TBody, TRes, TQuery>,
@@ -111,6 +188,34 @@ export class BigCommerceClient {
         } as RequestOptions<TBody, TRes, TQuery>);
     }
 
+    /**
+     * Sends a PUT request to the given path.
+     *
+     * @param path - API path relative to the store's versioned base URL.
+     * @param options - Ky options are forwarded to the underlying request.
+     * @param options.version - API version segment inserted into the URL. Defaults to `'v3'`.
+     * @param options.body - Request body, serialized as JSON.
+     * @param options.bodySchema - StandardSchemaV1 schema to validate `body` before the request
+     *   is sent. Requires `body` to be provided.
+     * @param options.query - Query parameters to append to the URL.
+     * @param options.querySchema - StandardSchemaV1 schema to validate `query` before the request
+     *   is sent. Requires `query` to be provided.
+     * @param options.responseSchema - StandardSchemaV1 schema to validate the parsed response body.
+     *
+     * @returns Parsed and optionally validated response body.
+     *
+     * @throws {@link BCApiError} on HTTP error responses.
+     * @throws {@link BCTimeoutError} if the request times out.
+     * @throws {@link BCResponseParseError} if the response body cannot be parsed.
+     * @throws {@link BCUrlTooLongError} if the constructed URL exceeds 2048 characters.
+     * @throws {@link BCRateLimitNoHeadersError} if a 429 is received without rate-limit headers.
+     * @throws {@link BCRateLimitDelayTooLongError} if the rate-limit reset window exceeds
+     *   `config.retry.maxRetryAfter`.
+     * @throws {@link BCQueryValidationError} if `querySchema` validation fails.
+     * @throws {@link BCRequestBodyValidationError} if `bodySchema` validation fails.
+     * @throws {@link BCResponseValidationError} if `responseSchema` validation fails.
+     * @throws {@link BCClientError} on any other ky or unknown error.
+     */
     async put<TRes, TBody = unknown, TQuery extends Query = Query>(
         path: string,
         options?: PutOptions<TBody, TRes, TQuery>,
@@ -121,6 +226,28 @@ export class BigCommerceClient {
         } as RequestOptions<TBody, TRes, TQuery>);
     }
 
+    /**
+     * Sends a DELETE request to the given path.
+     *
+     * Silently suppresses 404 responses (resource already gone) and empty response bodies.
+     *
+     * @param path - API path relative to the store's versioned base URL.
+     * @param options - Ky options are forwarded to the underlying request.
+     * @param options.version - API version segment inserted into the URL. Defaults to `'v3'`.
+     * @param options.query - Query parameters to append to the URL.
+     * @param options.querySchema - StandardSchemaV1 schema to validate `query` before the request
+     *   is sent. Requires `query` to be provided.
+     *
+     * @throws {@link BCApiError} on non-404 HTTP error responses.
+     * @throws {@link BCTimeoutError} if the request times out.
+     * @throws {@link BCResponseParseError} if the response body is non-empty and cannot be parsed.
+     * @throws {@link BCUrlTooLongError} if the constructed URL exceeds 2048 characters.
+     * @throws {@link BCRateLimitNoHeadersError} if a 429 is received without rate-limit headers.
+     * @throws {@link BCRateLimitDelayTooLongError} if the rate-limit reset window exceeds
+     *   `config.retry.maxRetryAfter`.
+     * @throws {@link BCQueryValidationError} if `querySchema` validation fails.
+     * @throws {@link BCClientError} on any other ky or unknown error.
+     */
     async delete<TRes = never, TQuery extends Query = Query>(
         path: string,
         options?: DeleteOptions<TQuery>,
@@ -146,6 +273,37 @@ export class BigCommerceClient {
         }
     }
 
+    /**
+     * Fetches items from a v3 paginated endpoint by splitting `values` across multiple requests
+     * using the given `key` query param, chunking to stay within URL length limits.
+     *
+     * Collects all results into an array. Use {@link queryStream} to process items lazily.
+     *
+     * @param path - API path relative to the store's versioned base URL.
+     * @param options.key - Query parameter name used for value filtering (e.g. `'id:in'`).
+     * @param options.values - Values to filter by. Automatically chunked across multiple requests
+     *   to keep each URL under 2048 characters.
+     * @param options.query - Additional query parameters. `query.limit` controls page size
+     *   (default 250, must be > 0). If `options.key` is present in `query` it will be ignored.
+     * @param options.querySchema - StandardSchemaV1 schema to validate `query`. Requires `query`
+     *   to be provided.
+     * @param options.itemSchema - StandardSchemaV1 schema to validate each returned item.
+     * @param options.concurrency - Max concurrent chunk requests. Must be 1–1000. `false` for
+     *   sequential. Defaults to `config.concurrency`, or 10 if not set on the client.
+     * @param options.rateLimitBackoff - Concurrency cap on 429 responses. Defaults to
+     *   `config.rateLimitBackoff`, or 1 if not set on the client.
+     * @param options.backoff - Divisor (or function) applied to concurrency on error responses.
+     *   Defaults to `config.backoff`, or 2 if not set on the client.
+     * @param options.backoffRecover - Amount (or function) added to concurrency per successful
+     *   response. Defaults to `config.backoffRecover`, or 1 if not set on the client.
+     *
+     * @returns All matching items across all chunked requests.
+     *
+     * @throws {@link BCApiError} on HTTP error responses.
+     * @throws {@link BCQueryValidationError} if `querySchema` validation fails.
+     * @throws {@link BCPaginatedResponseError} if a page response has an unexpected shape.
+     * @throws {@link BCPaginatedItemValidationError} if `itemSchema` validation fails for an item.
+     */
     async query<TItem, TQuery extends Query = Query>(
         path: string,
         options: QueryOptions<TItem, TQuery>,
@@ -163,16 +321,41 @@ export class BigCommerceClient {
         return results;
     }
 
+    /**
+     * Streaming variant of {@link query}. Yields each item individually as results arrive,
+     * splitting `values` into URL-length-safe chunks across concurrent requests.
+     *
+     * Each yielded value is a {@link Result} — check `err` before using `data`.
+     *
+     * @param path - API path relative to the store's versioned base URL.
+     * @param options.key - Query parameter name used for value filtering (e.g. `'id:in'`).
+     * @param options.values - Values to filter by. Automatically chunked across multiple requests
+     *   to keep each URL under 2048 characters.
+     * @param options.query - Additional query parameters. `query.limit` controls page size
+     *   (default 250, must be > 0). If `options.key` is present in `query` it will be ignored.
+     * @param options.querySchema - StandardSchemaV1 schema to validate `query`. Requires `query`
+     *   to be provided.
+     * @param options.itemSchema - StandardSchemaV1 schema to validate each returned item.
+     * @param options.concurrency - Max concurrent chunk requests. Must be 1–1000. `false` for
+     *   sequential. Defaults to `config.concurrency`, or 10 if not set on the client.
+     * @param options.rateLimitBackoff - Concurrency cap on 429 responses. Defaults to
+     *   `config.rateLimitBackoff`, or 1 if not set on the client.
+     * @param options.backoff - Divisor (or function) applied to concurrency on error responses.
+     *   Defaults to `config.backoff`, or 2 if not set on the client.
+     * @param options.backoffRecover - Amount (or function) added to concurrency per successful
+     *   response. Defaults to `config.backoffRecover`, or 1 if not set on the client.
+     */
     async *queryStream<TItem, TQuery extends Query = Query>(
         path: string,
         options: QueryOptions<TItem, TQuery>,
     ): AsyncGenerator<Result<TItem, BaseError>> {
-        const limit = this.validatePaginationOption(path, 'limit', options?.query?.limit ?? DEFAULT_LIMIT);
-        const itemSchema = options?.itemSchema;
+        const { key, values, query, querySchema, itemSchema, ...requestOptions } = options;
+
+        const limit = this.validatePaginationOption(path, 'limit', query?.limit ?? DEFAULT_LIMIT);
 
         const validatedQuery = await this.validate(
-            options.query,
-            options.querySchema,
+            query,
+            querySchema,
             BCQueryValidationError,
             'GET',
             path,
@@ -184,22 +367,19 @@ export class BigCommerceClient {
             limit,
         };
 
-        if (options.key in newQuery) {
-            this.logger?.warn(
-                { key: options.key },
-                'The provided key is already in the query params, this param will be ignored',
-            );
+        if (key in newQuery) {
+            this.logger?.warn({ key }, 'The provided key is already in the query params, this param will be ignored');
 
-            delete newQuery[options.key];
+            delete newQuery[key];
         }
 
-        const url = this.config.prefixUrl ?? options.prefixUrl ?? BASE_KY_CONFIG.prefixUrl;
+        const url = this.config.prefixUrl ?? requestOptions.prefixUrl ?? BASE_KY_CONFIG.prefixUrl;
         const fullPath = this.makePath('v3', path);
         const fullQuery = toUrlSearchParams(newQuery);
         const fullUrl = `${url}/${fullPath}?${fullQuery}`;
-        const keyOverhead = options.key.length + 2; // `&key=` or `key=` prefix
+        const keyOverhead = key.length + 2; // `&key=` or `key=` prefix
 
-        const chunks = chunkStrLength(options.values.map(String), {
+        const chunks = chunkStrLength(values.map(String), {
             chunkLength: limit,
             maxLength: MAX_URL_LENGTH,
             offset: fullUrl.length + keyOverhead,
@@ -208,10 +388,11 @@ export class BigCommerceClient {
 
         const requests = chunks.map((chunk) =>
             req.get(path, {
+                ...requestOptions,
                 query: {
                     ...newQuery,
                     page: 1,
-                    [options.key]: chunk,
+                    [key]: chunk,
                 },
             }),
         );
@@ -238,6 +419,34 @@ export class BigCommerceClient {
         }
     }
 
+    /**
+     * Fetches all pages from a v3 paginated endpoint and collects items into an array.
+     *
+     * Use {@link stream} to process items lazily without buffering the full result set.
+     *
+     * @param path - API path relative to the store's versioned base URL.
+     * @param options - Ky options are forwarded to page requests.
+     * @param options.query - Query parameters. `query.limit` controls page size (default 250,
+     *   must be > 0). `query.page` sets the starting page (default 1, must be > 0).
+     * @param options.querySchema - StandardSchemaV1 schema to validate `query`. Requires `query`
+     *   to be provided.
+     * @param options.itemSchema - StandardSchemaV1 schema to validate each returned item.
+     * @param options.concurrency - Max concurrent page requests for pages after the first.
+     *   Must be 1–1000. `false` for sequential. Defaults to `config.concurrency`, or 10 if not
+     *   set on the client.
+     * @param options.rateLimitBackoff - Concurrency cap on 429 responses. Defaults to
+     *   `config.rateLimitBackoff`, or 1 if not set on the client.
+     * @param options.backoff - Divisor (or function) applied to concurrency on error responses.
+     *   Defaults to `config.backoff`, or 2 if not set on the client.
+     * @param options.backoffRecover - Amount (or function) added to concurrency per successful
+     *   response. Defaults to `config.backoffRecover`, or 1 if not set on the client.
+     * @returns All items across all pages.
+     *
+     * @throws {@link BCApiError} on HTTP error responses.
+     * @throws {@link BCQueryValidationError} if `querySchema` validation fails.
+     * @throws {@link BCPaginatedResponseError} if a page response has an unexpected shape.
+     * @throws {@link BCPaginatedItemValidationError} if `itemSchema` validation fails for an item.
+     */
     async collect<TItem, TQuery extends Query>(
         path: string,
         options?: CollectOptions<TItem, TQuery>,
@@ -255,17 +464,44 @@ export class BigCommerceClient {
         return items;
     }
 
+    /**
+     * Streams items from a v2 paginated endpoint using a known total item `count`.
+     *
+     * Use this for v2 endpoints that do not return pagination metadata. Yields each item
+     * as a {@link Result} — check `err` before using `data`. Use {@link collectCount} to
+     * collect all results into an array.
+     *
+     * @param path - API path relative to the store's versioned base URL.
+     * @param options - Ky options are forwarded to page requests.
+     * @param options.count - Total number of items expected. Used to compute the page range as
+     *   `ceil(count / limit) - page + 1` requests. Must be > 0. Defaults to 2000.
+     * @param options.query - Query parameters. `query.limit` controls page size (default 250,
+     *   must be > 0). `query.page` sets the starting page (default 1, must be > 0).
+     * @param options.querySchema - StandardSchemaV1 schema to validate `query`. Requires `query`
+     *   to be provided.
+     * @param options.itemSchema - StandardSchemaV1 schema to validate each returned item.
+     * @param options.concurrency - Max concurrent page requests. Must be 1–1000. `false` for
+     *   sequential. Defaults to `config.concurrency`, or 10 if not set on the client.
+     * @param options.rateLimitBackoff - Concurrency cap on 429 responses. Defaults to
+     *   `config.rateLimitBackoff`, or 1 if not set on the client.
+     * @param options.backoff - Divisor (or function) applied to concurrency on error responses.
+     *   Defaults to `config.backoff`, or 2 if not set on the client.
+     * @param options.backoffRecover - Amount (or function) added to concurrency per successful
+     *   response. Defaults to `config.backoffRecover`, or 1 if not set on the client.
+     */
     async *streamCount<TItem, TQuery extends Query>(
         path: string,
         options?: CountedCollectOptions<TItem, TQuery>,
     ): AsyncGenerator<Result<TItem, BaseError>> {
-        const count = this.validatePaginationOption(path, 'count', options?.count ?? DEFAULT_BLIND_COUNT);
-        const page = this.validatePaginationOption(path, 'page', options?.query?.page ?? 1);
-        const limit = this.validatePaginationOption(path, 'limit', options?.query?.limit ?? DEFAULT_LIMIT);
+        const { count: optionCount, query, querySchema, itemSchema, ...requestOptions } = options ?? {};
+
+        const count = this.validatePaginationOption(path, 'count', optionCount ?? DEFAULT_BLIND_COUNT);
+        const page = this.validatePaginationOption(path, 'page', query?.page ?? 1);
+        const limit = this.validatePaginationOption(path, 'limit', query?.limit ?? DEFAULT_LIMIT);
 
         const validatedQuery = await this.validate(
-            options?.query,
-            options?.querySchema,
+            query,
+            querySchema,
             BCQueryValidationError,
             'GET',
             path,
@@ -277,6 +513,7 @@ export class BigCommerceClient {
                 method: 'GET' as const,
                 version: 'v2' as const,
                 path,
+                ...requestOptions,
                 query: {
                     ...validatedQuery,
                     limit,
@@ -299,13 +536,44 @@ export class BigCommerceClient {
                     );
                 } else {
                     for (const item of data) {
-                        yield this.validatePaginatedItem(path, item, options?.itemSchema);
+                        yield this.validatePaginatedItem(path, item, itemSchema);
                     }
                 }
             }
         }
     }
 
+    /**
+     * Fetches items from a v2 paginated endpoint using a known total item `count` and collects
+     * them into an array.
+     *
+     * Use this for v2 endpoints that do not return pagination metadata. Use {@link streamCount}
+     * to process items lazily.
+     *
+     * @param path - API path relative to the store's versioned base URL.
+     * @param options - Ky options are forwarded to page requests.
+     * @param options.count - Total number of items expected. Used to compute the page range as
+     *   `ceil(count / limit) - page + 1` requests. Must be > 0. Defaults to 2000.
+     * @param options.query - Query parameters. `query.limit` controls page size (default 250,
+     *   must be > 0). `query.page` sets the starting page (default 1, must be > 0).
+     * @param options.querySchema - StandardSchemaV1 schema to validate `query`. Requires `query`
+     *   to be provided.
+     * @param options.itemSchema - StandardSchemaV1 schema to validate each returned item.
+     * @param options.concurrency - Max concurrent page requests. Must be 1–1000. `false` for
+     *   sequential. Defaults to `config.concurrency`, or 10 if not set on the client.
+     * @param options.rateLimitBackoff - Concurrency cap on 429 responses. Defaults to
+     *   `config.rateLimitBackoff`, or 1 if not set on the client.
+     * @param options.backoff - Divisor (or function) applied to concurrency on error responses.
+     *   Defaults to `config.backoff`, or 2 if not set on the client.
+     * @param options.backoffRecover - Amount (or function) added to concurrency per successful
+     *   response. Defaults to `config.backoffRecover`, or 1 if not set on the client.
+     *
+     * @returns All items across the computed page range.
+     *
+     * @throws {@link BCApiError} on HTTP error responses.
+     * @throws {@link BCQueryValidationError} if `querySchema` validation fails.
+     * @throws {@link BCPaginatedItemValidationError} if `itemSchema` validation fails for an item.
+     */
     async collectCount<TItem, TQuery extends Query>(
         path: string,
         options?: CountedCollectOptions<TItem, TQuery>,
@@ -323,6 +591,24 @@ export class BigCommerceClient {
         return items;
     }
 
+    /**
+     * Executes multiple requests concurrently and returns all results as {@link Result} values,
+     * never throwing. Errors from individual requests are captured as `Err` results.
+     *
+     * Use {@link batchStream} to process results as they arrive rather than waiting for all.
+     *
+     * @param requests - Array of request descriptors built with the {@link req} helpers.
+     * @param options.concurrency - Max concurrent requests. Must be 1–1000. `false` for
+     *   sequential. Defaults to `config.concurrency`, or 10 if not set on the client.
+     * @param options.rateLimitBackoff - Concurrency cap on 429 responses. Defaults to
+     *   `config.rateLimitBackoff`, or 1 if not set on the client.
+     * @param options.backoff - Divisor (or function) applied to concurrency on error responses.
+     *   Defaults to `config.backoff`, or 2 if not set on the client.
+     * @param options.backoffRecover - Amount (or function) added to concurrency per successful
+     *   response. Defaults to `config.backoffRecover`, or 1 if not set on the client.
+     *
+     * @returns Results in the order requests complete (not necessarily input order).
+     */
     async batchSafe<TBody, TRes, TQuery extends Query>(
         requests: BatchRequestOptions<TBody, TRes, TQuery>[],
         options?: ConcurrencyOptions,
@@ -336,31 +622,55 @@ export class BigCommerceClient {
         return results;
     }
 
+    /**
+     * Streams all items from a v3 paginated endpoint, fetching the first page sequentially
+     * and remaining pages concurrently via {@link batchStream}.
+     *
+     * Each yielded value is a {@link Result} — check `err` before using `data`. Use
+     * {@link collect} to gather all items into an array.
+     *
+     * @param path - API path relative to the store's versioned base URL.
+     * @param options - Ky options are forwarded to page requests.
+     * @param options.query - Query parameters. `query.limit` controls page size (default 250,
+     *   must be > 0). `query.page` sets the starting page (default 1, must be > 0). If the API
+     *   enforces a different limit, the actual `per_page` from the first response is used for
+     *   subsequent pages.
+     * @param options.querySchema - StandardSchemaV1 schema to validate `query`. Requires `query`
+     *   to be provided.
+     * @param options.itemSchema - StandardSchemaV1 schema to validate each returned item.
+     * @param options.concurrency - Max concurrent page requests for pages after the first.
+     *   Must be 1–1000. `false` for sequential. Defaults to `config.concurrency`, or 10 if not
+     *   set on the client.
+     * @param options.rateLimitBackoff - Concurrency cap on 429 responses. Defaults to
+     *   `config.rateLimitBackoff`, or 1 if not set on the client.
+     * @param options.backoff - Divisor (or function) applied to concurrency on error responses.
+     *   Defaults to `config.backoff`, or 2 if not set on the client.
+     * @param options.backoffRecover - Amount (or function) added to concurrency per successful
+     *   response. Defaults to `config.backoffRecover`, or 1 if not set on the client.
+     */
     async *stream<TItem, TQuery extends Query>(
         path: string,
         options?: CollectOptions<TItem, TQuery>,
     ): AsyncGenerator<Result<TItem, BaseError>> {
-        let limit = this.validatePaginationOption(path, 'limit', options?.query?.limit ?? DEFAULT_LIMIT);
-        const page = this.validatePaginationOption(path, 'page', options?.query?.page ?? 1);
-        const itemSchema = options?.itemSchema;
+        const { query, querySchema, itemSchema, ...requestOptions } = options ?? {};
+
+        let limit = this.validatePaginationOption(path, 'limit', query?.limit ?? DEFAULT_LIMIT);
+        const page = this.validatePaginationOption(path, 'page', query?.page ?? 1);
 
         const validatedQuery = await this.validate(
-            options?.query,
-            options?.querySchema,
+            query,
+            querySchema,
             BCQueryValidationError,
             'GET',
             path,
             'Invalid query parameters',
         );
 
-        // Strip querySchema — validated above, don't re-validate against the augmented query in sub-calls
-        const pageOptions = stripKeys(options, ['querySchema']);
-
         let firstPageMeta: V3Resource<unknown[]>['meta'];
 
         try {
             const firstPage = await this.get(path, {
-                ...pageOptions,
+                ...requestOptions,
                 query: {
                     ...validatedQuery,
                     page,
@@ -393,13 +703,11 @@ export class BigCommerceClient {
             limit = per_page;
         }
 
-        // itemSchema consumed above — strip before passing to batchStream (querySchema already stripped in pageOptions)
-        const batchOptions = stripKeys(pageOptions, ['itemSchema']);
-
         // Fetch other pages using batchStream
         const requests = Array.from({ length: total_pages - page }, (_, i) => i + page + 1).map((page) => ({
             method: 'GET' as const,
             path,
+            ...requestOptions,
             query: {
                 ...validatedQuery,
                 limit,
@@ -407,7 +715,7 @@ export class BigCommerceClient {
             },
         }));
 
-        for await (const pageRes of requests.length > 0 ? this.batchStream(requests, batchOptions) : []) {
+        for await (const pageRes of requests.length > 0 ? this.batchStream(requests, options) : []) {
             const { data: page, err } = pageRes;
 
             if (err) {
@@ -431,6 +739,24 @@ export class BigCommerceClient {
         }
     }
 
+    /**
+     * Executes multiple requests with configurable concurrency, yielding each result as a
+     * {@link Result} as it completes. Errors from individual requests are yielded as `Err`
+     * results rather than thrown.
+     *
+     * Automatically adjusts concurrency up/down in response to rate-limit and error responses.
+     * Use {@link batchSafe} to collect all results into an array.
+     *
+     * @param requests - Array of request descriptors built with the {@link req} helpers.
+     * @param options.concurrency - Max concurrent requests. Must be 1–1000. `false` for
+     *   sequential. Defaults to `config.concurrency`, or 10 if not set on the client.
+     * @param options.rateLimitBackoff - Concurrency cap on 429 responses. Defaults to
+     *   `config.rateLimitBackoff`, or 1 if not set on the client.
+     * @param options.backoff - Divisor (or function) applied to concurrency on error responses.
+     *   Defaults to `config.backoff`, or 2 if not set on the client.
+     * @param options.backoffRecover - Amount (or function) added to concurrency per successful
+     *   response. Defaults to `config.backoffRecover`, or 1 if not set on the client.
+     */
     async *batchStream<TBody, TRes, TQuery extends Query>(
         requests: BatchRequestOptions<TBody, TRes, TQuery>[],
         options?: ConcurrencyOptions,
