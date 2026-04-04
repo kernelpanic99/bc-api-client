@@ -8,4 +8,6 @@
 
 > **QueryValue** = `string` \| `number` \| (`string` \| `number`)[]
 
-Defined in: lib/request.ts:7
+Defined in: lib/request.ts:9
+
+Valid query parameter value types.

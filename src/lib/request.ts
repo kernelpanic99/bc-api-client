@@ -2,12 +2,19 @@ import type { Options as KyOptions } from 'ky';
 import type { ConcurrencyOptions } from './common';
 import type { StandardSchemaV1 } from './standard-schema';
 
+/** BigCommerce API versions supported by the client. */
 export type ApiVersion = 'v3' | 'v2';
 
+/** Valid query parameter value types. */
 export type QueryValue = string | number | Array<string | number>;
 
+/** Query parameter object for API requests. */
 export type Query = Record<string, QueryValue>;
 
+/**
+ * Converts a Query object to URLSearchParams.
+ * Array values are joined with commas (e.g., `id:in=1,2,3`).
+ */
 export const toUrlSearchParams = (query?: Query): URLSearchParams | undefined => {
     if (!query) {
         return;
@@ -26,6 +33,7 @@ export const toUrlSearchParams = (query?: Query): URLSearchParams | undefined =>
     return params;
 };
 
+/** Supported HTTP methods for API requests. */
 export type HttpMethod = 'POST' | 'GET' | 'PUT' | 'DELETE';
 
 /** @internal */
@@ -36,34 +44,51 @@ type BaseKyRequest = Omit<
 
 /** @internal */
 type QuerySchemaOptions<TQuery extends Query> =
-    | { query: TQuery; querySchema: StandardSchemaV1<TQuery> }
-    | { query?: TQuery; querySchema?: never };
+    /** Query parameters to send with the request. */
+    { query: TQuery; querySchema: StandardSchemaV1<TQuery> } | { query?: TQuery; querySchema?: never };
 
 /** @internal */
 type BodySchemaOptions<TBody> =
-    | { body: TBody; bodySchema: StandardSchemaV1<TBody> }
-    | { body?: TBody; bodySchema?: never };
+    /** Request body, serialized as JSON. */
+    { body: TBody; bodySchema: StandardSchemaV1<TBody> } | { body?: TBody; bodySchema?: never };
 
+/**
+ * Full request options for direct API calls.
+ * @see {@link GetOptions}, {@link PostOptions}, {@link PutOptions}, {@link DeleteOptions}
+ */
 export type RequestOptions<TBody, TRes, TQuery extends Query> = BaseKyRequest &
     QuerySchemaOptions<TQuery> &
     BodySchemaOptions<TBody> & {
+        /** HTTP method for the request. */
         method: HttpMethod;
+        /** API version to use. Defaults to `'v3'`. */
         version?: ApiVersion;
+        /** Schema to validate the response body. */
         responseSchema?: StandardSchemaV1<TRes>;
     };
 
+/** Options for GET requests. */
 export type GetOptions<TRes, TQuery extends Query> = Omit<
     RequestOptions<never, TRes, TQuery>,
     'body' | 'bodySchema' | 'method'
 >;
 
+/** Options for POST requests. */
 export type PostOptions<TBody, TRes, TQuery extends Query> = Omit<RequestOptions<TBody, TRes, TQuery>, 'method'>;
+
+/** Options for PUT requests. */
 export type PutOptions<TBody, TRes, TQuery extends Query> = PostOptions<TBody, TRes, TQuery>;
+
+/** Options for DELETE requests. */
 export type DeleteOptions<TQuery extends Query> = Omit<
     RequestOptions<never, never, TQuery>,
     'body' | 'bodySchema' | 'method' | 'responseSchema'
 >;
 
+/**
+ * Request descriptor for batch operations.
+ * Use the {@link req} helpers to construct these.
+ */
 export type BatchRequestOptions<TBody, TRes, TQuery extends Query> = {
     path: string;
 } & RequestOptions<TBody, TRes, TQuery>;
@@ -126,16 +151,29 @@ export const req = {
         ({ method: 'DELETE', path, ...options }) as BatchRequestOptions<never, never, TQuery>,
 };
 
+/**
+ * Options for v3 paginated collection operations ({@link BigCommerceClient.collect}, {@link BigCommerceClient.stream}).
+ */
 export type CollectOptions<TItem, TQuery extends Query> = ConcurrencyOptions &
     Omit<GetOptions<TItem, TQuery>, 'responseSchema' | 'version'> & {
+        /** Schema to validate each item in the response. */
         itemSchema?: StandardSchemaV1<TItem>;
     };
 
+/**
+ * Options for v2 paginated operations with known count ({@link BigCommerceClient.collectCount}, {@link BigCommerceClient.streamCount}).
+ */
 export type CountedCollectOptions<TItem, TQuery extends Query> = CollectOptions<TItem, TQuery> & {
+    /** Total number of items expected (for v2 endpoints without pagination metadata). */
     count?: number;
 };
 
+/**
+ * Options for query-based filtering operations ({@link BigCommerceClient.query}, {@link BigCommerceClient.queryStream}).
+ */
 export type QueryOptions<TItem, TQuery extends Query> = CollectOptions<TItem, TQuery> & {
+    /** Query parameter name for value filtering (e.g., `'id:in'`). */
     key: string;
+    /** Values to filter by. Automatically chunked across multiple requests. */
     values: (string | number)[];
 };

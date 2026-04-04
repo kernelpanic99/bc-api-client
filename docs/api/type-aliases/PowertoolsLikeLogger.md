@@ -8,7 +8,7 @@
 
 > **PowertoolsLikeLogger** = `object`
 
-Defined in: lib/logger.ts:10
+Defined in: lib/logger.ts:16
 
 ## Methods
 
@@ -16,7 +16,7 @@ Defined in: lib/logger.ts:10
 
 > **debug**(`message`, ...`data`): `void`
 
-Defined in: lib/logger.ts:11
+Defined in: lib/logger.ts:17
 
 #### Parameters
 
@@ -35,7 +35,7 @@ Defined in: lib/logger.ts:11
 
 > **error**(`message`, ...`data`): `void`
 
-Defined in: lib/logger.ts:14
+Defined in: lib/logger.ts:20
 
 #### Parameters
 
@@ -54,7 +54,7 @@ Defined in: lib/logger.ts:14
 
 > **info**(`message`, ...`data`): `void`
 
-Defined in: lib/logger.ts:12
+Defined in: lib/logger.ts:18
 
 #### Parameters
 
@@ -73,7 +73,7 @@ Defined in: lib/logger.ts:12
 
 > **warn**(`message`, ...`data`): `void`
 
-Defined in: lib/logger.ts:13
+Defined in: lib/logger.ts:19
 
 #### Parameters
 

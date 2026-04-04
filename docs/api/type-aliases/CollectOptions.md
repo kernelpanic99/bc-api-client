@@ -8,13 +8,15 @@
 
 > **CollectOptions**\<`TItem`, `TQuery`\> = [`ConcurrencyOptions`](ConcurrencyOptions.md) & `Omit`\<[`GetOptions`](GetOptions.md)\<`TItem`, `TQuery`\>, `"responseSchema"` \| `"version"`\> & `object`
 
-Defined in: lib/request.ts:129
+Defined in: lib/request.ts:157
+
+Options for v3 paginated collection operations ([BigCommerceClient.collect](../classes/BigCommerceClient.md#collect), [BigCommerceClient.stream](../classes/BigCommerceClient.md#stream)).
 
 ## Type Declaration
 
-| Name | Type | Defined in |
-| ------ | ------ | ------ |
-| `itemSchema?` | [`StandardSchemaV1`](../interfaces/StandardSchemaV1.md)\<`TItem`\> | lib/request.ts:131 |
+| Name | Type | Description | Defined in |
+| ------ | ------ | ------ | ------ |
+| `itemSchema?` | [`StandardSchemaV1`](../interfaces/StandardSchemaV1.md)\<`TItem`\> | Schema to validate each item in the response. | lib/request.ts:160 |
 
 ## Type Parameters
 

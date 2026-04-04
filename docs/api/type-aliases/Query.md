@@ -8,4 +8,6 @@
 
 > **Query** = `Record`\<`string`, [`QueryValue`](QueryValue.md)\>
 
-Defined in: lib/request.ts:9
+Defined in: lib/request.ts:12
+
+Query parameter object for API requests.

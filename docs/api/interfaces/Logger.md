@@ -6,7 +6,12 @@
 
 # Interface: Logger
 
-Defined in: lib/logger.ts:3
+Defined in: lib/logger.ts:9
+
+Logging interface for the BigCommerce client.
+
+Implement this interface to provide custom logging. The client passes context data
+as the first argument, making it compatible with structured loggers.
 
 ## Methods
 
@@ -14,7 +19,7 @@ Defined in: lib/logger.ts:3
 
 > **debug**(`data`, `message?`): `void`
 
-Defined in: lib/logger.ts:4
+Defined in: lib/logger.ts:10
 
 #### Parameters
 
@@ -33,7 +38,7 @@ Defined in: lib/logger.ts:4
 
 > **error**(`data`, `message?`): `void`
 
-Defined in: lib/logger.ts:7
+Defined in: lib/logger.ts:13
 
 #### Parameters
 
@@ -52,7 +57,7 @@ Defined in: lib/logger.ts:7
 
 > **info**(`data`, `message?`): `void`
 
-Defined in: lib/logger.ts:5
+Defined in: lib/logger.ts:11
 
 #### Parameters
 
@@ -71,7 +76,7 @@ Defined in: lib/logger.ts:5
 
 > **warn**(`data`, `message?`): `void`
 
-Defined in: lib/logger.ts:6
+Defined in: lib/logger.ts:12
 
 #### Parameters
 

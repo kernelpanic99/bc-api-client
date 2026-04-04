@@ -8,4 +8,6 @@
 
 > **HttpMethod** = `"POST"` \| `"GET"` \| `"PUT"` \| `"DELETE"`
 
-Defined in: lib/request.ts:29
+Defined in: lib/request.ts:37
+
+Supported HTTP methods for API requests.

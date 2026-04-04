@@ -1,5 +1,11 @@
 import type { ClientConfig } from './common';
 
+/**
+ * Logging interface for the BigCommerce client.
+ *
+ * Implement this interface to provide custom logging. The client passes context data
+ * as the first argument, making it compatible with structured loggers.
+ */
 export interface Logger {
     debug(data: Record<string, unknown>, message?: string): void;
     info(data: Record<string, unknown>, message?: string): void;
@@ -17,6 +23,7 @@ export type PowertoolsLikeLogger = {
 /** @internal */
 export const LOG_LEVELS = ['debug', 'info', 'warn', 'error'] as const;
 
+/** Supported log levels. */
 export type LogLevel = (typeof LOG_LEVELS)[number];
 
 /**

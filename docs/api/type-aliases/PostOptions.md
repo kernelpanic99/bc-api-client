@@ -8,7 +8,9 @@
 
 > **PostOptions**\<`TBody`, `TRes`, `TQuery`\> = `Omit`\<[`RequestOptions`](RequestOptions.md)\<`TBody`, `TRes`, `TQuery`\>, `"method"`\>
 
-Defined in: lib/request.ts:60
+Defined in: lib/request.ts:77
+
+Options for POST requests.
 
 ## Type Parameters
 

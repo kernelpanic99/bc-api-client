@@ -8,7 +8,9 @@
 
 > **PutOptions**\<`TBody`, `TRes`, `TQuery`\> = [`PostOptions`](PostOptions.md)\<`TBody`, `TRes`, `TQuery`\>
 
-Defined in: lib/request.ts:61
+Defined in: lib/request.ts:80
+
+Options for PUT requests.
 
 ## Type Parameters
 

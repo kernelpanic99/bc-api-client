@@ -8,14 +8,16 @@
 
 > **QueryOptions**\<`TItem`, `TQuery`\> = [`CollectOptions`](CollectOptions.md)\<`TItem`, `TQuery`\> & `object`
 
-Defined in: lib/request.ts:138
+Defined in: lib/request.ts:174
+
+Options for query-based filtering operations ([BigCommerceClient.query](../classes/BigCommerceClient.md#query), [BigCommerceClient.queryStream](../classes/BigCommerceClient.md#querystream)).
 
 ## Type Declaration
 
-| Name | Type | Defined in |
-| ------ | ------ | ------ |
-| `key` | `string` | lib/request.ts:139 |
-| `values` | (`string` \| `number`)[] | lib/request.ts:140 |
+| Name | Type | Description | Defined in |
+| ------ | ------ | ------ | ------ |
+| `key` | `string` | Query parameter name for value filtering (e.g., `'id:in'`). | lib/request.ts:176 |
+| `values` | (`string` \| `number`)[] | Values to filter by. Automatically chunked across multiple requests. | lib/request.ts:178 |
 
 ## Type Parameters
 

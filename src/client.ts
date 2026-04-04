@@ -123,10 +123,11 @@ export class BigCommerceClient {
      *
      * @param path - API path relative to the store's versioned base URL (e.g. `catalog/products`).
      * @param options - Ky options are forwarded to the underlying request.
-     *   - `version` – API version inserted into the URL. Defaults to `'v3'`.
-     *   - `query` – Query parameters to append to the URL.
-     *   - `querySchema` – Schema to validate `query` before sending. Requires `query` to be provided.
-     *   - `responseSchema` – Schema to validate the parsed response body.
+     * @param options.version - API version segment inserted into the URL. Defaults to `'v3'`.
+     * @param options.query - Query parameters to append to the URL.
+     * @param options.querySchema - StandardSchemaV1 schema to validate `query` before the request
+     *   is sent. Requires `query` to be provided.
+     * @param options.responseSchema - StandardSchemaV1 schema to validate the parsed response body.
      *
      * @returns Parsed and optionally validated response body.
      *
@@ -153,12 +154,14 @@ export class BigCommerceClient {
      *
      * @param path - API path relative to the store's versioned base URL.
      * @param options - Ky options are forwarded to the underlying request.
-     *   - `version` – API version inserted into the URL. Defaults to `'v3'`.
-     *   - `body` – Request body, serialized as JSON.
-     *   - `bodySchema` – Schema to validate `body` before sending. Requires `body` to be provided.
-     *   - `query` – Query parameters to append to the URL.
-     *   - `querySchema` – Schema to validate `query` before sending. Requires `query` to be provided.
-     *   - `responseSchema` – Schema to validate the parsed response body.
+     * @param options.version - API version segment inserted into the URL. Defaults to `'v3'`.
+     * @param options.body - Request body, serialized as JSON.
+     * @param options.bodySchema - StandardSchemaV1 schema to validate `body` before the request
+     *   is sent. Requires `body` to be provided.
+     * @param options.query - Query parameters to append to the URL.
+     * @param options.querySchema - StandardSchemaV1 schema to validate `query` before the request
+     *   is sent. Requires `query` to be provided.
+     * @param options.responseSchema - StandardSchemaV1 schema to validate the parsed response body.
      *
      * @returns Parsed and optionally validated response body.
      *
@@ -189,12 +192,14 @@ export class BigCommerceClient {
      *
      * @param path - API path relative to the store's versioned base URL.
      * @param options - Ky options are forwarded to the underlying request.
-     *   - `version` – API version inserted into the URL. Defaults to `'v3'`.
-     *   - `body` – Request body, serialized as JSON.
-     *   - `bodySchema` – Schema to validate `body` before sending. Requires `body` to be provided.
-     *   - `query` – Query parameters to append to the URL.
-     *   - `querySchema` – Schema to validate `query` before sending. Requires `query` to be provided.
-     *   - `responseSchema` – Schema to validate the parsed response body.
+     * @param options.version - API version segment inserted into the URL. Defaults to `'v3'`.
+     * @param options.body - Request body, serialized as JSON.
+     * @param options.bodySchema - StandardSchemaV1 schema to validate `body` before the request
+     *   is sent. Requires `body` to be provided.
+     * @param options.query - Query parameters to append to the URL.
+     * @param options.querySchema - StandardSchemaV1 schema to validate `query` before the request
+     *   is sent. Requires `query` to be provided.
+     * @param options.responseSchema - StandardSchemaV1 schema to validate the parsed response body.
      *
      * @returns Parsed and optionally validated response body.
      *
@@ -227,9 +232,10 @@ export class BigCommerceClient {
      *
      * @param path - API path relative to the store's versioned base URL.
      * @param options - Ky options are forwarded to the underlying request.
-     *   - `version` – API version inserted into the URL. Defaults to `'v3'`.
-     *   - `query` – Query parameters to append to the URL.
-     *   - `querySchema` – Schema to validate `query` before sending. Requires `query` to be provided.
+     * @param options.version - API version segment inserted into the URL. Defaults to `'v3'`.
+     * @param options.query - Query parameters to append to the URL.
+     * @param options.querySchema - StandardSchemaV1 schema to validate `query` before the request
+     *   is sent. Requires `query` to be provided.
      *
      * @throws {@link BCApiError} on non-404 HTTP error responses.
      * @throws {@link BCTimeoutError} if the request times out.
@@ -273,21 +279,24 @@ export class BigCommerceClient {
      * Collects all results into an array. Use {@link queryStream} to process items lazily.
      *
      * @param path - API path relative to the store's versioned base URL.
-     * @param options - Query options:
-     *   - `key` – Query parameter name used for value filtering (e.g. `'id:in'`).
-     *   - `values` – Values to filter by. Automatically chunked to stay within URL length limits.
-     *   - `query` – Additional query parameters. `query.limit` controls page size (default 250,
-     *     must be > 0). If `options.key` is present in `query` it will be ignored.
-     *   - `querySchema` – Schema to validate `query`. Requires `query` to be provided.
-     *   - `itemSchema` – Schema to validate each returned item.
-     *   - `concurrency` – Max concurrent chunk requests. Must be 1–1000. `false` for sequential.
-     *     Defaults to `config.concurrency`, or 10 if not set on the client.
-     *   - `rateLimitBackoff` – Concurrency cap on 429 responses. Defaults to `config.rateLimitBackoff`,
-     *     or 1 if not set on the client.
-     *   - `backoff` – Divisor (or function) applied to concurrency on error responses.
-     *     Defaults to `config.backoff`, or 2 if not set on the client.
-     *   - `backoffRecover` – Amount (or function) added to concurrency per successful response.
-     *     Defaults to `config.backoffRecover`, or 1 if not set on the client.
+     * @param options - Query options including `key`, `values`, pagination params, and concurrency
+     *   controls.
+     * @param options.key - Query parameter name used for value filtering (e.g. `'id:in'`).
+     * @param options.values - Values to filter by. Automatically chunked across multiple requests
+     *   to keep each URL under 2048 characters.
+     * @param options.query - Additional query parameters. `query.limit` controls page size
+     *   (default 250, must be > 0). If `options.key` is present in `query` it will be ignored.
+     * @param options.querySchema - StandardSchemaV1 schema to validate `query`. Requires `query`
+     *   to be provided.
+     * @param options.itemSchema - StandardSchemaV1 schema to validate each returned item.
+     * @param options.concurrency - Max concurrent chunk requests. Must be 1–1000. `false` for
+     *   sequential. Defaults to `config.concurrency`, or 10 if not set on the client.
+     * @param options.rateLimitBackoff - Concurrency cap on 429 responses. Defaults to
+     *   `config.rateLimitBackoff`, or 1 if not set on the client.
+     * @param options.backoff - Divisor (or function) applied to concurrency on error responses.
+     *   Defaults to `config.backoff`, or 2 if not set on the client.
+     * @param options.backoffRecover - Amount (or function) added to concurrency per successful
+     *   response. Defaults to `config.backoffRecover`, or 1 if not set on the client.
      *
      * @returns All matching items across all chunked requests.
      * @throws {@link BCPaginatedOptionError} if `query.limit` is not a positive number.
@@ -327,21 +336,24 @@ export class BigCommerceClient {
      * Each yielded value is a {@link Result} — check `err` before using `data`.
      *
      * @param path - API path relative to the store's versioned base URL.
-     * @param options - Query options:
-     *   - `key` – Query parameter name used for value filtering (e.g. `'id:in'`).
-     *   - `values` – Values to filter by. Automatically chunked to stay within URL length limits.
-     *   - `query` – Additional query parameters. `query.limit` controls page size (default 250,
-     *     must be > 0). If `options.key` is present in `query` it will be ignored.
-     *   - `querySchema` – Schema to validate `query`. Requires `query` to be provided.
-     *   - `itemSchema` – Schema to validate each returned item.
-     *   - `concurrency` – Max concurrent chunk requests. Must be 1–1000. `false` for sequential.
-     *     Defaults to `config.concurrency`, or 10 if not set on the client.
-     *   - `rateLimitBackoff` – Concurrency cap on 429 responses. Defaults to `config.rateLimitBackoff`,
-     *     or 1 if not set on the client.
-     *   - `backoff` – Divisor (or function) applied to concurrency on error responses.
-     *     Defaults to `config.backoff`, or 2 if not set on the client.
-     *   - `backoffRecover` – Amount (or function) added to concurrency per successful response.
-     *     Defaults to `config.backoffRecover`, or 1 if not set on the client.
+     * @param options - Query options including `key`, `values`, pagination params, and concurrency
+     *   controls.
+     * @param options.key - Query parameter name used for value filtering (e.g. `'id:in'`).
+     * @param options.values - Values to filter by. Automatically chunked across multiple requests
+     *   to keep each URL under 2048 characters.
+     * @param options.query - Additional query parameters. `query.limit` controls page size
+     *   (default 250, must be > 0). If `options.key` is present in `query` it will be ignored.
+     * @param options.querySchema - StandardSchemaV1 schema to validate `query`. Requires `query`
+     *   to be provided.
+     * @param options.itemSchema - StandardSchemaV1 schema to validate each returned item.
+     * @param options.concurrency - Max concurrent chunk requests. Must be 1–1000. `false` for
+     *   sequential. Defaults to `config.concurrency`, or 10 if not set on the client.
+     * @param options.rateLimitBackoff - Concurrency cap on 429 responses. Defaults to
+     *   `config.rateLimitBackoff`, or 1 if not set on the client.
+     * @param options.backoff - Divisor (or function) applied to concurrency on error responses.
+     *   Defaults to `config.backoff`, or 2 if not set on the client.
+     * @param options.backoffRecover - Amount (or function) added to concurrency per successful
+     *   response. Defaults to `config.backoffRecover`, or 1 if not set on the client.
      * @throws {@link BCPaginatedOptionError} if `query.limit` is not a positive number.
      * @throws {@link BCQueryValidationError} if `querySchema` validation fails.
      */
@@ -426,18 +438,20 @@ export class BigCommerceClient {
      *
      * @param path - API path relative to the store's versioned base URL.
      * @param options - Ky options are forwarded to page requests.
-     *   - `query` – Query parameters. `query.limit` controls page size (default 250, must be > 0).
-     *     `query.page` sets the starting page (default 1, must be > 0).
-     *   - `querySchema` – Schema to validate `query`. Requires `query` to be provided.
-     *   - `itemSchema` – Schema to validate each returned item.
-     *   - `concurrency` – Max concurrent page requests after the first. Must be 1–1000. `false` for
-     *     sequential. Defaults to `config.concurrency`, or 10 if not set on the client.
-     *   - `rateLimitBackoff` – Concurrency cap on 429 responses. Defaults to `config.rateLimitBackoff`,
-     *     or 1 if not set on the client.
-     *   - `backoff` – Divisor (or function) applied to concurrency on error responses.
-     *     Defaults to `config.backoff`, or 2 if not set on the client.
-     *   - `backoffRecover` – Amount (or function) added to concurrency per successful response.
-     *     Defaults to `config.backoffRecover`, or 1 if not set on the client.
+     * @param options.query - Query parameters. `query.limit` controls page size (default 250,
+     *   must be > 0). `query.page` sets the starting page (default 1, must be > 0).
+     * @param options.querySchema - StandardSchemaV1 schema to validate `query`. Requires `query`
+     *   to be provided.
+     * @param options.itemSchema - StandardSchemaV1 schema to validate each returned item.
+     * @param options.concurrency - Max concurrent page requests for pages after the first.
+     *   Must be 1–1000. `false` for sequential. Defaults to `config.concurrency`, or 10 if not
+     *   set on the client.
+     * @param options.rateLimitBackoff - Concurrency cap on 429 responses. Defaults to
+     *   `config.rateLimitBackoff`, or 1 if not set on the client.
+     * @param options.backoff - Divisor (or function) applied to concurrency on error responses.
+     *   Defaults to `config.backoff`, or 2 if not set on the client.
+     * @param options.backoffRecover - Amount (or function) added to concurrency per successful
+     *   response. Defaults to `config.backoffRecover`, or 1 if not set on the client.
      * @returns All items across all pages.
      * @throws {@link BCPaginatedOptionError} if `query.limit` or `query.page` is not a positive number.
      * @throws {@link BCQueryValidationError} if `querySchema` validation fails.
@@ -478,20 +492,21 @@ export class BigCommerceClient {
      *
      * @param path - API path relative to the store's versioned base URL.
      * @param options - Ky options are forwarded to page requests.
-     *   - `count` – Total items expected. Used to compute page range as
-     *     `ceil(count / limit) - page + 1` requests. Must be > 0. Defaults to 2000.
-     *   - `query` – Query parameters. `query.limit` controls page size (default 250, must be > 0).
-     *     `query.page` sets the starting page (default 1, must be > 0).
-     *   - `querySchema` – Schema to validate `query`. Requires `query` to be provided.
-     *   - `itemSchema` – Schema to validate each returned item.
-     *   - `concurrency` – Max concurrent page requests. Must be 1–1000. `false` for sequential.
-     *     Defaults to `config.concurrency`, or 10 if not set on the client.
-     *   - `rateLimitBackoff` – Concurrency cap on 429 responses. Defaults to `config.rateLimitBackoff`,
-     *     or 1 if not set on the client.
-     *   - `backoff` – Divisor (or function) applied to concurrency on error responses.
-     *     Defaults to `config.backoff`, or 2 if not set on the client.
-     *   - `backoffRecover` – Amount (or function) added to concurrency per successful response.
-     *     Defaults to `config.backoffRecover`, or 1 if not set on the client.
+     * @param options.count - Total number of items expected. Used to compute the page range as
+     *   `ceil(count / limit) - page + 1` requests. Must be > 0. Defaults to 2000.
+     * @param options.query - Query parameters. `query.limit` controls page size (default 250,
+     *   must be > 0). `query.page` sets the starting page (default 1, must be > 0).
+     * @param options.querySchema - StandardSchemaV1 schema to validate `query`. Requires `query`
+     *   to be provided.
+     * @param options.itemSchema - StandardSchemaV1 schema to validate each returned item.
+     * @param options.concurrency - Max concurrent page requests. Must be 1–1000. `false` for
+     *   sequential. Defaults to `config.concurrency`, or 10 if not set on the client.
+     * @param options.rateLimitBackoff - Concurrency cap on 429 responses. Defaults to
+     *   `config.rateLimitBackoff`, or 1 if not set on the client.
+     * @param options.backoff - Divisor (or function) applied to concurrency on error responses.
+     *   Defaults to `config.backoff`, or 2 if not set on the client.
+     * @param options.backoffRecover - Amount (or function) added to concurrency per successful
+     *   response. Defaults to `config.backoffRecover`, or 1 if not set on the client.
      * @throws {@link BCPaginatedOptionError} if `count`, `query.limit`, or `query.page` is not a
      *   positive number.
      * @throws {@link BCQueryValidationError} if `querySchema` validation fails.
@@ -559,20 +574,21 @@ export class BigCommerceClient {
      *
      * @param path - API path relative to the store's versioned base URL.
      * @param options - Ky options are forwarded to page requests.
-     *   - `count` – Total items expected. Used to compute page range as
-     *     `ceil(count / limit) - page + 1` requests. Must be > 0. Defaults to 2000.
-     *   - `query` – Query parameters. `query.limit` controls page size (default 250, must be > 0).
-     *     `query.page` sets the starting page (default 1, must be > 0).
-     *   - `querySchema` – Schema to validate `query`. Requires `query` to be provided.
-     *   - `itemSchema` – Schema to validate each returned item.
-     *   - `concurrency` – Max concurrent page requests. Must be 1–1000. `false` for sequential.
-     *     Defaults to `config.concurrency`, or 10 if not set on the client.
-     *   - `rateLimitBackoff` – Concurrency cap on 429 responses. Defaults to `config.rateLimitBackoff`,
-     *     or 1 if not set on the client.
-     *   - `backoff` – Divisor (or function) applied to concurrency on error responses.
-     *     Defaults to `config.backoff`, or 2 if not set on the client.
-     *   - `backoffRecover` – Amount (or function) added to concurrency per successful response.
-     *     Defaults to `config.backoffRecover`, or 1 if not set on the client.
+     * @param options.count - Total number of items expected. Used to compute the page range as
+     *   `ceil(count / limit) - page + 1` requests. Must be > 0. Defaults to 2000.
+     * @param options.query - Query parameters. `query.limit` controls page size (default 250,
+     *   must be > 0). `query.page` sets the starting page (default 1, must be > 0).
+     * @param options.querySchema - StandardSchemaV1 schema to validate `query`. Requires `query`
+     *   to be provided.
+     * @param options.itemSchema - StandardSchemaV1 schema to validate each returned item.
+     * @param options.concurrency - Max concurrent page requests. Must be 1–1000. `false` for
+     *   sequential. Defaults to `config.concurrency`, or 10 if not set on the client.
+     * @param options.rateLimitBackoff - Concurrency cap on 429 responses. Defaults to
+     *   `config.rateLimitBackoff`, or 1 if not set on the client.
+     * @param options.backoff - Divisor (or function) applied to concurrency on error responses.
+     *   Defaults to `config.backoff`, or 2 if not set on the client.
+     * @param options.backoffRecover - Amount (or function) added to concurrency per successful
+     *   response. Defaults to `config.backoffRecover`, or 1 if not set on the client.
      *
      * @returns All items across the computed page range.
      * @throws {@link BCPaginatedOptionError} if `count`, `query.limit`, or `query.page` is not a
@@ -645,19 +661,22 @@ export class BigCommerceClient {
      *
      * @param path - API path relative to the store's versioned base URL.
      * @param options - Ky options are forwarded to page requests.
-     *   - `query` – Query parameters. `query.limit` controls page size (default 250, must be > 0).
-     *     `query.page` sets the starting page (default 1, must be > 0). If the API enforces a
-     *     different limit, the actual `per_page` from the first response is used for subsequent pages.
-     *   - `querySchema` – Schema to validate `query`. Requires `query` to be provided.
-     *   - `itemSchema` – Schema to validate each returned item.
-     *   - `concurrency` – Max concurrent page requests after the first. Must be 1–1000. `false` for
-     *     sequential. Defaults to `config.concurrency`, or 10 if not set on the client.
-     *   - `rateLimitBackoff` – Concurrency cap on 429 responses. Defaults to `config.rateLimitBackoff`,
-     *     or 1 if not set on the client.
-     *   - `backoff` – Divisor (or function) applied to concurrency on error responses.
-     *     Defaults to `config.backoff`, or 2 if not set on the client.
-     *   - `backoffRecover` – Amount (or function) added to concurrency per successful response.
-     *     Defaults to `config.backoffRecover`, or 1 if not set on the client.
+     * @param options.query - Query parameters. `query.limit` controls page size (default 250,
+     *   must be > 0). `query.page` sets the starting page (default 1, must be > 0). If the API
+     *   enforces a different limit, the actual `per_page` from the first response is used for
+     *   subsequent pages.
+     * @param options.querySchema - StandardSchemaV1 schema to validate `query`. Requires `query`
+     *   to be provided.
+     * @param options.itemSchema - StandardSchemaV1 schema to validate each returned item.
+     * @param options.concurrency - Max concurrent page requests for pages after the first.
+     *   Must be 1–1000. `false` for sequential. Defaults to `config.concurrency`, or 10 if not
+     *   set on the client.
+     * @param options.rateLimitBackoff - Concurrency cap on 429 responses. Defaults to
+     *   `config.rateLimitBackoff`, or 1 if not set on the client.
+     * @param options.backoff - Divisor (or function) applied to concurrency on error responses.
+     *   Defaults to `config.backoff`, or 2 if not set on the client.
+     * @param options.backoffRecover - Amount (or function) added to concurrency per successful
+     *   response. Defaults to `config.backoffRecover`, or 1 if not set on the client.
      * @throws {@link BCPaginatedOptionError} if `query.limit` or `query.page` is not a positive number.
      * @throws {@link BCQueryValidationError} if `querySchema` validation fails.
      */

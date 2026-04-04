@@ -8,4 +8,6 @@
 
 > **LogLevel** = *typeof* `LOG_LEVELS`\[`number`\]
 
-Defined in: lib/logger.ts:20
+Defined in: lib/logger.ts:27
+
+Supported log levels.

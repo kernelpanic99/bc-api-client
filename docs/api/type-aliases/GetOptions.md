@@ -8,7 +8,9 @@
 
 > **GetOptions**\<`TRes`, `TQuery`\> = `Omit`\<[`RequestOptions`](RequestOptions.md)\<`never`, `TRes`, `TQuery`\>, `"body"` \| `"bodySchema"` \| `"method"`\>
 
-Defined in: lib/request.ts:55
+Defined in: lib/request.ts:71
+
+Options for GET requests.
 
 ## Type Parameters
 
