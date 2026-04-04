@@ -6,6 +6,5 @@ export default defineConfig({
         enabled: true,
         ignoreRules: ['cjs-resolves-to-esm'],
     },
-    target: 'node16',
     format: ['esm'],
 });
