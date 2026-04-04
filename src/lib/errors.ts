@@ -3,7 +3,14 @@ import type { StandardSchemaV1 } from './standard-schema';
 
 export type ErrorContext = Record<string, unknown>;
 
+/**
+ * Abstract base class for all library errors. Carries a typed `context` object with
+ * structured diagnostic data and a machine-readable `code` string.
+ *
+ * Use `instanceof` checks against specific subclasses rather than this base class.
+ */
 export abstract class BaseError<TContext extends ErrorContext = ErrorContext> extends Error {
+    /** Machine-readable error code. Unique per subclass. */
     abstract readonly code: string;
 
     constructor(
@@ -27,6 +34,7 @@ export abstract class BaseError<TContext extends ErrorContext = ErrorContext> ex
     }
 }
 
+/** Catch-all for unexpected client-side errors not covered by a more specific subclass. */
 export class BCClientError extends BaseError<Record<string, string>> {
     code = 'BC_CLIENT_ERROR';
 
@@ -35,6 +43,7 @@ export class BCClientError extends BaseError<Record<string, string>> {
     }
 }
 
+/** Thrown by the {@link BigCommerceClient} constructor when credentials or config are invalid. */
 export class BCCredentialsError extends BaseError<{
     errors: string[];
 }> {
@@ -45,6 +54,7 @@ export class BCCredentialsError extends BaseError<{
     }
 }
 
+/** Thrown before a request is sent when the constructed URL exceeds 2048 characters. */
 export class BCUrlTooLongError extends BaseError<{
     url: string;
     max: number;
@@ -57,6 +67,10 @@ export class BCUrlTooLongError extends BaseError<{
     }
 }
 
+/**
+ * Thrown during retry when a 429 response is received but the expected
+ * `X-Rate-Limit-*` headers are absent, making it impossible to determine the backoff delay.
+ */
 export class BCRateLimitNoHeadersError extends BaseError<{
     url: string;
     method: string;
@@ -73,6 +87,10 @@ export class BCRateLimitNoHeadersError extends BaseError<{
     }
 }
 
+/**
+ * Thrown during retry when a 429 response specifies a reset window that exceeds
+ * `config.retry.maxRetryAfter`, preventing an unbounded wait.
+ */
 export class BCRateLimitDelayTooLongError extends BaseError<{
     url: string;
     method: string;
@@ -93,6 +111,10 @@ export class BCRateLimitDelayTooLongError extends BaseError<{
     }
 }
 
+/**
+ * Abstract base for all StandardSchema validation errors. Carries the raw `data` that failed
+ * validation and the schema `error` result. Use specific subclasses for `instanceof` checks.
+ */
 export abstract class BCSchemaValidationError extends BaseError<{
     method: string;
     path: string;
@@ -104,22 +126,30 @@ export abstract class BCSchemaValidationError extends BaseError<{
     }
 }
 
+/** Thrown when `options.querySchema` validation fails before a request is sent. */
 export class BCQueryValidationError extends BCSchemaValidationError {
     code = 'BC_QUERY_VALIDATION_FAILED';
 }
 
+/** Thrown when `options.bodySchema` validation fails before a request is sent. */
 export class BCRequestBodyValidationError extends BCSchemaValidationError {
     code = 'BC_REQUEST_BODY_VALIDATION_FAILED';
 }
 
+/** Thrown when `options.responseSchema` validation fails after a response is received. */
 export class BCResponseValidationError extends BCSchemaValidationError {
     code = 'BC_RESPONSE_VALIDATION_FAILED';
 }
 
+/** Thrown or yielded when `options.itemSchema` validation fails for an item in a page response. */
 export class BCPaginatedItemValidationError extends BCSchemaValidationError {
     code = 'BC_PAGINATED_ITEM_VALIDATION_FAILED';
 }
 
+/**
+ * Thrown when the BigCommerce API returns a non-2xx HTTP response.
+ * `context.status` and `context.responseBody` are the most useful fields for debugging.
+ */
 export class BCApiError extends BaseError<{
     method: string;
     url: string;
@@ -146,6 +176,7 @@ export class BCApiError extends BaseError<{
     }
 }
 
+/** Thrown when a request exceeds the configured timeout (default 120 s). */
 export class BCTimeoutError extends BaseError<{
     method: string;
     url: string;
@@ -160,6 +191,10 @@ export class BCTimeoutError extends BaseError<{
     }
 }
 
+/**
+ * Thrown when the response body cannot be read or parsed as JSON.
+ * `context.rawBody` contains the raw text that failed to parse (empty string if the body was empty).
+ */
 export class BCResponseParseError extends BaseError<{ method: string; path: string; rawBody?: string }> {
     code = 'BC_RESPONSE_PARSE_ERROR';
 
@@ -176,6 +211,10 @@ export class BCResponseParseError extends BaseError<{ method: string; path: stri
     }
 }
 
+/**
+ * Thrown when a pagination option (`limit`, `page`, or `count`) is not a positive number.
+ * `context.option` names the offending field; `context.value` is the value that was passed.
+ */
 export class BCPaginatedOptionError extends BaseError<{ path: string; option: string; value: unknown }> {
     code = 'BC_PAGINATED_OPTION_ERROR';
 
@@ -184,6 +223,10 @@ export class BCPaginatedOptionError extends BaseError<{ path: string; option: st
     }
 }
 
+/**
+ * Thrown or yielded when a paginated response is missing required v3 envelope fields
+ * (`data`, `meta.pagination`, etc.). Usually means the path is not a v3 collection endpoint.
+ */
 export class BCPaginatedResponseError extends BaseError<{ path: string; data: unknown; reason: string }> {
     code = 'BC_PAGINATED_RESPONSE_ERROR';
 
@@ -192,6 +235,7 @@ export class BCPaginatedResponseError extends BaseError<{ path: string; data: un
     }
 }
 
+/** Thrown by {@link BigCommerceAuth} constructor when `config.redirectUri` is not a valid URL. */
 export class BCAuthInvalidRedirectUriError extends BaseError<{ redirectUri: string }> {
     code = 'BC_AUTH_INVALID_REDIRECT_URI';
 
@@ -200,6 +244,7 @@ export class BCAuthInvalidRedirectUriError extends BaseError<{ redirectUri: stri
     }
 }
 
+/** Thrown by {@link BigCommerceAuth.requestToken} when a required OAuth callback param is absent. */
 export class BCAuthMissingParamError extends BaseError<{ param: string }> {
     code = 'BC_AUTH_MISSING_PARAM';
 
@@ -208,6 +253,11 @@ export class BCAuthMissingParamError extends BaseError<{ param: string }> {
     }
 }
 
+/**
+ * Thrown by {@link BigCommerceAuth.requestToken} when the scopes granted by BigCommerce
+ * do not include all scopes listed in `config.scopes`.
+ * `context.missing` lists the scopes that were expected but not granted.
+ */
 export class BCAuthScopeMismatchError extends BaseError<{
     granted: string[];
     expected: string[];
@@ -220,6 +270,7 @@ export class BCAuthScopeMismatchError extends BaseError<{
     }
 }
 
+/** Thrown by {@link BigCommerceAuth.verify} when the JWT signature, audience, issuer, or subject is invalid. */
 export class BCAuthInvalidJwtError extends BaseError<{ storeHash: string }> {
     code = 'BC_AUTH_INVALID_JWT';
 

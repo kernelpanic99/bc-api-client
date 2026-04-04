@@ -160,9 +160,16 @@ export class BigCommerceAuth {
     }
 
     /**
-     * Requests an access token from BigCommerce
-     * @param data - Either a query string, URLSearchParams, or AuthQuery object containing auth callback data
-     * @returns Promise resolving to the token response
+     * Exchanges an OAuth authorization code for an access token.
+     *
+     * @param data - The auth callback payload: a raw query string, `URLSearchParams`, or a
+     *   pre-parsed object with `code`, `scope`, and `context`.
+     * @returns The token response including `access_token`, `user`, and `context`.
+     * @throws {@link BCAuthMissingParamError} if `code`, `scope`, or `context` are absent.
+     * @throws {@link BCAuthScopeMismatchError} if the granted scopes don't include all `config.scopes`.
+     * @throws {@link BCApiError} on HTTP error responses from the token endpoint.
+     * @throws {@link BCTimeoutError} if the token request times out.
+     * @throws {@link BCClientError} on any other error.
      */
     async requestToken(data: string | AuthQuery | URLSearchParams): Promise<TokenResponse> {
         const query = typeof data === 'string' || data instanceof URLSearchParams ? this.parseQueryString(data) : data;

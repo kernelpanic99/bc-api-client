@@ -65,25 +65,57 @@ export type BatchRequestOptions<TBody, TRes, TQuery extends Query> = {
     path: string;
 } & RequestOptions<TBody, TRes, TQuery>;
 
+/**
+ * Helpers for building typed request descriptors to pass to
+ * {@link BigCommerceClient.batchSafe} or {@link BigCommerceClient.batchStream}.
+ *
+ * @example
+ * ```ts
+ * const results = await client.batchSafe([
+ *   req.get('catalog/products/1'),
+ *   req.post('catalog/products', { body: { name: 'Widget' } }),
+ * ]);
+ * ```
+ */
 export const req = {
+    /**
+     * Builds a GET request descriptor.
+     * @param path - API path relative to the store's versioned base URL.
+     * @param options - Optional query params, schemas, and ky options.
+     */
     get: <TRes, TQuery extends Query = Query>(
         path: string,
         options?: GetOptions<TRes, TQuery>,
     ): BatchRequestOptions<never, TRes, TQuery> =>
         ({ method: 'GET', path, ...options }) as BatchRequestOptions<never, TRes, TQuery>,
 
+    /**
+     * Builds a POST request descriptor.
+     * @param path - API path relative to the store's versioned base URL.
+     * @param options - Optional body, query params, schemas, and ky options.
+     */
     post: <TRes, TBody = unknown, TQuery extends Query = Query>(
         path: string,
         options?: PostOptions<TBody, TRes, TQuery>,
     ): BatchRequestOptions<TBody, TRes, TQuery> =>
         ({ method: 'POST', path, ...options }) as BatchRequestOptions<TBody, TRes, TQuery>,
 
+    /**
+     * Builds a PUT request descriptor.
+     * @param path - API path relative to the store's versioned base URL.
+     * @param options - Optional body, query params, schemas, and ky options.
+     */
     put: <TRes, TBody = unknown, TQuery extends Query = Query>(
         path: string,
         options?: PutOptions<TBody, TRes, TQuery>,
     ): BatchRequestOptions<TBody, TRes, TQuery> =>
         ({ method: 'PUT', path, ...options }) as BatchRequestOptions<TBody, TRes, TQuery>,
 
+    /**
+     * Builds a DELETE request descriptor.
+     * @param path - API path relative to the store's versioned base URL.
+     * @param options - Optional query params and ky options.
+     */
     delete: <TQuery extends Query = Query>(
         path: string,
         options?: DeleteOptions<TQuery>,

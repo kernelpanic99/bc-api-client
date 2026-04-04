@@ -82,7 +82,6 @@ export class BigCommerceClient {
      * @throws {@link BCCredentialsError} if `storeHash` or `accessToken` are missing or if
      *   `concurrency` is out of range.
      * @throws {@link BCClientError} if `prefixUrl` is not a valid URL.
-     * @throws Does not throw for unknown string log levels; falls back to `'info'` and logs a warning.
      */
     constructor(private readonly config: ClientConfig) {
         this.validateConfig();
@@ -298,11 +297,18 @@ export class BigCommerceClient {
      *   response. Defaults to `config.backoffRecover`, or 1 if not set on the client.
      *
      * @returns All matching items across all chunked requests.
-     *
-     * @throws {@link BCApiError} on HTTP error responses.
+     * @throws {@link BCPaginatedOptionError} if `query.limit` is not a positive number.
      * @throws {@link BCQueryValidationError} if `querySchema` validation fails.
+     * @throws {@link BCApiError} on HTTP error responses.
+     * @throws {@link BCTimeoutError} if a request times out.
+     * @throws {@link BCResponseParseError} if a response body cannot be parsed.
+     * @throws {@link BCUrlTooLongError} if a constructed URL exceeds 2048 characters.
+     * @throws {@link BCRateLimitNoHeadersError} if a 429 is received without rate-limit headers.
+     * @throws {@link BCRateLimitDelayTooLongError} if the rate-limit reset window exceeds
+     *   `config.retry.maxRetryAfter`.
      * @throws {@link BCPaginatedResponseError} if a page response has an unexpected shape.
      * @throws {@link BCPaginatedItemValidationError} if `itemSchema` validation fails for an item.
+     * @throws {@link BCClientError} on any other ky or unknown error.
      */
     async query<TItem, TQuery extends Query = Query>(
         path: string,
@@ -344,6 +350,8 @@ export class BigCommerceClient {
      *   Defaults to `config.backoff`, or 2 if not set on the client.
      * @param options.backoffRecover - Amount (or function) added to concurrency per successful
      *   response. Defaults to `config.backoffRecover`, or 1 if not set on the client.
+     * @throws {@link BCPaginatedOptionError} if `query.limit` is not a positive number.
+     * @throws {@link BCQueryValidationError} if `querySchema` validation fails.
      */
     async *queryStream<TItem, TQuery extends Query = Query>(
         path: string,
@@ -441,11 +449,18 @@ export class BigCommerceClient {
      * @param options.backoffRecover - Amount (or function) added to concurrency per successful
      *   response. Defaults to `config.backoffRecover`, or 1 if not set on the client.
      * @returns All items across all pages.
-     *
-     * @throws {@link BCApiError} on HTTP error responses.
+     * @throws {@link BCPaginatedOptionError} if `query.limit` or `query.page` is not a positive number.
      * @throws {@link BCQueryValidationError} if `querySchema` validation fails.
+     * @throws {@link BCApiError} on HTTP error responses.
+     * @throws {@link BCTimeoutError} if a request times out.
+     * @throws {@link BCResponseParseError} if a response body cannot be parsed.
+     * @throws {@link BCUrlTooLongError} if a constructed URL exceeds 2048 characters.
+     * @throws {@link BCRateLimitNoHeadersError} if a 429 is received without rate-limit headers.
+     * @throws {@link BCRateLimitDelayTooLongError} if the rate-limit reset window exceeds
+     *   `config.retry.maxRetryAfter`.
      * @throws {@link BCPaginatedResponseError} if a page response has an unexpected shape.
      * @throws {@link BCPaginatedItemValidationError} if `itemSchema` validation fails for an item.
+     * @throws {@link BCClientError} on any other ky or unknown error.
      */
     async collect<TItem, TQuery extends Query>(
         path: string,
@@ -488,6 +503,9 @@ export class BigCommerceClient {
      *   Defaults to `config.backoff`, or 2 if not set on the client.
      * @param options.backoffRecover - Amount (or function) added to concurrency per successful
      *   response. Defaults to `config.backoffRecover`, or 1 if not set on the client.
+     * @throws {@link BCPaginatedOptionError} if `count`, `query.limit`, or `query.page` is not a
+     *   positive number.
+     * @throws {@link BCQueryValidationError} if `querySchema` validation fails.
      */
     async *streamCount<TItem, TQuery extends Query>(
         path: string,
@@ -569,10 +587,18 @@ export class BigCommerceClient {
      *   response. Defaults to `config.backoffRecover`, or 1 if not set on the client.
      *
      * @returns All items across the computed page range.
-     *
-     * @throws {@link BCApiError} on HTTP error responses.
+     * @throws {@link BCPaginatedOptionError} if `count`, `query.limit`, or `query.page` is not a
+     *   positive number.
      * @throws {@link BCQueryValidationError} if `querySchema` validation fails.
+     * @throws {@link BCApiError} on HTTP error responses.
+     * @throws {@link BCTimeoutError} if a request times out.
+     * @throws {@link BCResponseParseError} if a response body cannot be parsed.
+     * @throws {@link BCUrlTooLongError} if a constructed URL exceeds 2048 characters.
+     * @throws {@link BCRateLimitNoHeadersError} if a 429 is received without rate-limit headers.
+     * @throws {@link BCRateLimitDelayTooLongError} if the rate-limit reset window exceeds
+     *   `config.retry.maxRetryAfter`.
      * @throws {@link BCPaginatedItemValidationError} if `itemSchema` validation fails for an item.
+     * @throws {@link BCClientError} on any other ky or unknown error.
      */
     async collectCount<TItem, TQuery extends Query>(
         path: string,
@@ -647,6 +673,8 @@ export class BigCommerceClient {
      *   Defaults to `config.backoff`, or 2 if not set on the client.
      * @param options.backoffRecover - Amount (or function) added to concurrency per successful
      *   response. Defaults to `config.backoffRecover`, or 1 if not set on the client.
+     * @throws {@link BCPaginatedOptionError} if `query.limit` or `query.page` is not a positive number.
+     * @throws {@link BCQueryValidationError} if `querySchema` validation fails.
      */
     async *stream<TItem, TQuery extends Query>(
         path: string,

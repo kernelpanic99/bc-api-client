@@ -18,6 +18,16 @@ export const LOG_LEVELS = ['debug', 'info', 'warn', 'error'] as const;
 
 export type LogLevel = (typeof LOG_LEVELS)[number];
 
+/**
+ * Adapts an AWS Lambda Powertools logger to the {@link Logger} interface expected by
+ * {@link BigCommerceClient} and {@link BigCommerceAuth}.
+ *
+ * Powertools loggers use `(message, ...data)` argument order whereas this library uses
+ * `(data, message)`. This adapter swaps the arguments.
+ *
+ * @param logger - An AWS Lambda Powertools (or any {@link PowertoolsLikeLogger}-compatible) logger.
+ * @returns A {@link Logger} wrapper suitable for `config.logger`.
+ */
 export const fromAwsPowertoolsLogger = (logger: PowertoolsLikeLogger): Logger => ({
     debug: (data, message) => logger.debug(message ?? '', data),
     info: (data, message) => logger.info(message ?? '', data),
@@ -25,7 +35,21 @@ export const fromAwsPowertoolsLogger = (logger: PowertoolsLikeLogger): Logger =>
     error: (data, message) => logger.error(message ?? '', data),
 });
 
+/**
+ * Console-based {@link Logger} that filters messages below a minimum level.
+ *
+ * Used automatically when `config.logger` is `true`, `undefined`, or a {@link LogLevel} string.
+ * Can also be instantiated directly for custom log level control.
+ *
+ * @example
+ * ```ts
+ * new BigCommerceClient({ ..., logger: new FallbackLogger('debug') });
+ * ```
+ */
 export class FallbackLogger implements Logger {
+    /**
+     * @param level - Minimum level to output. Messages below this level are silently dropped.
+     */
     constructor(public readonly level: LogLevel) {}
 
     debug(data: Record<string, unknown>, message?: string): void {
