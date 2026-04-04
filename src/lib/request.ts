@@ -30,15 +30,21 @@ export type HttpMethod = 'POST' | 'GET' | 'PUT' | 'DELETE';
 
 type BaseKyRequest = Omit<KyOptions, 'json' | 'method' | 'searchQueryParams' | 'body'>;
 
-export interface RequestOptions<TBody, TRes, TQuery extends Query> extends BaseKyRequest {
-    method: HttpMethod;
-    version?: ApiVersion;
-    query?: TQuery;
-    body?: TBody;
-    responseSchema?: StandardSchemaV1<TRes>;
-    bodySchema?: StandardSchemaV1<TBody>;
-    querySchema?: StandardSchemaV1<TQuery>;
-}
+type QuerySchemaOptions<TQuery extends Query> =
+    | { query: TQuery; querySchema: StandardSchemaV1<TQuery> }
+    | { query?: TQuery; querySchema?: never };
+
+type BodySchemaOptions<TBody> =
+    | { body: TBody; bodySchema: StandardSchemaV1<TBody> }
+    | { body?: TBody; bodySchema?: never };
+
+export type RequestOptions<TBody, TRes, TQuery extends Query> = BaseKyRequest &
+    QuerySchemaOptions<TQuery> &
+    BodySchemaOptions<TBody> & {
+        method: HttpMethod;
+        version?: ApiVersion;
+        responseSchema?: StandardSchemaV1<TRes>;
+    };
 
 export type GetOptions<TRes, TQuery extends Query> = Omit<
     RequestOptions<never, TRes, TQuery>,
@@ -60,22 +66,26 @@ export const req = {
     get: <TRes, TQuery extends Query = Query>(
         path: string,
         options?: GetOptions<TRes, TQuery>,
-    ): BatchRequestOptions<never, TRes, TQuery> => ({ method: 'GET', path, ...options }),
+    ): BatchRequestOptions<never, TRes, TQuery> =>
+        ({ method: 'GET', path, ...options }) as BatchRequestOptions<never, TRes, TQuery>,
 
     post: <TRes, TBody = unknown, TQuery extends Query = Query>(
         path: string,
         options?: PostOptions<TBody, TRes, TQuery>,
-    ): BatchRequestOptions<TBody, TRes, TQuery> => ({ method: 'POST', path, ...options }),
+    ): BatchRequestOptions<TBody, TRes, TQuery> =>
+        ({ method: 'POST', path, ...options }) as BatchRequestOptions<TBody, TRes, TQuery>,
 
     put: <TRes, TBody = unknown, TQuery extends Query = Query>(
         path: string,
         options?: PutOptions<TBody, TRes, TQuery>,
-    ): BatchRequestOptions<TBody, TRes, TQuery> => ({ method: 'PUT', path, ...options }),
+    ): BatchRequestOptions<TBody, TRes, TQuery> =>
+        ({ method: 'PUT', path, ...options }) as BatchRequestOptions<TBody, TRes, TQuery>,
 
     delete: <TQuery extends Query = Query>(
         path: string,
         options?: DeleteOptions<TQuery>,
-    ): BatchRequestOptions<never, never, TQuery> => ({ method: 'DELETE', path, ...options }),
+    ): BatchRequestOptions<never, never, TQuery> =>
+        ({ method: 'DELETE', path, ...options }) as BatchRequestOptions<never, never, TQuery>,
 };
 
 export type CollectOptions<TItem, TQuery extends Query> = ConcurrencyOptions &

@@ -98,7 +98,7 @@ export class BigCommerceClient {
         return this.request<never, TRes, TQuery>(path, {
             ...options,
             method: 'GET',
-        });
+        } as RequestOptions<never, TRes, TQuery>);
     }
 
     async post<TRes, TBody = unknown, TQuery extends Query = Query>(
@@ -108,7 +108,7 @@ export class BigCommerceClient {
         return this.request<TBody, TRes, TQuery>(path, {
             ...options,
             method: 'POST',
-        });
+        } as RequestOptions<TBody, TRes, TQuery>);
     }
 
     async put<TRes, TBody = unknown, TQuery extends Query = Query>(
@@ -118,7 +118,7 @@ export class BigCommerceClient {
         return this.request<TBody, TRes, TQuery>(path, {
             ...options,
             method: 'PUT',
-        });
+        } as RequestOptions<TBody, TRes, TQuery>);
     }
 
     async delete<TRes = never, TQuery extends Query = Query>(
@@ -129,7 +129,7 @@ export class BigCommerceClient {
             await this.request<never, TRes, TQuery>(path, {
                 ...options,
                 method: 'DELETE',
-            });
+            } as RequestOptions<never, TRes, TQuery>);
         } catch (err) {
             if (err instanceof BCResponseParseError && err.context.rawBody === '') {
                 return;
