@@ -1,4 +1,5 @@
-import { BASE_KY_CONFIG, BigCommerceClient } from 'src';
+import { BigCommerceClient } from 'src';
+import { BASE_KY_CONFIG } from 'src/lib/common';
 
 export const getThrown = (fn: () => void) => {
     try {

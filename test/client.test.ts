@@ -1,5 +1,4 @@
 import {
-    BASE_KY_CONFIG,
     BCApiError,
     BCCredentialsError,
     BCQueryValidationError,
@@ -10,9 +9,9 @@ import {
     BCResponseValidationError,
     BCSchemaValidationError,
     BCUrlTooLongError,
-    HEADERS,
 } from 'src';
 import { BigCommerceClient } from 'src/client';
+import { BASE_KY_CONFIG, HEADERS } from 'src/lib/common';
 import { describe, expect, it, vi } from 'vitest';
 import z from 'zod';
 import { createClient, getThrown, VALID_CREDENTIALS } from './util';

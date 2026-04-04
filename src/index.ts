@@ -1,7 +1,21 @@
 export * from './client';
-export * from './lib/common';
+export type { ClientConfig, ConcurrencyOptions } from './lib/common';
 export * from './lib/errors';
-export * from './lib/logger';
+export type { Logger, LogLevel, PowertoolsLikeLogger } from './lib/logger';
+export { FallbackLogger, fromAwsPowertoolsLogger } from './lib/logger';
 export * from './lib/pagination';
-export * from './lib/request';
+export type {
+    ApiVersion,
+    BatchRequestOptions,
+    CollectOptions,
+    DeleteOptions,
+    GetOptions,
+    HttpMethod,
+    PostOptions,
+    PutOptions,
+    Query,
+    QueryValue,
+    RequestOptions,
+} from './lib/request';
+export { req } from './lib/request';
 export * from './lib/result';
