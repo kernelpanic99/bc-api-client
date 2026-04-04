@@ -264,24 +264,6 @@ export class BigCommerceClient {
         }
     }
 
-    private async validatePaginatedItem<TItem>(
-        path: string,
-        item: unknown,
-        schema?: StandardSchemaV1<TItem>,
-    ): Promise<Result<TItem, BaseError>> {
-        if (!schema) {
-            return Ok(item as TItem);
-        }
-
-        const result = await schema['~standard'].validate(item);
-
-        if (result.issues) {
-            return Err(new BCPaginatedItemValidationError('Page item validation failed', 'GET', path, item, result));
-        } else {
-            return Ok(result.value);
-        }
-    }
-
     async *batchStream<TBody, TRes, TQuery extends Query>(
         requests: BatchRequestOptions<TBody, TRes, TQuery>[],
         options?: ConcurrencyOptions,
@@ -308,6 +290,24 @@ export class BigCommerceClient {
             }
         } finally {
             limit.clearQueue();
+        }
+    }
+
+    private async validatePaginatedItem<TItem>(
+        path: string,
+        item: unknown,
+        schema?: StandardSchemaV1<TItem>,
+    ): Promise<Result<TItem, BaseError>> {
+        if (!schema) {
+            return Ok(item as TItem);
+        }
+
+        const result = await schema['~standard'].validate(item);
+
+        if (result.issues) {
+            return Err(new BCPaginatedItemValidationError('Page item validation failed', 'GET', path, item, result));
+        } else {
+            return Ok(result.value);
         }
     }
 
