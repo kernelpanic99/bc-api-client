@@ -1,10 +1,8 @@
 import { type BeforeRequestHook, type BeforeRetryHook, isHTTPError } from 'ky';
-import { rateLimitJitter } from './common';
+import { MAX_URL_LENGTH, rateLimitJitter } from './common';
 import { BCRateLimitDelayTooLongError, BCRateLimitNoHeadersError, BCUrlTooLongError } from './errors';
 import type { Logger } from './logger';
 import { extractRateLimitHeaders } from './util';
-
-const MAX_URL_LENGTH = 2048;
 
 export const validateUrlLength: BeforeRequestHook = (request) => {
     if (request.url.length > MAX_URL_LENGTH) {

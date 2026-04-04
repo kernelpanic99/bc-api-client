@@ -7,10 +7,12 @@ import {
     DEFAULT_BACKOFF_RATE,
     DEFAULT_BACKOFF_RECOVER,
     DEFAULT_CONCURRENCY,
+    DEFAULT_LIMIT,
     DEFAULT_RATE_LIMIT_BACKOFF,
     HEADERS,
     type Logger,
     MAX_CONCURRENCY,
+    MAX_URL_LENGTH,
     type ResolvedConcurrencyOptions,
 } from './lib/common';
 import {
@@ -40,12 +42,14 @@ import {
     type PostOptions,
     type PutOptions,
     type Query,
+    type QueryOptions,
     type RequestOptions,
+    req,
     toUrlSearchParams,
 } from './lib/request';
 import { Err, Ok, type Result } from './lib/result';
 import type { StandardSchemaV1 } from './lib/standard-schema';
-import { AsyncChannel, stripKeys } from './lib/util';
+import { AsyncChannel, chunkStrLength, stripKeys } from './lib/util';
 
 const LEADING_SLASHES = /^\/+/;
 export class BigCommerceClient {
@@ -144,6 +148,74 @@ export class BigCommerceClient {
         }
     }
 
+    async *queryStream<TItem, TQuery extends Query = Query>(
+        path: string,
+        options: QueryOptions<TItem, TQuery>,
+    ): AsyncGenerator<Result<TItem, BaseError>> {
+        const limit = this.validatePaginationOption(path, 'limit', options?.query?.limit ?? DEFAULT_LIMIT);
+        stripKeys(options, ['responseSchema']);
+
+        const itemSchema = options?.itemSchema;
+
+        const newQuery: Query = {
+            ...options.query,
+            limit,
+        };
+
+        if (options.key in newQuery) {
+            this.logger?.warn(
+                { key: options.key },
+                'The provided key is already in the query params, this param will be ignored',
+            );
+
+            stripKeys(newQuery, [options.key]);
+        }
+
+        const url = this.config.prefixUrl ?? options.prefixUrl ?? BASE_KY_CONFIG.prefixUrl;
+        const fullPath = this.makePath('v3', path);
+        const fullQuery = toUrlSearchParams(newQuery);
+        const fullUrl = `${url}/${fullPath}?${fullQuery}`;
+        const keyOverhead = options.key.length + 2; // `&key=` or `key=` prefix
+
+        const chunks = chunkStrLength(options.values.map(String), {
+            chunkLength: limit,
+            maxLength: MAX_URL_LENGTH,
+            offset: fullUrl.length + keyOverhead,
+            separatorSize: 1,
+        });
+
+        const requests = chunks.map((chunk) =>
+            req.get(path, {
+                query: {
+                    ...newQuery,
+                    page: 1,
+                    [options.key]: chunk,
+                },
+            }),
+        );
+
+        for await (const { err, data } of this.batchStream(requests, options)) {
+            if (err) {
+                yield Err(err);
+                continue;
+            }
+
+            try {
+                const { data: items } = this.assertPaginatedResponse(path, data);
+
+                for (const item of items) {
+                    yield this.validatePaginatedItem(path, item, itemSchema);
+                }
+            } catch (err) {
+                if (err instanceof BaseError) {
+                    yield Err(err);
+                } else {
+                    yield Err(new BCClientError('Unknown error occurred processing page', {}, { cause: err }));
+                }
+            }
+        }
+    }
+
     async collect<TItem, TQuery extends Query>(
         path: string,
         options?: CollectOptions<TItem, TQuery>,
@@ -182,7 +254,7 @@ export class BigCommerceClient {
         path: string,
         options?: CollectOptions<TItem, TQuery>,
     ): AsyncGenerator<Result<TItem, BaseError>> {
-        let limit = this.validatePaginationOption(path, 'limit', options?.query?.limit ?? 250);
+        let limit = this.validatePaginationOption(path, 'limit', options?.query?.limit ?? DEFAULT_LIMIT);
         const page = this.validatePaginationOption(path, 'page', options?.query?.page ?? 1);
 
         stripKeys(options, ['responseSchema']);
@@ -279,7 +351,7 @@ export class BigCommerceClient {
                     limit(() =>
                         this.request(req.path, req, client).then(
                             (val) => channel.push(Ok(val)),
-                            (err) => channel.push(err(err)),
+                            (err) => channel.push(Err(err)),
                         ),
                     ),
                 ),

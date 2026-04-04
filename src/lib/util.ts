@@ -39,6 +39,50 @@ export const extractRateLimitHeaders = (headers: Headers): RateLimitMeta | undef
     };
 };
 
+export const chunkStrLength = (
+    items: string[],
+    options: {
+        maxLength?: number;
+        chunkLength?: number;
+        offset?: number;
+        separatorSize?: number;
+    } = {},
+) => {
+    const { maxLength = 2048, chunkLength = 250, offset = 0, separatorSize = 1 } = options;
+
+    const chunks: string[][] = [];
+    let currentStrLength = offset;
+    let currentChunk: string[] = [];
+
+    for (const item of items) {
+        const itemLength = encodeURIComponent(item).length;
+        const separatorLength = currentChunk.length > 0 ? separatorSize : 0;
+        const totalItemLength = itemLength + separatorLength;
+
+        const wouldExceedLength = currentStrLength + totalItemLength > maxLength;
+        const wouldExceedCount = currentChunk.length >= chunkLength;
+
+        if ((wouldExceedLength || wouldExceedCount) && currentChunk.length > 0) {
+            chunks.push(currentChunk);
+            currentChunk = [];
+            currentStrLength = offset;
+        }
+
+        if (itemLength + offset > maxLength) {
+            throw new Error(`Item too large: ${itemLength} exceeds maxLength ${maxLength}`);
+        }
+
+        currentChunk.push(item);
+        currentStrLength += totalItemLength;
+    }
+
+    if (currentChunk.length > 0) {
+        chunks.push(currentChunk);
+    }
+
+    return chunks;
+};
+
 export class AsyncChannel<T> {
     private readonly queue: T[] = [];
     private notify: (() => void) | null = null;

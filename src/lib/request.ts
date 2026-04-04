@@ -82,3 +82,8 @@ export type CollectOptions<TItem, TQuery extends Query> = ConcurrencyOptions &
     Omit<GetOptions<TItem, TQuery>, 'responseSchema'> & {
         itemSchema?: StandardSchemaV1<TItem>;
     };
+
+export type QueryOptions<TItem, TQuery extends Query> = CollectOptions<TItem, TQuery> & {
+    key: string;
+    values: (string | number)[];
+};
