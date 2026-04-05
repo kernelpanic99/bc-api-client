@@ -25,4 +25,6 @@ jobs:
         run: mise x -- pnpm qa
 
       - name: Publish
-        run: mise x -- pnpm publish --provenance
+        run: |
+          TAG=$(node -e "const v = require('./package.json').version; process.stdout.write(v.includes('-') ? 'beta' : 'latest')")
+          mise x -- pnpm publish --provenance --tag $TAG
