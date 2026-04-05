@@ -23,15 +23,15 @@ An opinionated and minimalistic client focusing on simplicity and concurrent per
 
 ## Features
 
-- Node 20+ LTS, ESM
+- Node 20+, ESM only
 - Built-in [Standard Schema](https://standardschema.dev/) validation support
 - Basic API methods (get, post, put, delete)
-- Rate limit handling
+- Rate limit handling and retries on transient errors
 - High-performance concurrency utilities:
   - Async generator streams
   - Automatic concurrency backoff on 429 and 5xx
   - V3 envelope pagination
-  - "blind" pagination until 404, 204 or a given page limit
+  - V2 "blind" pagination until 404, 204 or a given page limit
 - App authenticator module. Request token and verify JWT.
 
 ## Installation
@@ -115,8 +115,8 @@ const claims = await auth.verify(jwtPayload, "your-store-hash");
 ## Tips
 
 - This library is built for real-time integrations on enterprise stores. If you're on a lower-tier plan, concurrency can do more harm than good (throttling). Note that some endpoints have explicit concurrency limits; always check the BC docs. **Use at your own risk.**
-- Utilize `include_fields` when available and define simplified types/schemas with only the fields you need. This significantly improves request speed and keeps autocomplete clean.
-- Use `query` to fetch resources by a large list of values, e.g. products by a list of IDs or customers by a list of emails. It workarounds the max url size limitation.
+- Utilize `include_fields` when available and define simplified schemas with only the fields you need. This significantly improves request speed and keeps autocomplete clean.
+- Use `query` to fetch resources by a large list of values, e.g. products by a list of IDs or customers by a list of emails. It works around the max URL size limitation.
 - By default, the client will not wait more than 120 seconds for a rate limit to reset. For longer waits, pass `retry: { maxRetryAfter: <ms> }` to the constructor.
 
 ## License
