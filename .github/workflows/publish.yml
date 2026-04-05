@@ -27,4 +27,4 @@ jobs:
       - name: Publish
         run: |
           TAG=$(node -e "const v = require('./package.json').version; process.stdout.write(v.includes('-') ? 'beta' : 'latest')")
-          mise x -- pnpm publish --provenance --tag $TAG
+          mise x -- pnpm publish --provenance --no-git-checks --tag $TAG
