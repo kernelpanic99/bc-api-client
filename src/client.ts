@@ -818,6 +818,12 @@ export class BigCommerceClient {
      * Automatically adjusts concurrency up/down in response to rate-limit and error responses.
      * Use {@link batchSafe} to collect all results into an array.
      *
+     * **Caution:** the generator is making requests concurrently. As a consequence if a
+     * request is mutating the remote (POST, DELETE) and `for await` loop is exited early,
+     * the in-flight request may or may not commit the mutation, and the results of
+     * these request WILL NOT be yielded. If you do intent to break the loop early and want to
+     * get all the results, set `concurrency: false` to trade concurrency for deterministic behavior.
+     *
      * @param requests - Array of request descriptors built with the {@link req} helpers.
      * @param options.concurrency - Max concurrent requests. Must be 1–1000. `false` for
      *   sequential. Defaults to `config.concurrency`, or 10 if not set on the client.
@@ -835,7 +841,7 @@ export class BigCommerceClient {
         const resolved = this.resolveStreamOptions(options);
 
         if (resolved.concurrency) {
-            const limit = pLimit(resolved.concurrency);
+            const limit = pLimit({ concurrency: resolved.concurrency, rejectOnClear: true });
             const client = this.makeStreamClient(limit, resolved);
             const channel = new AsyncChannel<Result<TRes, BaseError>>();
 
