@@ -6,9 +6,9 @@ import {
     type ConcurrencyOptions,
     DEFAULT_BACKOFF_RATE,
     DEFAULT_BACKOFF_RECOVER,
-    DEFAULT_BLIND_COUNT,
     DEFAULT_CONCURRENCY,
     DEFAULT_LIMIT,
+    DEFAULT_MAX_BLIND_PAGES,
     DEFAULT_RATE_LIMIT_BACKOFF,
     HEADERS,
     LEADING_SLASHES,
@@ -38,8 +38,8 @@ import type { V3Resource } from './lib/pagination';
 import {
     type ApiVersion,
     type BatchRequestOptions,
+    type BlindOptions,
     type CollectOptions,
-    type CountedCollectOptions,
     type DeleteOptions,
     type GetOptions,
     type PostOptions,
@@ -453,6 +453,7 @@ export class BigCommerceClient {
      * @param options.backoffRecover - Amount (or function) added to concurrency per successful
      *   response. Defaults to `config.backoffRecover`, or 1 if not set on the client.
      * @returns All items across all pages.
+     *
      * @throws {@link BCPaginatedOptionError} if `query.limit` or `query.page` is not a positive number.
      * @throws {@link BCQueryValidationError} if `querySchema` validation fails.
      * @throws {@link BCApiError} on HTTP error responses.
@@ -484,141 +485,176 @@ export class BigCommerceClient {
     }
 
     /**
-     * Streams items from a v2 paginated endpoint using a known total item `count`.
+     * Fetches all pages from a v2 flat-array endpoint and collects items into an array.
      *
-     * Use this for v2 endpoints that do not return pagination metadata. Yields each item
-     * as a {@link Result} — check `err` before using `data`. Use {@link collectCount} to
-     * collect all results into an array.
+     * Pagination is discovered dynamically — pages are fetched in batches until an empty page,
+     * a 404, or a 204 response is received. No prior knowledge of total count is required.
      *
-     * @param path - API path relative to the store's versioned base URL.
+     * Use {@link streamBlind} to process items lazily without buffering the full result set.
+     *
+     * @param path - API path relative to the store's versioned base URL (always requests v2).
      * @param options - Ky options are forwarded to page requests.
-     * @param options.count - Total number of items expected. Used to compute the page range as
-     *   `ceil(count / limit) - page + 1` requests. Must be > 0. Defaults to 2000.
      * @param options.query - Query parameters. `query.limit` controls page size (default 250,
      *   must be > 0). `query.page` sets the starting page (default 1, must be > 0).
      * @param options.querySchema - StandardSchemaV1 schema to validate `query`. Requires `query`
      *   to be provided.
      * @param options.itemSchema - StandardSchemaV1 schema to validate each returned item.
-     * @param options.concurrency - Max concurrent page requests. Must be 1–1000. `false` for
-     *   sequential. Defaults to `config.concurrency`, or 10 if not set on the client.
+     * @param options.maxPages - Maximum number of pages to fetch before stopping (default 500,
+     *   must be > 0). A warning is logged if this limit is reached.
+     * @param options.concurrency - Max concurrent page requests per batch. Must be 1–1000.
+     *   `false` for sequential. Defaults to `config.concurrency`, or 10 if not set on the client.
      * @param options.rateLimitBackoff - Concurrency cap on 429 responses. Defaults to
      *   `config.rateLimitBackoff`, or 1 if not set on the client.
      * @param options.backoff - Divisor (or function) applied to concurrency on error responses.
      *   Defaults to `config.backoff`, or 2 if not set on the client.
      * @param options.backoffRecover - Amount (or function) added to concurrency per successful
      *   response. Defaults to `config.backoffRecover`, or 1 if not set on the client.
-     * @throws {@link BCPaginatedOptionError} if `count`, `query.limit`, or `query.page` is not a
-     *   positive number.
+     * @returns All items across all pages.
+     *
+     * @throws {@link BCPaginatedOptionError} if `query.limit`, `query.page`, or `maxPages` is not a positive number.
      * @throws {@link BCQueryValidationError} if `querySchema` validation fails.
-     */
-    async *streamCount<TItem, TQuery extends Query>(
-        path: string,
-        options?: CountedCollectOptions<TItem, TQuery>,
-    ): AsyncGenerator<Result<TItem, BaseError>> {
-        const { count: optionCount, query, querySchema, itemSchema, ...requestOptions } = options ?? {};
-
-        const count = this.validatePaginationOption(path, 'count', optionCount ?? DEFAULT_BLIND_COUNT);
-        const page = this.validatePaginationOption(path, 'page', query?.page ?? 1);
-        const limit = this.validatePaginationOption(path, 'limit', query?.limit ?? DEFAULT_LIMIT);
-
-        const validatedQuery = await this.validate(
-            query,
-            querySchema,
-            BCQueryValidationError,
-            'GET',
-            path,
-            'Invalid query parameters',
-        );
-
-        const requests = Array.from({ length: Math.ceil(count / limit) - page + 1 }, (_, i) => i + page).map(
-            (page) => ({
-                method: 'GET' as const,
-                version: 'v2' as const,
-                path,
-                ...requestOptions,
-                query: {
-                    ...validatedQuery,
-                    limit,
-                    page,
-                },
-            }),
-        );
-
-        for await (const { err, data } of this.batchStream(requests, options)) {
-            if (err) {
-                yield Err(err);
-            } else {
-                if (!Array.isArray(data)) {
-                    yield Err(
-                        new BCClientError('Received non-array response from paginated endpoint', {
-                            path,
-                            count: count.toString(),
-                            limit: limit.toString(),
-                        }),
-                    );
-                } else {
-                    for (const item of data) {
-                        yield this.validatePaginatedItem(path, item, itemSchema);
-                    }
-                }
-            }
-        }
-    }
-
-    /**
-     * Fetches items from a v2 paginated endpoint using a known total item `count` and collects
-     * them into an array.
-     *
-     * Use this for v2 endpoints that do not return pagination metadata. Use {@link streamCount}
-     * to process items lazily.
-     *
-     * @param path - API path relative to the store's versioned base URL.
-     * @param options - Ky options are forwarded to page requests.
-     * @param options.count - Total number of items expected. Used to compute the page range as
-     *   `ceil(count / limit) - page + 1` requests. Must be > 0. Defaults to 2000.
-     * @param options.query - Query parameters. `query.limit` controls page size (default 250,
-     *   must be > 0). `query.page` sets the starting page (default 1, must be > 0).
-     * @param options.querySchema - StandardSchemaV1 schema to validate `query`. Requires `query`
-     *   to be provided.
-     * @param options.itemSchema - StandardSchemaV1 schema to validate each returned item.
-     * @param options.concurrency - Max concurrent page requests. Must be 1–1000. `false` for
-     *   sequential. Defaults to `config.concurrency`, or 10 if not set on the client.
-     * @param options.rateLimitBackoff - Concurrency cap on 429 responses. Defaults to
-     *   `config.rateLimitBackoff`, or 1 if not set on the client.
-     * @param options.backoff - Divisor (or function) applied to concurrency on error responses.
-     *   Defaults to `config.backoff`, or 2 if not set on the client.
-     * @param options.backoffRecover - Amount (or function) added to concurrency per successful
-     *   response. Defaults to `config.backoffRecover`, or 1 if not set on the client.
-     *
-     * @returns All items across the computed page range.
-     * @throws {@link BCPaginatedOptionError} if `count`, `query.limit`, or `query.page` is not a
-     *   positive number.
-     * @throws {@link BCQueryValidationError} if `querySchema` validation fails.
-     * @throws {@link BCApiError} on HTTP error responses.
+     * @throws {@link BCPaginatedItemValidationError} if `itemSchema` validation fails for an item.
+     * @throws {@link BCClientError} if a page returns a non-array response, or on any other error.
+     * @throws {@link BCApiError} on non-terminating HTTP error responses.
      * @throws {@link BCTimeoutError} if a request times out.
      * @throws {@link BCResponseParseError} if a response body cannot be parsed.
-     * @throws {@link BCUrlTooLongError} if a constructed URL exceeds 2048 characters.
-     * @throws {@link BCRateLimitNoHeadersError} if a 429 is received without rate-limit headers.
-     * @throws {@link BCRateLimitDelayTooLongError} if the rate-limit reset window exceeds
-     *   `config.retry.maxRetryAfter`.
-     * @throws {@link BCPaginatedItemValidationError} if `itemSchema` validation fails for an item.
-     * @throws {@link BCClientError} on any other ky or unknown error.
      */
-    async collectCount<TItem, TQuery extends Query>(
+    async collectBlind<TItem, TQuery extends Query = Query>(
         path: string,
-        options?: CountedCollectOptions<TItem, TQuery>,
+        options?: BlindOptions<TItem, TQuery>,
     ): Promise<TItem[]> {
-        const items: TItem[] = [];
+        const results: TItem[] = [];
 
-        for await (const { data, err } of this.streamCount(path, options)) {
+        for await (const { err, data } of this.streamBlind(path, options)) {
             if (err) {
                 throw err;
             } else {
-                items.push(data);
+                results.push(data);
             }
         }
 
-        return items;
+        return results;
+    }
+
+    /**
+     * Lazily streams items from a v2 flat-array endpoint, page by page.
+     *
+     * Pagination is discovered dynamically — pages are fetched in concurrent batches until an
+     * empty page, a 404, or a 204 response is received. No prior knowledge of total count is
+     * required. Each item is yielded as a {@link Result}: `Ok(item)` on success or
+     * `Err(error)` for item-level validation failures and non-terminating page errors.
+     *
+     * Use {@link collectBlind} to buffer all results into an array (throws on any error).
+     *
+     * @param path - API path relative to the store's versioned base URL (always requests v2).
+     * @param options - Ky options are forwarded to page requests.
+     * @param options.query - Query parameters. `query.limit` controls page size (default 250,
+     *   must be > 0). `query.page` sets the starting page (default 1, must be > 0).
+     * @param options.querySchema - StandardSchemaV1 schema to validate `query`. Requires `query`
+     *   to be provided.
+     * @param options.itemSchema - StandardSchemaV1 schema to validate each returned item.
+     * @param options.maxPages - Maximum number of pages to fetch before stopping (default 500,
+     *   must be > 0). A warning is logged if this limit is reached.
+     * @param options.concurrency - Max concurrent page requests per batch. Must be 1–1000.
+     *   `false` for sequential. Defaults to `config.concurrency`, or 10 if not set on the client.
+     * @param options.rateLimitBackoff - Concurrency cap on 429 responses. Defaults to
+     *   `config.rateLimitBackoff`, or 1 if not set on the client.
+     * @param options.backoff - Divisor (or function) applied to concurrency on error responses.
+     *   Defaults to `config.backoff`, or 2 if not set on the client.
+     * @param options.backoffRecover - Amount (or function) added to concurrency per successful
+     *   response. Defaults to `config.backoffRecover`, or 1 if not set on the client.
+     *
+     * @throws {@link BCPaginatedOptionError} if `query.limit`, `query.page`, or `maxPages` is not a positive number.
+     * @throws {@link BCQueryValidationError} if `querySchema` validation fails.
+     *
+     * @yields `Ok(item)` for each successfully fetched and validated item.
+     * @yields `Err(BCPaginatedItemValidationError)` when `itemSchema` rejects an item.
+     * @yields `Err(BCClientError)` when a page returns a non-array response.
+     * @yields `Err(error)` for non-terminating page errors (e.g. non-404/204 HTTP errors).
+     */
+    async *streamBlind<TItem, TQuery extends Query = Query>(
+        path: string,
+        options?: BlindOptions<TItem, TQuery>,
+    ): AsyncGenerator<Result<TItem, BaseError>> {
+        const {
+            query: rawQuery,
+            querySchema,
+            itemSchema,
+            maxPages: rawMaxPages,
+            concurrency: rawConcurrency,
+            rateLimitBackoff,
+            backoff,
+            backoffRecover,
+            ...requestOptions
+        } = options ?? {};
+
+        const concurrencyOptions = { concurrency: rawConcurrency, rateLimitBackoff, backoff, backoffRecover };
+
+        const concurrency = this.validateConcurrency(this.config.concurrency ?? rawConcurrency ?? DEFAULT_CONCURRENCY);
+
+        const query = await this.validate(rawQuery, querySchema, BCQueryValidationError, 'GET', path);
+        const page = this.validatePaginationOption(path, 'page', query?.page ?? 1);
+        const limit = this.validatePaginationOption(path, 'limit', query?.limit ?? DEFAULT_LIMIT);
+        const maxPages = this.validatePaginationOption(path, 'maxPages', rawMaxPages ?? DEFAULT_MAX_BLIND_PAGES);
+
+        let done = false;
+        let currentPage = page;
+
+        do {
+            if (currentPage > maxPages) {
+                this.logger?.warn({ currentPage }, 'Blind pagination reached maxPages before the end of the data');
+                break;
+            }
+
+            const batchSize = concurrency || 1;
+            const pageRequests = Array.from({ length: batchSize }, (_, i) => currentPage + i).map((page) =>
+                req.get(path, {
+                    ...requestOptions,
+                    version: 'v2',
+                    query: {
+                        ...query,
+                        page,
+                        limit,
+                    },
+                }),
+            );
+
+            currentPage += batchSize;
+
+            const pages = await this.batchSafe(pageRequests, concurrencyOptions);
+
+            for (const { err, data } of pages) {
+                if (err) {
+                    done =
+                        (err instanceof BCApiError && err.context.status === 404) ||
+                        (err instanceof BCResponseParseError &&
+                            err.context.rawBody === '' &&
+                            err.context.status === 204);
+
+                    if (!done) {
+                        yield Err(err);
+                    }
+                } else {
+                    if (Array.isArray(data)) {
+                        if (data.length === 0) {
+                            done = true;
+                            break;
+                        }
+
+                        for (const item of data) {
+                            yield this.validatePaginatedItem(path, item, itemSchema);
+                        }
+                    } else {
+                        yield Err(
+                            new BCClientError('Received non array response from blind pagination page endpoint', {
+                                data,
+                                path,
+                            }),
+                        );
+                    }
+                }
+            }
+        } while (!done);
     }
 
     /**
@@ -1059,7 +1095,7 @@ export class BigCommerceClient {
         try {
             text = await response.text();
         } catch (err) {
-            throw new BCResponseParseError(options.method, path, err, '');
+            throw new BCResponseParseError(options.method, path, response.status, err, query, '');
         }
 
         let res: TRes;
@@ -1067,7 +1103,7 @@ export class BigCommerceClient {
         try {
             res = JSON.parse(text);
         } catch (err) {
-            throw new BCResponseParseError(options.method, path, err, text);
+            throw new BCResponseParseError(options.method, path, response.status, err, query, text);
         }
 
         this.logger?.debug(
@@ -1166,5 +1202,7 @@ export class BigCommerceClient {
         if (concurrency <= 0 || concurrency > MAX_CONCURRENCY) {
             throw new BCClientError(`Invalid concurrency: allowed range (1:${MAX_CONCURRENCY})`, undefined);
         }
+
+        return concurrency;
     }
 }

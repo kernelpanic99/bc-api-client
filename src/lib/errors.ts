@@ -1,4 +1,5 @@
 import type { HTTPError, KyRequest, TimeoutError as KyTimeoutError } from 'ky';
+import type { Query } from './request';
 import type { StandardSchemaV1 } from './standard-schema';
 
 export type ErrorContext = Record<string, unknown>;
@@ -36,10 +37,10 @@ export abstract class BaseError<TContext extends ErrorContext = ErrorContext> ex
 }
 
 /** Catch-all for unexpected client-side errors not covered by a more specific subclass. */
-export class BCClientError extends BaseError<Record<string, string>> {
+export class BCClientError extends BaseError<Record<string, unknown>> {
     code = 'BC_CLIENT_ERROR';
 
-    constructor(message: string, context?: Record<string, string>, cause?: unknown) {
+    constructor(message: string, context?: Record<string, unknown>, cause?: unknown) {
         super(message, context ?? {}, { cause });
     }
 }
@@ -196,15 +197,23 @@ export class BCTimeoutError extends BaseError<{
  * Thrown when the response body cannot be read or parsed as JSON.
  * `context.rawBody` contains the raw text that failed to parse (empty string if the body was empty).
  */
-export class BCResponseParseError extends BaseError<{ method: string; path: string; rawBody?: string }> {
+export class BCResponseParseError extends BaseError<{
+    method: string;
+    status: number;
+    path: string;
+    query?: Query;
+    rawBody?: string;
+}> {
     code = 'BC_RESPONSE_PARSE_ERROR';
 
-    constructor(method: string, path: string, cause: unknown, rawBody?: string) {
+    constructor(method: string, path: string, status: number, cause: unknown, query?: Query, rawBody?: string) {
         super(
             'Failed to parse BigCommerce API response',
             {
+                status,
                 method,
                 path,
+                query,
                 rawBody,
             },
             { cause },

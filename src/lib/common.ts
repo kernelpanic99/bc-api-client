@@ -34,10 +34,10 @@ export const DEFAULT_BACKOFF_RECOVER = 1;
 export const DEFAULT_LIMIT = 250;
 /** Maximum allowed URL length before chunking is required. */
 export const MAX_URL_LENGTH = 2048;
-/** Default item count for v2 endpoints without pagination metadata. */
-export const DEFAULT_BLIND_COUNT = 2000;
 /** Regex to strip leading slashes from API paths. */
 export const LEADING_SLASHES = /^\/+/;
+/** Maximum pages to fetch during blind pagination **/
+export const DEFAULT_MAX_BLIND_PAGES = 500;
 
 /**
  * Configuration options for the BigCommerce client.

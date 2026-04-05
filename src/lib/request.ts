@@ -160,6 +160,10 @@ export type CollectOptions<TItem, TQuery extends Query> = ConcurrencyOptions &
         itemSchema?: StandardSchemaV1<TItem>;
     };
 
+export type BlindOptions<TItem, TQuery extends Query> = Omit<CollectOptions<TItem, TQuery>, 'version'> & {
+    maxPages?: number;
+};
+
 /**
  * Options for v2 paginated operations with known count ({@link BigCommerceClient.collectCount}, {@link BigCommerceClient.streamCount}).
  */

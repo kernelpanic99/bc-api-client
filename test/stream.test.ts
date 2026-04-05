@@ -1,9 +1,11 @@
 import { BigCommerceClient } from 'src/client';
 import {
+    BCApiError,
     BCClientError,
     BCPaginatedItemValidationError,
     BCPaginatedOptionError,
     BCPaginatedResponseError,
+    BCResponseParseError,
 } from 'src/lib/errors';
 import { Err, Ok } from 'src/lib/result';
 import type { StandardSchemaV1 } from 'src/lib/standard-schema';
@@ -428,7 +430,17 @@ describe('collect', () => {
     });
 });
 
-describe('streamCount', () => {
+function make404Error(): BCApiError {
+    const httpError = Object.assign(new Error('Not Found'), {
+        request: { method: 'GET', url: 'http://x.com', text: () => Promise.resolve('') },
+        response: { status: 404, statusText: 'Not Found', text: () => Promise.resolve(''), headers: new Headers() },
+    });
+
+    // biome-ignore lint/suspicious/noExplicitAny: Test files
+    return new BCApiError(httpError as any, '', '');
+}
+
+describe('streamBlind', () => {
     let client: BigCommerceClient;
 
     beforeEach(() => {
@@ -436,86 +448,71 @@ describe('streamCount', () => {
     });
 
     describe('pagination option validation', () => {
-        it('throws BCPaginatedOptionError for count = 0', async () => {
-            await expect(drain(client.streamCount('/p', { count: 0 }))).rejects.toThrow(BCPaginatedOptionError);
+        it('throws BCPaginatedOptionError for maxPages = 0', async () => {
+            await expect(drain(client.streamBlind('/p', { maxPages: 0 }))).rejects.toThrow(BCPaginatedOptionError);
         });
 
-        it('throws BCPaginatedOptionError for negative count', async () => {
-            await expect(drain(client.streamCount('/p', { count: -1 }))).rejects.toThrow(BCPaginatedOptionError);
+        it('throws BCPaginatedOptionError for negative maxPages', async () => {
+            await expect(drain(client.streamBlind('/p', { maxPages: -1 }))).rejects.toThrow(BCPaginatedOptionError);
         });
 
-        it('throws BCPaginatedOptionError for non-number count', async () => {
-            await expect(drain(client.streamCount('/p', { count: 'bad' as unknown as number }))).rejects.toThrow(
+        it('throws BCPaginatedOptionError for non-number maxPages', async () => {
+            await expect(drain(client.streamBlind('/p', { maxPages: 'bad' as unknown as number }))).rejects.toThrow(
                 BCPaginatedOptionError,
             );
         });
 
         it('throws BCPaginatedOptionError for page = 0', async () => {
-            await expect(drain(client.streamCount('/p', { count: 100, query: { page: 0 } }))).rejects.toThrow(
+            await expect(drain(client.streamBlind('/p', { query: { page: 0 } }))).rejects.toThrow(
                 BCPaginatedOptionError,
             );
         });
 
         it('throws BCPaginatedOptionError for negative limit', async () => {
-            await expect(drain(client.streamCount('/p', { count: 100, query: { limit: -1 } }))).rejects.toThrow(
+            await expect(drain(client.streamBlind('/p', { query: { limit: -1 } }))).rejects.toThrow(
                 BCPaginatedOptionError,
             );
         });
     });
 
     describe('request construction', () => {
-        it('requests all pages from 1 to ceil(count/limit)', async () => {
-            const batchSpy = vi.spyOn(client, 'batchStream').mockImplementation(async function* () {});
+        it('sends page and limit in each request', async () => {
+            const batchSpy = vi.spyOn(client, 'batchSafe').mockResolvedValue([Ok([])]);
 
-            await drain(client.streamCount('/legacy', { count: 500, query: { limit: 250 } }));
+            await drain(client.streamBlind('/legacy', { query: { limit: 50 }, concurrency: 1 }));
 
             expect(batchSpy).toHaveBeenCalledWith(
-                [
-                    { method: 'GET', version: 'v2', path: '/legacy', query: { limit: 250, page: 1 } },
-                    { method: 'GET', version: 'v2', path: '/legacy', query: { limit: 250, page: 2 } },
-                ],
+                [{ method: 'GET', version: 'v2', path: '/legacy', query: { limit: 50, page: 1 } }],
                 expect.anything(),
             );
         });
 
-        it('uses DEFAULT_BLIND_COUNT and DEFAULT_LIMIT when options are omitted', async () => {
-            const batchSpy = vi.spyOn(client, 'batchStream').mockImplementation(async function* () {});
+        it('uses DEFAULT_LIMIT when limit is omitted', async () => {
+            const batchSpy = vi.spyOn(client, 'batchSafe').mockResolvedValue([Ok([])]);
 
-            await drain(client.streamCount('/legacy'));
+            await drain(client.streamBlind('/legacy', { concurrency: 1 }));
 
-            const [requests] = batchSpy.mock.calls[0];
-
-            expect(requests).toHaveLength(8); // ceil(2000/250) = 8
-            expect(requests[0]).toMatchObject({ query: { page: 1, limit: 250 } });
-            expect(requests[7]).toMatchObject({ query: { page: 8, limit: 250 } });
+            expect(batchSpy).toHaveBeenCalledWith(
+                [{ method: 'GET', version: 'v2', path: '/legacy', query: { limit: 250, page: 1 } }],
+                expect.anything(),
+            );
         });
 
         it('starts from the given page', async () => {
-            const batchSpy = vi.spyOn(client, 'batchStream').mockImplementation(async function* () {});
+            const batchSpy = vi.spyOn(client, 'batchSafe').mockResolvedValue([Ok([])]);
 
-            await drain(client.streamCount('/legacy', { count: 500, query: { limit: 250, page: 2 } }));
+            await drain(client.streamBlind('/legacy', { query: { limit: 250, page: 3 }, concurrency: 1 }));
 
             expect(batchSpy).toHaveBeenCalledWith(
-                [{ method: 'GET', version: 'v2', path: '/legacy', query: { limit: 250, page: 2 } }],
+                [{ method: 'GET', version: 'v2', path: '/legacy', query: { limit: 250, page: 3 } }],
                 expect.anything(),
             );
         });
 
-        it('includes a partial last page when count is not a multiple of limit', async () => {
-            const batchSpy = vi.spyOn(client, 'batchStream').mockImplementation(async function* () {});
-
-            await drain(client.streamCount('/legacy', { count: 501, query: { limit: 250 } }));
-
-            const [requests] = batchSpy.mock.calls[0];
-
-            expect(requests).toHaveLength(3); // ceil(501/250) = 3
-            expect(requests[2]).toMatchObject({ query: { page: 3 } });
-        });
-
         it('spreads extra query params into every request', async () => {
-            const batchSpy = vi.spyOn(client, 'batchStream').mockImplementation(async function* () {});
+            const batchSpy = vi.spyOn(client, 'batchSafe').mockResolvedValue([Ok([])]);
 
-            await drain(client.streamCount('/legacy', { count: 250, query: { limit: 250, category_id: 5 } }));
+            await drain(client.streamBlind('/legacy', { query: { limit: 250, category_id: 5 }, concurrency: 1 }));
 
             expect(batchSpy).toHaveBeenCalledWith(
                 [{ method: 'GET', version: 'v2', path: '/legacy', query: { limit: 250, page: 1, category_id: 5 } }],
@@ -523,68 +520,106 @@ describe('streamCount', () => {
             );
         });
 
-        it('passes options to batchStream for concurrency settings', async () => {
-            const batchSpy = vi.spyOn(client, 'batchStream').mockImplementation(async function* () {});
-            const options = { count: 250, query: { limit: 250 }, concurrency: 3 };
+        it('advances by concurrency pages per batch', async () => {
+            const batchSpy = vi
+                .spyOn(client, 'batchSafe')
+                .mockResolvedValueOnce([Ok([{ id: 1 }]), Ok([{ id: 2 }])])
+                .mockResolvedValue([Ok([])]);
 
-            await drain(client.streamCount('/legacy', options));
+            await drain(client.streamBlind('/legacy', { query: { limit: 250 }, concurrency: 2 }));
 
-            expect(batchSpy).toHaveBeenCalledWith(expect.anything(), options);
+            expect(batchSpy.mock.calls[0][0]).toEqual([
+                { method: 'GET', version: 'v2', path: '/legacy', query: { limit: 250, page: 1 } },
+                { method: 'GET', version: 'v2', path: '/legacy', query: { limit: 250, page: 2 } },
+            ]);
+        });
+    });
+
+    describe('stopping conditions', () => {
+        it('stops after receiving an empty page', async () => {
+            const batchSpy = vi
+                .spyOn(client, 'batchSafe')
+                .mockResolvedValueOnce([Ok([{ id: 1 }])])
+                .mockResolvedValueOnce([Ok([])])
+                .mockResolvedValue([Ok([{ id: 99 }])]);
+
+            const results = await drain(client.streamBlind('/legacy', { concurrency: 1 }));
+
+            expect(results).toEqual([Ok({ id: 1 })]);
+            expect(batchSpy).toHaveBeenCalledTimes(2);
+        });
+
+        it('stops after a 404 without yielding an error', async () => {
+            vi.spyOn(client, 'batchSafe')
+                .mockResolvedValueOnce([Ok([{ id: 1 }])])
+                .mockResolvedValueOnce([Err(make404Error())]);
+
+            const results = await drain(client.streamBlind('/legacy', { concurrency: 1 }));
+
+            expect(results).toEqual([Ok({ id: 1 })]);
+        });
+
+        it('stops after a 204 empty body without yielding an error', async () => {
+            const err204 = new BCResponseParseError('GET', '/legacy', 204, null, undefined, '');
+
+            vi.spyOn(client, 'batchSafe')
+                .mockResolvedValueOnce([Ok([{ id: 1 }])])
+                .mockResolvedValueOnce([Err(err204)]);
+
+            const results = await drain(client.streamBlind('/legacy', { concurrency: 1 }));
+
+            expect(results).toEqual([Ok({ id: 1 })]);
+        });
+
+        it('stops at maxPages', async () => {
+            const batchSpy = vi.spyOn(client, 'batchSafe').mockResolvedValue([Ok([{ id: 1 }])]);
+
+            await drain(client.streamBlind('/legacy', { maxPages: 2, concurrency: 1 }));
+
+            expect(batchSpy).toHaveBeenCalledTimes(2);
         });
     });
 
     describe('response handling', () => {
-        it('yields Ok for each item in flat array responses', async () => {
-            vi.spyOn(client, 'batchStream').mockImplementation(async function* () {
-                yield Ok([{ id: 1 }, { id: 2 }]);
-                yield Ok([{ id: 3 }]);
-            });
+        it('yields Ok for each item in array pages', async () => {
+            vi.spyOn(client, 'batchSafe')
+                .mockResolvedValueOnce([Ok([{ id: 1 }, { id: 2 }])])
+                .mockResolvedValue([Ok([])]);
 
-            const results = await drain(client.streamCount('/legacy', { count: 500, query: { limit: 250 } }));
+            const results = await drain(client.streamBlind('/legacy', { concurrency: 1 }));
 
-            expect(results).toEqual([Ok({ id: 1 }), Ok({ id: 2 }), Ok({ id: 3 })]);
+            expect(results).toEqual([Ok({ id: 1 }), Ok({ id: 2 })]);
         });
 
-        it('yields nothing when pages are empty', async () => {
-            vi.spyOn(client, 'batchStream').mockImplementation(async function* () {
-                yield Ok([]);
-            });
+        it('yields Err(BCClientError) when page response is not an array', async () => {
+            vi.spyOn(client, 'batchSafe')
+                .mockResolvedValueOnce([Ok({ data: [], meta: {} })]) // v3 envelope — not a flat array
+                .mockResolvedValue([Ok([])]);
 
-            const results = await drain(client.streamCount('/legacy', { count: 250, query: { limit: 250 } }));
-
-            expect(results).toEqual([]);
-        });
-
-        it('yields Err(BCClientError) when response is not an array', async () => {
-            vi.spyOn(client, 'batchStream').mockImplementation(async function* () {
-                yield Ok({ data: [], meta: {} }); // v3 envelope — not a flat array
-            });
-
-            const results = await drain(client.streamCount('/legacy', { count: 250, query: { limit: 250 } }));
+            const results = await drain(client.streamBlind('/legacy', { concurrency: 1 }));
 
             expect(results).toHaveLength(1);
             expect(results[0].err).toBeInstanceOf(BCClientError);
         });
 
-        it('yields Err from batchStream', async () => {
+        it('yields Err for non-terminating API errors and continues', async () => {
             const error = new BCClientError('request failed');
 
-            vi.spyOn(client, 'batchStream').mockImplementation(async function* () {
-                yield Err(error);
-            });
+            vi.spyOn(client, 'batchSafe')
+                .mockResolvedValueOnce([Err(error)])
+                .mockResolvedValue([Ok([])]);
 
-            const results = await drain(client.streamCount('/legacy', { count: 250, query: { limit: 250 } }));
+            const results = await drain(client.streamBlind('/legacy', { concurrency: 1 }));
 
-            expect(results).toEqual([Err(error)]);
+            expect(results[0]).toEqual(Err(error));
         });
 
         it('continues after a non-array page response', async () => {
-            vi.spyOn(client, 'batchStream').mockImplementation(async function* () {
-                yield Ok('not an array');
-                yield Ok([{ id: 1 }]);
-            });
+            vi.spyOn(client, 'batchSafe')
+                .mockResolvedValueOnce([Ok('not an array'), Ok([{ id: 1 }])])
+                .mockResolvedValue([Ok([])]);
 
-            const results = await drain(client.streamCount('/legacy', { count: 500, query: { limit: 250 } }));
+            const results = await drain(client.streamBlind('/legacy', { concurrency: 2 }));
 
             expect(results[0].err).toBeInstanceOf(BCClientError);
             expect(results[1]).toEqual(Ok({ id: 1 }));
@@ -593,46 +628,38 @@ describe('streamCount', () => {
 
     describe('item schema validation', () => {
         it('yields Ok(validatedValue) when schema passes', async () => {
-            vi.spyOn(client, 'batchStream').mockImplementation(async function* () {
-                yield Ok([10, 20]);
-            });
+            vi.spyOn(client, 'batchSafe')
+                .mockResolvedValueOnce([Ok([10, 20])])
+                .mockResolvedValue([Ok([])]);
 
             const schema = makeSchema<number>((v) => ({ value: (v as number) * 2 }));
-            const results = await drain(
-                client.streamCount('/legacy', { count: 250, query: { limit: 250 }, itemSchema: schema }),
-            );
+            const results = await drain(client.streamBlind('/legacy', { itemSchema: schema, concurrency: 1 }));
 
             expect(results).toEqual([Ok(20), Ok(40)]);
         });
 
         it('yields Err(BCPaginatedItemValidationError) when schema fails', async () => {
-            vi.spyOn(client, 'batchStream').mockImplementation(async function* () {
-                yield Ok(['not-a-number']);
-            });
+            vi.spyOn(client, 'batchSafe')
+                .mockResolvedValueOnce([Ok(['not-a-number'])])
+                .mockResolvedValue([Ok([])]);
 
             const schema = makeSchema<number>((v) =>
                 typeof v === 'number' ? { value: v } : { issues: [{ message: 'not a number' }] },
             );
-
-            const results = await drain(
-                client.streamCount('/legacy', { count: 250, query: { limit: 250 }, itemSchema: schema }),
-            );
+            const results = await drain(client.streamBlind('/legacy', { itemSchema: schema, concurrency: 1 }));
 
             expect(results[0].err).toBeInstanceOf(BCPaginatedItemValidationError);
         });
 
         it('mixes Ok and Err when some items fail schema', async () => {
-            vi.spyOn(client, 'batchStream').mockImplementation(async function* () {
-                yield Ok([1, 'bad', 3]);
-            });
+            vi.spyOn(client, 'batchSafe')
+                .mockResolvedValueOnce([Ok([1, 'bad', 3])])
+                .mockResolvedValue([Ok([])]);
 
             const schema = makeSchema<number>((v) =>
                 typeof v === 'number' ? { value: v } : { issues: [{ message: 'bad' }] },
             );
-
-            const results = await drain(
-                client.streamCount('/legacy', { count: 250, query: { limit: 250 }, itemSchema: schema }),
-            );
+            const results = await drain(client.streamBlind('/legacy', { itemSchema: schema, concurrency: 1 }));
 
             expect(results[0]).toEqual(Ok(1));
             expect(results[1].err).toBeInstanceOf(BCPaginatedItemValidationError);
@@ -641,16 +668,16 @@ describe('streamCount', () => {
     });
 });
 
-describe('collectCount', () => {
+describe('collectBlind', () => {
     it('returns all items as a flat array', async () => {
         const client = makeClient();
 
-        vi.spyOn(client, 'batchStream').mockImplementation(async function* () {
-            yield Ok([{ id: 1 }, { id: 2 }]);
-            yield Ok([{ id: 3 }]);
-        });
+        vi.spyOn(client, 'batchSafe')
+            .mockResolvedValueOnce([Ok([{ id: 1 }, { id: 2 }])])
+            .mockResolvedValueOnce([Ok([{ id: 3 }])])
+            .mockResolvedValue([Ok([])]);
 
-        const result = await client.collectCount('/legacy', { count: 500, query: { limit: 250 } });
+        const result = await client.collectBlind('/legacy', { concurrency: 1 });
 
         expect(result).toEqual([{ id: 1 }, { id: 2 }, { id: 3 }]);
     });
@@ -659,11 +686,10 @@ describe('collectCount', () => {
         const client = makeClient();
         const error = new BCClientError('bad page');
 
-        vi.spyOn(client, 'batchStream').mockImplementation(async function* () {
-            yield Ok([{ id: 1 }]);
-            yield Err(error);
-        });
+        vi.spyOn(client, 'batchSafe')
+            .mockResolvedValueOnce([Ok([{ id: 1 }])])
+            .mockResolvedValueOnce([Err(error)]);
 
-        await expect(client.collectCount('/legacy', { count: 500, query: { limit: 250 } })).rejects.toThrow(error);
+        await expect(client.collectBlind('/legacy', { concurrency: 1 })).rejects.toThrow(error);
     });
 });
