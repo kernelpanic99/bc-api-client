@@ -41,9 +41,9 @@ Creates a new BigCommerceClient.
 
 ### batchSafe()
 
-> **batchSafe**\<`TBody`, `TRes`, `TQuery`\>(`requests`, `options?`): `Promise`\<[`Result`](../type-aliases/Result.md)\<`TRes`, [`BaseError`](BaseError.md)\<[`ErrorContext`](../type-aliases/ErrorContext.md)\>\>[]\>
+> **batchSafe**\<`TRes`, `TBody`, `TQuery`\>(`requests`, `options?`): `Promise`\<[`Result`](../type-aliases/Result.md)\<`TRes`, [`BaseError`](BaseError.md)\<[`ErrorContext`](../type-aliases/ErrorContext.md)\>\>[]\>
 
-Defined in: client.ts:678
+Defined in: client.ts:681
 
 Executes multiple requests concurrently and returns all results as [Result](../type-aliases/Result.md) values,
 never throwing. Errors from individual requests are captured as `Err` results.
@@ -52,11 +52,11 @@ Use [batchStream](#batchstream) to process results as they arrive rather than wa
 
 #### Type Parameters
 
-| Type Parameter |
-| ------ |
-| `TBody` |
-| `TRes` |
-| `TQuery` *extends* [`Query`](../type-aliases/Query.md) |
+| Type Parameter | Default type |
+| ------ | ------ |
+| `TRes` | `unknown` |
+| `TBody` | `unknown` |
+| `TQuery` *extends* [`Query`](../type-aliases/Query.md) | [`Query`](../type-aliases/Query.md) |
 
 #### Parameters
 
@@ -75,9 +75,9 @@ Results in the order requests complete (not necessarily input order).
 
 ### batchStream()
 
-> **batchStream**\<`TBody`, `TRes`, `TQuery`\>(`requests`, `options?`): `AsyncGenerator`\<[`Result`](../type-aliases/Result.md)\<`TRes`, [`BaseError`](BaseError.md)\<[`ErrorContext`](../type-aliases/ErrorContext.md)\>\>\>
+> **batchStream**\<`TRes`, `TBody`, `TQuery`\>(`requests`, `options?`): `AsyncGenerator`\<[`Result`](../type-aliases/Result.md)\<`TRes`, [`BaseError`](BaseError.md)\<[`ErrorContext`](../type-aliases/ErrorContext.md)\>\>\>
 
-Defined in: client.ts:828
+Defined in: client.ts:837
 
 Executes multiple requests with configurable concurrency, yielding each result as a
 [Result](../type-aliases/Result.md) as it completes. Errors from individual requests are yielded as `Err`
@@ -86,13 +86,19 @@ results rather than thrown.
 Automatically adjusts concurrency up/down in response to rate-limit and error responses.
 Use [batchSafe](#batchsafe) to collect all results into an array.
 
+**Caution:** the generator is making requests concurrently. As a consequence if a
+request is mutating the remote (POST, DELETE) and `for await` loop is exited early,
+the in-flight request may or may not commit the mutation, and the results of
+these request WILL NOT be yielded. If you do intent to break the loop early and want to
+get all the results, set `concurrency: false` to trade concurrency for deterministic behavior.
+
 #### Type Parameters
 
-| Type Parameter |
-| ------ |
-| `TBody` |
-| `TRes` |
-| `TQuery` *extends* [`Query`](../type-aliases/Query.md) |
+| Type Parameter | Default type |
+| ------ | ------ |
+| `TRes` | `unknown` |
+| `TBody` | `unknown` |
+| `TQuery` *extends* [`Query`](../type-aliases/Query.md) | [`Query`](../type-aliases/Query.md) |
 
 #### Parameters
 
@@ -111,7 +117,7 @@ Use [batchSafe](#batchsafe) to collect all results into an array.
 
 > **collect**\<`TItem`, `TQuery`\>(`path`, `options?`): `Promise`\<`TItem`[]\>
 
-Defined in: client.ts:470
+Defined in: client.ts:473
 
 Fetches all pages from a v3 paginated endpoint and collects items into an array.
 
@@ -119,10 +125,10 @@ Use [stream](#stream) to process items lazily without buffering the full result 
 
 #### Type Parameters
 
-| Type Parameter |
-| ------ |
-| `TItem` |
-| `TQuery` *extends* [`Query`](../type-aliases/Query.md) |
+| Type Parameter | Default type |
+| ------ | ------ |
+| `TItem` | `unknown` |
+| `TQuery` *extends* [`Query`](../type-aliases/Query.md) | [`Query`](../type-aliases/Query.md) |
 
 #### Parameters
 
@@ -188,7 +194,7 @@ All items across all pages.
 
 > **collectBlind**\<`TItem`, `TQuery`\>(`path`, `options?`): `Promise`\<`TItem`[]\>
 
-Defined in: client.ts:522
+Defined in: client.ts:525
 
 Fetches all pages from a v2 flat-array endpoint and collects items into an array.
 
@@ -201,7 +207,7 @@ Use [streamBlind](#streamblind) to process items lazily without buffering the fu
 
 | Type Parameter | Default type |
 | ------ | ------ |
-| `TItem` | - |
+| `TItem` | `unknown` |
 | `TQuery` *extends* [`Query`](../type-aliases/Query.md) | [`Query`](../type-aliases/Query.md) |
 
 #### Parameters
@@ -251,7 +257,7 @@ All items across all pages.
 
 > **delete**\<`TRes`, `TQuery`\>(`path`, `options?`): `Promise`\<`void`\>
 
-Defined in: client.ts:250
+Defined in: client.ts:253
 
 Sends a DELETE request to the given path.
 
@@ -322,7 +328,7 @@ Sends a GET request to the given path.
 
 | Type Parameter | Default type |
 | ------ | ------ |
-| `TRes` | - |
+| `TRes` | `unknown` |
 | `TQuery` *extends* [`Query`](../type-aliases/Query.md) | [`Query`](../type-aliases/Query.md) |
 
 #### Parameters
@@ -381,7 +387,7 @@ Parsed and optionally validated response body.
 
 > **post**\<`TRes`, `TBody`, `TQuery`\>(`path`, `options?`): `Promise`\<`TRes`\>
 
-Defined in: client.ts:180
+Defined in: client.ts:183
 
 Sends a POST request to the given path.
 
@@ -389,7 +395,7 @@ Sends a POST request to the given path.
 
 | Type Parameter | Default type |
 | ------ | ------ |
-| `TRes` | - |
+| `TRes` | `unknown` |
 | `TBody` | `unknown` |
 | `TQuery` *extends* [`Query`](../type-aliases/Query.md) | [`Query`](../type-aliases/Query.md) |
 
@@ -453,7 +459,7 @@ Parsed and optionally validated response body.
 
 > **put**\<`TRes`, `TBody`, `TQuery`\>(`path`, `options?`): `Promise`\<`TRes`\>
 
-Defined in: client.ts:218
+Defined in: client.ts:221
 
 Sends a PUT request to the given path.
 
@@ -461,7 +467,7 @@ Sends a PUT request to the given path.
 
 | Type Parameter | Default type |
 | ------ | ------ |
-| `TRes` | - |
+| `TRes` | `unknown` |
 | `TBody` | `unknown` |
 | `TQuery` *extends* [`Query`](../type-aliases/Query.md) | [`Query`](../type-aliases/Query.md) |
 
@@ -525,7 +531,7 @@ Parsed and optionally validated response body.
 
 > **query**\<`TItem`, `TQuery`\>(`path`, `options`): `Promise`\<`TItem`[]\>
 
-Defined in: client.ts:315
+Defined in: client.ts:318
 
 Fetches items from a v3 paginated endpoint by splitting `values` across multiple requests
 using the given `key` query param, chunking to stay within URL length limits.
@@ -536,7 +542,7 @@ Collects all results into an array. Use [queryStream](#querystream) to process i
 
 | Type Parameter | Default type |
 | ------ | ------ |
-| `TItem` | - |
+| `TItem` | `unknown` |
 | `TQuery` *extends* [`Query`](../type-aliases/Query.md) | [`Query`](../type-aliases/Query.md) |
 
 #### Parameters
@@ -603,7 +609,7 @@ All matching items across all chunked requests.
 
 > **queryStream**\<`TItem`, `TQuery`\>(`path`, `options`): `AsyncGenerator`\<[`Result`](../type-aliases/Result.md)\<`TItem`, [`BaseError`](BaseError.md)\<[`ErrorContext`](../type-aliases/ErrorContext.md)\>\>\>
 
-Defined in: client.ts:360
+Defined in: client.ts:363
 
 Streaming variant of [query](#query). Yields each item individually as results arrive,
 splitting `values` into URL-length-safe chunks across concurrent requests.
@@ -614,7 +620,7 @@ Each yielded value is a [Result](../type-aliases/Result.md) — check `err` befo
 
 | Type Parameter | Default type |
 | ------ | ------ |
-| `TItem` | - |
+| `TItem` | `unknown` |
 | `TQuery` *extends* [`Query`](../type-aliases/Query.md) | [`Query`](../type-aliases/Query.md) |
 
 #### Parameters
@@ -642,7 +648,7 @@ Each yielded value is a [Result](../type-aliases/Result.md) — check `err` befo
 
 > **stream**\<`TItem`, `TQuery`\>(`path`, `options?`): `AsyncGenerator`\<[`Result`](../type-aliases/Result.md)\<`TItem`, [`BaseError`](BaseError.md)\<[`ErrorContext`](../type-aliases/ErrorContext.md)\>\>\>
 
-Defined in: client.ts:719
+Defined in: client.ts:722
 
 Streams all items from a v3 paginated endpoint, fetching the first page sequentially
 and remaining pages concurrently via [batchStream](#batchstream).
@@ -652,10 +658,10 @@ Each yielded value is a [Result](../type-aliases/Result.md) — check `err` befo
 
 #### Type Parameters
 
-| Type Parameter |
-| ------ |
-| `TItem` |
-| `TQuery` *extends* [`Query`](../type-aliases/Query.md) |
+| Type Parameter | Default type |
+| ------ | ------ |
+| `TItem` | `unknown` |
+| `TQuery` *extends* [`Query`](../type-aliases/Query.md) | [`Query`](../type-aliases/Query.md) |
 
 #### Parameters
 
@@ -682,7 +688,7 @@ Each yielded value is a [Result](../type-aliases/Result.md) — check `err` befo
 
 > **streamBlind**\<`TItem`, `TQuery`\>(`path`, `options?`): `AsyncGenerator`\<[`Result`](../type-aliases/Result.md)\<`TItem`, [`BaseError`](BaseError.md)\<[`ErrorContext`](../type-aliases/ErrorContext.md)\>\>\>
 
-Defined in: client.ts:575
+Defined in: client.ts:578
 
 Lazily streams items from a v2 flat-array endpoint, page by page.
 
@@ -697,7 +703,7 @@ Use [collectBlind](#collectblind) to buffer all results into an array (throws on
 
 | Type Parameter | Default type |
 | ------ | ------ |
-| `TItem` | - |
+| `TItem` | `unknown` |
 | `TQuery` *extends* [`Query`](../type-aliases/Query.md) | [`Query`](../type-aliases/Query.md) |
 
 #### Parameters
