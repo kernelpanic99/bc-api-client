@@ -1,11 +1,11 @@
 # Bigcommerce management API client and JWT authenticator
 
 [![CI](https://github.com/kernelpanic99/bc-api-client/actions/workflows/ci.yml/badge.svg)](https://github.com/kernelpanic99/bc-api-client/actions/workflows/ci.yml)
-[![npm](https://img.shields.io/npm/v/bc-api-client)](https://www.npmjs.com/package/bc-api-client)
+[![npm](https://img.shields.io/npm/v/bc-api-client/beta)](https://www.npmjs.com/package/bc-api-client?activeTab=versions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Node 22+](https://img.shields.io/badge/node-22%2B-brightgreen)](https://nodejs.org)
 
-> [!WARNING] 
+> [!WARNING]
 > V1 is a complete rewrite. See [Migration Guide](docs/V1_MIGRATION_GUIDE.md)
 
 An opinionated and minimalistic client focusing on simplicity and concurrent performance.
@@ -38,11 +38,11 @@ An opinionated and minimalistic client focusing on simplicity and concurrent per
 ## Installation
 
 ```bash
-npm install bc-api-client
+npm install bc-api-client@beta
 # or
-pnpm add bc-api-client
+pnpm add bc-api-client@beta
 # or
-yarn add bc-api-client
+yarn add bc-api-client@beta
 ```
 
 ## Usage
