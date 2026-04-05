@@ -5,7 +5,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Node 22+](https://img.shields.io/badge/node-22%2B-brightgreen)](https://nodejs.org)
 
-> [!WARNING] V1 is a complete rewrite. See [Migration Guide](docs/V1_MIGRATION_GUIDE.md)
+> [!WARNING] 
+> V1 is a complete rewrite. See [Migration Guide](docs/V1_MIGRATION_GUIDE.md)
 
 An opinionated and minimalistic client focusing on simplicity and concurrent performance.
 
