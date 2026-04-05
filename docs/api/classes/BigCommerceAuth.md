@@ -48,7 +48,7 @@ Exchanges an OAuth authorization code for an access token.
 
 | Parameter | Type | Description |
 | ------ | ------ | ------ |
-| `data` | `string` \| [`BigCommerceAuthQuery`](../type-aliases/BigCommerceAuthQuery.md) \| `URLSearchParams` | The auth callback payload: a raw query string, `URLSearchParams`, or a pre-parsed object with `code`, `scope`, and `context`. |
+| `data` | `string` \| `URLSearchParams` \| [`BigCommerceAuthQuery`](../type-aliases/BigCommerceAuthQuery.md) | The auth callback payload: a raw query string, `URLSearchParams`, or a pre-parsed object with `code`, `scope`, and `context`. |
 
 #### Returns
 

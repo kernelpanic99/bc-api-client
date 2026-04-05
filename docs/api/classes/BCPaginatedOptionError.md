@@ -6,7 +6,7 @@
 
 # Class: BCPaginatedOptionError
 
-Defined in: lib/errors.ts:219
+Defined in: lib/errors.ts:228
 
 Thrown when a pagination option (`limit`, `page`, or `count`) is not a positive number.
 `context.option` names the offending field; `context.value` is the value that was passed.
@@ -21,7 +21,7 @@ Thrown when a pagination option (`limit`, `page`, or `count`) is not a positive 
 
 > **new BCPaginatedOptionError**(`path`, `value`, `option`): `BCPaginatedOptionError`
 
-Defined in: lib/errors.ts:222
+Defined in: lib/errors.ts:231
 
 #### Parameters
 
@@ -43,8 +43,8 @@ Defined in: lib/errors.ts:222
 
 | Property | Modifier | Type | Default value | Description | Overrides | Inherited from | Defined in |
 | ------ | ------ | ------ | ------ | ------ | ------ | ------ | ------ |
-| <a id="code"></a> `code` | `public` | `string` | `'BC_PAGINATED_OPTION_ERROR'` | Machine-readable error code. Unique per subclass. | [`BaseError`](BaseError.md).[`code`](BaseError.md#code) | - | lib/errors.ts:220 |
-| <a id="context"></a> `context` | `readonly` | `object` | `undefined` | - | - | [`BaseError`](BaseError.md).[`context`](BaseError.md#context) | lib/errors.ts:18 |
-| `context.option` | `public` | `string` | `undefined` | - | - | - | lib/errors.ts:219 |
-| `context.path` | `public` | `string` | `undefined` | - | - | - | lib/errors.ts:219 |
-| `context.value` | `public` | `unknown` | `undefined` | - | - | - | lib/errors.ts:219 |
+| <a id="code"></a> `code` | `public` | `string` | `'BC_PAGINATED_OPTION_ERROR'` | Machine-readable error code. Unique per subclass. | [`BaseError`](BaseError.md).[`code`](BaseError.md#code) | - | lib/errors.ts:229 |
+| <a id="context"></a> `context` | `readonly` | `object` | `undefined` | - | - | [`BaseError`](BaseError.md).[`context`](BaseError.md#context) | lib/errors.ts:19 |
+| `context.option` | `public` | `string` | `undefined` | - | - | - | lib/errors.ts:228 |
+| `context.path` | `public` | `string` | `undefined` | - | - | - | lib/errors.ts:228 |
+| `context.value` | `public` | `unknown` | `undefined` | - | - | - | lib/errors.ts:228 |

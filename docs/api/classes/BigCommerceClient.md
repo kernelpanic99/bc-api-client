@@ -43,7 +43,7 @@ Creates a new BigCommerceClient.
 
 > **batchSafe**\<`TBody`, `TRes`, `TQuery`\>(`requests`, `options?`): `Promise`\<[`Result`](../type-aliases/Result.md)\<`TRes`, [`BaseError`](BaseError.md)\<[`ErrorContext`](../type-aliases/ErrorContext.md)\>\>[]\>
 
-Defined in: client.ts:642
+Defined in: client.ts:678
 
 Executes multiple requests concurrently and returns all results as [Result](../type-aliases/Result.md) values,
 never throwing. Errors from individual requests are captured as `Err` results.
@@ -77,7 +77,7 @@ Results in the order requests complete (not necessarily input order).
 
 > **batchStream**\<`TBody`, `TRes`, `TQuery`\>(`requests`, `options?`): `AsyncGenerator`\<[`Result`](../type-aliases/Result.md)\<`TRes`, [`BaseError`](BaseError.md)\<[`ErrorContext`](../type-aliases/ErrorContext.md)\>\>\>
 
-Defined in: client.ts:792
+Defined in: client.ts:828
 
 Executes multiple requests with configurable concurrency, yielding each result as a
 [Result](../type-aliases/Result.md) as it completes. Errors from individual requests are yielded as `Err`
@@ -111,7 +111,7 @@ Use [batchSafe](#batchsafe) to collect all results into an array.
 
 > **collect**\<`TItem`, `TQuery`\>(`path`, `options?`): `Promise`\<`TItem`[]\>
 
-Defined in: client.ts:469
+Defined in: client.ts:470
 
 Fetches all pages from a v3 paginated endpoint and collects items into an array.
 
@@ -184,42 +184,42 @@ All items across all pages.
 
 ***
 
-### collectCount()
+### collectBlind()
 
-> **collectCount**\<`TItem`, `TQuery`\>(`path`, `options?`): `Promise`\<`TItem`[]\>
+> **collectBlind**\<`TItem`, `TQuery`\>(`path`, `options?`): `Promise`\<`TItem`[]\>
 
-Defined in: client.ts:607
+Defined in: client.ts:522
 
-Fetches items from a v2 paginated endpoint using a known total item `count` and collects
-them into an array.
+Fetches all pages from a v2 flat-array endpoint and collects items into an array.
 
-Use this for v2 endpoints that do not return pagination metadata. Use [streamCount](#streamcount)
-to process items lazily.
+Pagination is discovered dynamically — pages are fetched in batches until an empty page,
+a 404, or a 204 response is received. No prior knowledge of total count is required.
+
+Use [streamBlind](#streamblind) to process items lazily without buffering the full result set.
 
 #### Type Parameters
 
-| Type Parameter |
-| ------ |
-| `TItem` |
-| `TQuery` *extends* [`Query`](../type-aliases/Query.md) |
+| Type Parameter | Default type |
+| ------ | ------ |
+| `TItem` | - |
+| `TQuery` *extends* [`Query`](../type-aliases/Query.md) | [`Query`](../type-aliases/Query.md) |
 
 #### Parameters
 
 | Parameter | Type | Description |
 | ------ | ------ | ------ |
-| `path` | `string` | API path relative to the store's versioned base URL. |
-| `options?` | [`CountedCollectOptions`](../type-aliases/CountedCollectOptions.md)\<`TItem`, `TQuery`\> | Ky options are forwarded to page requests. |
+| `path` | `string` | API path relative to the store's versioned base URL (always requests v2). |
+| `options?` | `BlindOptions`\<`TItem`, `TQuery`\> | Ky options are forwarded to page requests. |
 
 #### Returns
 
 `Promise`\<`TItem`[]\>
 
-All items across the computed page range.
+All items across all pages.
 
 #### Throws
 
-[BCPaginatedOptionError](BCPaginatedOptionError.md) if `count`, `query.limit`, or `query.page` is not a
-  positive number.
+[BCPaginatedOptionError](BCPaginatedOptionError.md) if `query.limit`, `query.page`, or `maxPages` is not a positive number.
 
 #### Throws
 
@@ -227,7 +227,15 @@ All items across the computed page range.
 
 #### Throws
 
-[BCApiError](BCApiError.md) on HTTP error responses.
+[BCPaginatedItemValidationError](BCPaginatedItemValidationError.md) if `itemSchema` validation fails for an item.
+
+#### Throws
+
+[BCClientError](BCClientError.md) if a page returns a non-array response, or on any other error.
+
+#### Throws
+
+[BCApiError](BCApiError.md) on non-terminating HTTP error responses.
 
 #### Throws
 
@@ -236,27 +244,6 @@ All items across the computed page range.
 #### Throws
 
 [BCResponseParseError](BCResponseParseError.md) if a response body cannot be parsed.
-
-#### Throws
-
-[BCUrlTooLongError](BCUrlTooLongError.md) if a constructed URL exceeds 2048 characters.
-
-#### Throws
-
-[BCRateLimitNoHeadersError](BCRateLimitNoHeadersError.md) if a 429 is received without rate-limit headers.
-
-#### Throws
-
-[BCRateLimitDelayTooLongError](BCRateLimitDelayTooLongError.md) if the rate-limit reset window exceeds
-  `config.retry.maxRetryAfter`.
-
-#### Throws
-
-[BCPaginatedItemValidationError](BCPaginatedItemValidationError.md) if `itemSchema` validation fails for an item.
-
-#### Throws
-
-[BCClientError](BCClientError.md) on any other ky or unknown error.
 
 ***
 
@@ -655,7 +642,7 @@ Each yielded value is a [Result](../type-aliases/Result.md) — check `err` befo
 
 > **stream**\<`TItem`, `TQuery`\>(`path`, `options?`): `AsyncGenerator`\<[`Result`](../type-aliases/Result.md)\<`TItem`, [`BaseError`](BaseError.md)\<[`ErrorContext`](../type-aliases/ErrorContext.md)\>\>\>
 
-Defined in: client.ts:683
+Defined in: client.ts:719
 
 Streams all items from a v3 paginated endpoint, fetching the first page sequentially
 and remaining pages concurrently via [batchStream](#batchstream).
@@ -691,31 +678,34 @@ Each yielded value is a [Result](../type-aliases/Result.md) — check `err` befo
 
 ***
 
-### streamCount()
+### streamBlind()
 
-> **streamCount**\<`TItem`, `TQuery`\>(`path`, `options?`): `AsyncGenerator`\<[`Result`](../type-aliases/Result.md)\<`TItem`, [`BaseError`](BaseError.md)\<[`ErrorContext`](../type-aliases/ErrorContext.md)\>\>\>
+> **streamBlind**\<`TItem`, `TQuery`\>(`path`, `options?`): `AsyncGenerator`\<[`Result`](../type-aliases/Result.md)\<`TItem`, [`BaseError`](BaseError.md)\<[`ErrorContext`](../type-aliases/ErrorContext.md)\>\>\>
 
-Defined in: client.ts:514
+Defined in: client.ts:575
 
-Streams items from a v2 paginated endpoint using a known total item `count`.
+Lazily streams items from a v2 flat-array endpoint, page by page.
 
-Use this for v2 endpoints that do not return pagination metadata. Yields each item
-as a [Result](../type-aliases/Result.md) — check `err` before using `data`. Use [collectCount](#collectcount) to
-collect all results into an array.
+Pagination is discovered dynamically — pages are fetched in concurrent batches until an
+empty page, a 404, or a 204 response is received. No prior knowledge of total count is
+required. Each item is yielded as a [Result](../type-aliases/Result.md): `Ok(item)` on success or
+`Err(error)` for item-level validation failures and non-terminating page errors.
+
+Use [collectBlind](#collectblind) to buffer all results into an array (throws on any error).
 
 #### Type Parameters
 
-| Type Parameter |
-| ------ |
-| `TItem` |
-| `TQuery` *extends* [`Query`](../type-aliases/Query.md) |
+| Type Parameter | Default type |
+| ------ | ------ |
+| `TItem` | - |
+| `TQuery` *extends* [`Query`](../type-aliases/Query.md) | [`Query`](../type-aliases/Query.md) |
 
 #### Parameters
 
 | Parameter | Type | Description |
 | ------ | ------ | ------ |
-| `path` | `string` | API path relative to the store's versioned base URL. |
-| `options?` | [`CountedCollectOptions`](../type-aliases/CountedCollectOptions.md)\<`TItem`, `TQuery`\> | Ky options are forwarded to page requests. |
+| `path` | `string` | API path relative to the store's versioned base URL (always requests v2). |
+| `options?` | `BlindOptions`\<`TItem`, `TQuery`\> | Ky options are forwarded to page requests. |
 
 #### Returns
 
@@ -723,9 +713,24 @@ collect all results into an array.
 
 #### Throws
 
-[BCPaginatedOptionError](BCPaginatedOptionError.md) if `count`, `query.limit`, or `query.page` is not a
-  positive number.
+[BCPaginatedOptionError](BCPaginatedOptionError.md) if `query.limit`, `query.page`, or `maxPages` is not a positive number.
 
 #### Throws
 
 [BCQueryValidationError](BCQueryValidationError.md) if `querySchema` validation fails.
+
+#### Yields
+
+`Ok(item)` for each successfully fetched and validated item.
+
+#### Yields
+
+`Err(BCPaginatedItemValidationError)` when `itemSchema` rejects an item.
+
+#### Yields
+
+`Err(BCClientError)` when a page returns a non-array response.
+
+#### Yields
+
+`Err(error)` for non-terminating page errors (e.g. non-404/204 HTTP errors).

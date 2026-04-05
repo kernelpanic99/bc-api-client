@@ -6,7 +6,7 @@
 
 # Class: BCTimeoutError
 
-Defined in: lib/errors.ts:181
+Defined in: lib/errors.ts:182
 
 Thrown when a request exceeds the configured timeout (default 120 s).
 
@@ -20,7 +20,7 @@ Thrown when a request exceeds the configured timeout (default 120 s).
 
 > **new BCTimeoutError**(`err`): `BCTimeoutError`
 
-Defined in: lib/errors.ts:187
+Defined in: lib/errors.ts:188
 
 #### Parameters
 
@@ -40,7 +40,7 @@ Defined in: lib/errors.ts:187
 
 | Property | Modifier | Type | Default value | Description | Overrides | Inherited from | Defined in |
 | ------ | ------ | ------ | ------ | ------ | ------ | ------ | ------ |
-| <a id="code"></a> `code` | `public` | `string` | `'BC_TIMEOUT_ERROR'` | Machine-readable error code. Unique per subclass. | [`BaseError`](BaseError.md).[`code`](BaseError.md#code) | - | lib/errors.ts:185 |
-| <a id="context"></a> `context` | `readonly` | `object` | `undefined` | - | - | [`BaseError`](BaseError.md).[`context`](BaseError.md#context) | lib/errors.ts:18 |
-| `context.method` | `public` | `string` | `undefined` | - | - | - | lib/errors.ts:182 |
-| `context.url` | `public` | `string` | `undefined` | - | - | - | lib/errors.ts:183 |
+| <a id="code"></a> `code` | `public` | `string` | `'BC_TIMEOUT_ERROR'` | Machine-readable error code. Unique per subclass. | [`BaseError`](BaseError.md).[`code`](BaseError.md#code) | - | lib/errors.ts:186 |
+| <a id="context"></a> `context` | `readonly` | `object` | `undefined` | - | - | [`BaseError`](BaseError.md).[`context`](BaseError.md#context) | lib/errors.ts:19 |
+| `context.method` | `public` | `string` | `undefined` | - | - | - | lib/errors.ts:183 |
+| `context.url` | `public` | `string` | `undefined` | - | - | - | lib/errors.ts:184 |

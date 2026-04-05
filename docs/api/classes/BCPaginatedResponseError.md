@@ -6,7 +6,7 @@
 
 # Class: BCPaginatedResponseError
 
-Defined in: lib/errors.ts:231
+Defined in: lib/errors.ts:240
 
 Thrown or yielded when a paginated response is missing required v3 envelope fields
 (`data`, `meta.pagination`, etc.). Usually means the path is not a v3 collection endpoint.
@@ -21,7 +21,7 @@ Thrown or yielded when a paginated response is missing required v3 envelope fiel
 
 > **new BCPaginatedResponseError**(`path`, `data`, `reason`): `BCPaginatedResponseError`
 
-Defined in: lib/errors.ts:234
+Defined in: lib/errors.ts:243
 
 #### Parameters
 
@@ -43,8 +43,8 @@ Defined in: lib/errors.ts:234
 
 | Property | Modifier | Type | Default value | Description | Overrides | Inherited from | Defined in |
 | ------ | ------ | ------ | ------ | ------ | ------ | ------ | ------ |
-| <a id="code"></a> `code` | `public` | `string` | `'BC_PAGINATED_RESPONSE_ERROR'` | Machine-readable error code. Unique per subclass. | [`BaseError`](BaseError.md).[`code`](BaseError.md#code) | - | lib/errors.ts:232 |
-| <a id="context"></a> `context` | `readonly` | `object` | `undefined` | - | - | [`BaseError`](BaseError.md).[`context`](BaseError.md#context) | lib/errors.ts:18 |
-| `context.data` | `public` | `unknown` | `undefined` | - | - | - | lib/errors.ts:231 |
-| `context.path` | `public` | `string` | `undefined` | - | - | - | lib/errors.ts:231 |
-| `context.reason` | `public` | `string` | `undefined` | - | - | - | lib/errors.ts:231 |
+| <a id="code"></a> `code` | `public` | `string` | `'BC_PAGINATED_RESPONSE_ERROR'` | Machine-readable error code. Unique per subclass. | [`BaseError`](BaseError.md).[`code`](BaseError.md#code) | - | lib/errors.ts:241 |
+| <a id="context"></a> `context` | `readonly` | `object` | `undefined` | - | - | [`BaseError`](BaseError.md).[`context`](BaseError.md#context) | lib/errors.ts:19 |
+| `context.data` | `public` | `unknown` | `undefined` | - | - | - | lib/errors.ts:240 |
+| `context.path` | `public` | `string` | `undefined` | - | - | - | lib/errors.ts:240 |
+| `context.reason` | `public` | `string` | `undefined` | - | - | - | lib/errors.ts:240 |

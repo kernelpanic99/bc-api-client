@@ -6,13 +6,13 @@
 
 # Class: BCClientError
 
-Defined in: lib/errors.ts:39
+Defined in: lib/errors.ts:40
 
 Catch-all for unexpected client-side errors not covered by a more specific subclass.
 
 ## Extends
 
-- [`BaseError`](BaseError.md)\<`Record`\<`string`, `string`\>\>
+- [`BaseError`](BaseError.md)\<`Record`\<`string`, `unknown`\>\>
 
 ## Constructors
 
@@ -20,14 +20,14 @@ Catch-all for unexpected client-side errors not covered by a more specific subcl
 
 > **new BCClientError**(`message`, `context?`, `cause?`): `BCClientError`
 
-Defined in: lib/errors.ts:42
+Defined in: lib/errors.ts:43
 
 #### Parameters
 
 | Parameter | Type |
 | ------ | ------ |
 | `message` | `string` |
-| `context?` | `Record`\<`string`, `string`\> |
+| `context?` | `Record`\<`string`, `unknown`\> |
 | `cause?` | `unknown` |
 
 #### Returns
@@ -42,5 +42,5 @@ Defined in: lib/errors.ts:42
 
 | Property | Modifier | Type | Default value | Description | Overrides | Inherited from | Defined in |
 | ------ | ------ | ------ | ------ | ------ | ------ | ------ | ------ |
-| <a id="code"></a> `code` | `public` | `string` | `'BC_CLIENT_ERROR'` | Machine-readable error code. Unique per subclass. | [`BaseError`](BaseError.md).[`code`](BaseError.md#code) | - | lib/errors.ts:40 |
-| <a id="context"></a> `context` | `readonly` | `TContext` | `undefined` | - | - | [`BaseError`](BaseError.md).[`context`](BaseError.md#context) | lib/errors.ts:18 |
+| <a id="code"></a> `code` | `public` | `string` | `'BC_CLIENT_ERROR'` | Machine-readable error code. Unique per subclass. | [`BaseError`](BaseError.md).[`code`](BaseError.md#code) | - | lib/errors.ts:41 |
+| <a id="context"></a> `context` | `readonly` | `TContext` | `undefined` | - | - | [`BaseError`](BaseError.md).[`context`](BaseError.md#context) | lib/errors.ts:19 |

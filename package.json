@@ -32,7 +32,7 @@
         "version": "git add -A src",
         "postversion": "git push && git push --tags",
         "qa": "concurrently 'biome check' 'tsgo --noEmit' 'vitest --run' --kill-others-on-fail",
-        "typedoc": "typedoc"
+        "doc": "typedoc"
     },
     "files": [
         "dist",

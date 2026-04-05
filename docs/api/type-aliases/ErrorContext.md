@@ -8,4 +8,4 @@
 
 > **ErrorContext** = `Record`\<`string`, `unknown`\>
 
-Defined in: lib/errors.ts:4
+Defined in: lib/errors.ts:5

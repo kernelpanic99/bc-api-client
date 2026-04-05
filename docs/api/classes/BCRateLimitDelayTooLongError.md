@@ -6,7 +6,7 @@
 
 # Class: BCRateLimitDelayTooLongError
 
-Defined in: lib/errors.ts:95
+Defined in: lib/errors.ts:96
 
 Thrown during retry when a 429 response specifies a reset window that exceeds
 `config.retry.maxRetryAfter`, preventing an unbounded wait.
@@ -21,7 +21,7 @@ Thrown during retry when a 429 response specifies a reset window that exceeds
 
 > **new BCRateLimitDelayTooLongError**(`request`, `attempts`, `maxDelay`, `delay`): `BCRateLimitDelayTooLongError`
 
-Defined in: lib/errors.ts:104
+Defined in: lib/errors.ts:105
 
 #### Parameters
 
@@ -44,10 +44,10 @@ Defined in: lib/errors.ts:104
 
 | Property | Modifier | Type | Default value | Description | Overrides | Inherited from | Defined in |
 | ------ | ------ | ------ | ------ | ------ | ------ | ------ | ------ |
-| <a id="code"></a> `code` | `public` | `string` | `'BC_RATE_LIMIT_DELAY_TOO_LONG'` | Machine-readable error code. Unique per subclass. | [`BaseError`](BaseError.md).[`code`](BaseError.md#code) | - | lib/errors.ts:102 |
-| <a id="context"></a> `context` | `readonly` | `object` | `undefined` | - | - | [`BaseError`](BaseError.md).[`context`](BaseError.md#context) | lib/errors.ts:18 |
-| `context.attempts` | `public` | `number` | `undefined` | - | - | - | lib/errors.ts:98 |
-| `context.delay` | `public` | `number` | `undefined` | - | - | - | lib/errors.ts:100 |
-| `context.maxDelay` | `public` | `number` | `undefined` | - | - | - | lib/errors.ts:99 |
-| `context.method` | `public` | `string` | `undefined` | - | - | - | lib/errors.ts:97 |
-| `context.url` | `public` | `string` | `undefined` | - | - | - | lib/errors.ts:96 |
+| <a id="code"></a> `code` | `public` | `string` | `'BC_RATE_LIMIT_DELAY_TOO_LONG'` | Machine-readable error code. Unique per subclass. | [`BaseError`](BaseError.md).[`code`](BaseError.md#code) | - | lib/errors.ts:103 |
+| <a id="context"></a> `context` | `readonly` | `object` | `undefined` | - | - | [`BaseError`](BaseError.md).[`context`](BaseError.md#context) | lib/errors.ts:19 |
+| `context.attempts` | `public` | `number` | `undefined` | - | - | - | lib/errors.ts:99 |
+| `context.delay` | `public` | `number` | `undefined` | - | - | - | lib/errors.ts:101 |
+| `context.maxDelay` | `public` | `number` | `undefined` | - | - | - | lib/errors.ts:100 |
+| `context.method` | `public` | `string` | `undefined` | - | - | - | lib/errors.ts:98 |
+| `context.url` | `public` | `string` | `undefined` | - | - | - | lib/errors.ts:97 |

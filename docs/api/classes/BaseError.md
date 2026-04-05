@@ -6,7 +6,7 @@
 
 # Abstract Class: BaseError\<TContext\>
 
-Defined in: lib/errors.ts:12
+Defined in: lib/errors.ts:13
 
 Abstract base class for all library errors. Carries a typed `context` object with
 structured diagnostic data and a machine-readable `code` string.
@@ -47,7 +47,7 @@ Use `instanceof` checks against specific subclasses rather than this base class.
 
 > **new BaseError**\<`TContext`\>(`message`, `context`, `options?`): `BaseError`\<`TContext`\>
 
-Defined in: lib/errors.ts:16
+Defined in: lib/errors.ts:17
 
 #### Parameters
 
@@ -69,5 +69,5 @@ Defined in: lib/errors.ts:16
 
 | Property | Modifier | Type | Description | Defined in |
 | ------ | ------ | ------ | ------ | ------ |
-| <a id="code"></a> `code` | `abstract` | `string` | Machine-readable error code. Unique per subclass. | lib/errors.ts:14 |
-| <a id="context"></a> `context` | `readonly` | `TContext` | - | lib/errors.ts:18 |
+| <a id="code"></a> `code` | `abstract` | `string` | Machine-readable error code. Unique per subclass. | lib/errors.ts:15 |
+| <a id="context"></a> `context` | `readonly` | `TContext` | - | lib/errors.ts:19 |

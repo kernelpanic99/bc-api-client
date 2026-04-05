@@ -6,7 +6,7 @@
 
 # Class: BCAuthInvalidJwtError
 
-Defined in: lib/errors.ts:275
+Defined in: lib/errors.ts:284
 
 Thrown by [BigCommerceAuth.verify](BigCommerceAuth.md#verify) when the JWT signature, audience, issuer, or subject is invalid.
 
@@ -20,7 +20,7 @@ Thrown by [BigCommerceAuth.verify](BigCommerceAuth.md#verify) when the JWT signa
 
 > **new BCAuthInvalidJwtError**(`storeHash`, `cause`): `BCAuthInvalidJwtError`
 
-Defined in: lib/errors.ts:278
+Defined in: lib/errors.ts:287
 
 #### Parameters
 
@@ -41,6 +41,6 @@ Defined in: lib/errors.ts:278
 
 | Property | Modifier | Type | Default value | Description | Overrides | Inherited from | Defined in |
 | ------ | ------ | ------ | ------ | ------ | ------ | ------ | ------ |
-| <a id="code"></a> `code` | `public` | `string` | `'BC_AUTH_INVALID_JWT'` | Machine-readable error code. Unique per subclass. | [`BaseError`](BaseError.md).[`code`](BaseError.md#code) | - | lib/errors.ts:276 |
-| <a id="context"></a> `context` | `readonly` | `object` | `undefined` | - | - | [`BaseError`](BaseError.md).[`context`](BaseError.md#context) | lib/errors.ts:18 |
-| `context.storeHash` | `public` | `string` | `undefined` | - | - | - | lib/errors.ts:275 |
+| <a id="code"></a> `code` | `public` | `string` | `'BC_AUTH_INVALID_JWT'` | Machine-readable error code. Unique per subclass. | [`BaseError`](BaseError.md).[`code`](BaseError.md#code) | - | lib/errors.ts:285 |
+| <a id="context"></a> `context` | `readonly` | `object` | `undefined` | - | - | [`BaseError`](BaseError.md).[`context`](BaseError.md#context) | lib/errors.ts:19 |
+| `context.storeHash` | `public` | `string` | `undefined` | - | - | - | lib/errors.ts:284 |

@@ -6,7 +6,7 @@
 
 # Abstract Class: BCSchemaValidationError
 
-Defined in: lib/errors.ts:119
+Defined in: lib/errors.ts:120
 
 Abstract base for all StandardSchema validation errors. Carries the raw `data` that failed
 validation and the schema `error` result. Use specific subclasses for `instanceof` checks.
@@ -28,7 +28,7 @@ validation and the schema `error` result. Use specific subclasses for `instanceo
 
 > **new BCSchemaValidationError**(`message`, `method`, `path`, `data`, `error`): `BCSchemaValidationError`
 
-Defined in: lib/errors.ts:125
+Defined in: lib/errors.ts:126
 
 #### Parameters
 
@@ -52,9 +52,9 @@ Defined in: lib/errors.ts:125
 
 | Property | Modifier | Type | Description | Inherited from | Defined in |
 | ------ | ------ | ------ | ------ | ------ | ------ |
-| <a id="code"></a> `code` | `abstract` | `string` | Machine-readable error code. Unique per subclass. | [`BaseError`](BaseError.md).[`code`](BaseError.md#code) | lib/errors.ts:14 |
-| <a id="context"></a> `context` | `readonly` | `object` | - | [`BaseError`](BaseError.md).[`context`](BaseError.md#context) | lib/errors.ts:18 |
-| `context.data` | `public` | `unknown` | - | - | lib/errors.ts:122 |
-| `context.error` | `public` | [`FailureResult`](../bc-api-client/namespaces/StandardSchemaV1/interfaces/FailureResult.md) | - | - | lib/errors.ts:123 |
-| `context.method` | `public` | `string` | - | - | lib/errors.ts:120 |
-| `context.path` | `public` | `string` | - | - | lib/errors.ts:121 |
+| <a id="code"></a> `code` | `abstract` | `string` | Machine-readable error code. Unique per subclass. | [`BaseError`](BaseError.md).[`code`](BaseError.md#code) | lib/errors.ts:15 |
+| <a id="context"></a> `context` | `readonly` | `object` | - | [`BaseError`](BaseError.md).[`context`](BaseError.md#context) | lib/errors.ts:19 |
+| `context.data` | `public` | `unknown` | - | - | lib/errors.ts:123 |
+| `context.error` | `public` | [`FailureResult`](../bc-api-client/namespaces/StandardSchemaV1/interfaces/FailureResult.md) | - | - | lib/errors.ts:124 |
+| `context.method` | `public` | `string` | - | - | lib/errors.ts:121 |
+| `context.path` | `public` | `string` | - | - | lib/errors.ts:122 |
