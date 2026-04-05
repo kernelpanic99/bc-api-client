@@ -142,7 +142,10 @@ export class BigCommerceClient {
      * @throws {@link BCResponseValidationError} if `responseSchema` validation fails.
      * @throws {@link BCClientError} on any other ky or unknown error.
      */
-    async get<TRes, TQuery extends Query = Query>(path: string, options?: GetOptions<TRes, TQuery>): Promise<TRes> {
+    async get<TRes = unknown, TQuery extends Query = Query>(
+        path: string,
+        options?: GetOptions<TRes, TQuery>,
+    ): Promise<TRes> {
         return this.request<never, TRes, TQuery>(path, {
             ...options,
             method: 'GET',
@@ -177,7 +180,7 @@ export class BigCommerceClient {
      * @throws {@link BCResponseValidationError} if `responseSchema` validation fails.
      * @throws {@link BCClientError} on any other ky or unknown error.
      */
-    async post<TRes, TBody = unknown, TQuery extends Query = Query>(
+    async post<TRes = unknown, TBody = unknown, TQuery extends Query = Query>(
         path: string,
         options?: PostOptions<TBody, TRes, TQuery>,
     ): Promise<TRes> {
@@ -215,7 +218,7 @@ export class BigCommerceClient {
      * @throws {@link BCResponseValidationError} if `responseSchema` validation fails.
      * @throws {@link BCClientError} on any other ky or unknown error.
      */
-    async put<TRes, TBody = unknown, TQuery extends Query = Query>(
+    async put<TRes = unknown, TBody = unknown, TQuery extends Query = Query>(
         path: string,
         options?: PutOptions<TBody, TRes, TQuery>,
     ): Promise<TRes> {
@@ -312,7 +315,7 @@ export class BigCommerceClient {
      * @throws {@link BCPaginatedItemValidationError} if `itemSchema` validation fails for an item.
      * @throws {@link BCClientError} on any other ky or unknown error.
      */
-    async query<TItem, TQuery extends Query = Query>(
+    async query<TItem = unknown, TQuery extends Query = Query>(
         path: string,
         options: QueryOptions<TItem, TQuery>,
     ): Promise<TItem[]> {
@@ -357,7 +360,7 @@ export class BigCommerceClient {
      * @throws {@link BCPaginatedOptionError} if `query.limit` is not a positive number.
      * @throws {@link BCQueryValidationError} if `querySchema` validation fails.
      */
-    async *queryStream<TItem, TQuery extends Query = Query>(
+    async *queryStream<TItem = unknown, TQuery extends Query = Query>(
         path: string,
         options: QueryOptions<TItem, TQuery>,
     ): AsyncGenerator<Result<TItem, BaseError>> {
@@ -467,7 +470,7 @@ export class BigCommerceClient {
      * @throws {@link BCPaginatedItemValidationError} if `itemSchema` validation fails for an item.
      * @throws {@link BCClientError} on any other ky or unknown error.
      */
-    async collect<TItem, TQuery extends Query>(
+    async collect<TItem = unknown, TQuery extends Query = Query>(
         path: string,
         options?: CollectOptions<TItem, TQuery>,
     ): Promise<TItem[]> {
@@ -519,7 +522,7 @@ export class BigCommerceClient {
      * @throws {@link BCTimeoutError} if a request times out.
      * @throws {@link BCResponseParseError} if a response body cannot be parsed.
      */
-    async collectBlind<TItem, TQuery extends Query = Query>(
+    async collectBlind<TItem = unknown, TQuery extends Query = Query>(
         path: string,
         options?: BlindOptions<TItem, TQuery>,
     ): Promise<TItem[]> {
@@ -572,7 +575,7 @@ export class BigCommerceClient {
      * @yields `Err(BCClientError)` when a page returns a non-array response.
      * @yields `Err(error)` for non-terminating page errors (e.g. non-404/204 HTTP errors).
      */
-    async *streamBlind<TItem, TQuery extends Query = Query>(
+    async *streamBlind<TItem = unknown, TQuery extends Query = Query>(
         path: string,
         options?: BlindOptions<TItem, TQuery>,
     ): AsyncGenerator<Result<TItem, BaseError>> {
@@ -675,7 +678,7 @@ export class BigCommerceClient {
      *
      * @returns Results in the order requests complete (not necessarily input order).
      */
-    async batchSafe<TBody, TRes, TQuery extends Query>(
+    async batchSafe<TRes = unknown, TBody = unknown, TQuery extends Query = Query>(
         requests: BatchRequestOptions<TBody, TRes, TQuery>[],
         options?: ConcurrencyOptions,
     ): Promise<Result<TRes, BaseError>[]> {
@@ -716,7 +719,7 @@ export class BigCommerceClient {
      * @throws {@link BCPaginatedOptionError} if `query.limit` or `query.page` is not a positive number.
      * @throws {@link BCQueryValidationError} if `querySchema` validation fails.
      */
-    async *stream<TItem, TQuery extends Query>(
+    async *stream<TItem = unknown, TQuery extends Query = Query>(
         path: string,
         options?: CollectOptions<TItem, TQuery>,
     ): AsyncGenerator<Result<TItem, BaseError>> {
@@ -825,7 +828,7 @@ export class BigCommerceClient {
      * @param options.backoffRecover - Amount (or function) added to concurrency per successful
      *   response. Defaults to `config.backoffRecover`, or 1 if not set on the client.
      */
-    async *batchStream<TBody, TRes, TQuery extends Query>(
+    async *batchStream<TRes = unknown, TBody = unknown, TQuery extends Query = Query>(
         requests: BatchRequestOptions<TBody, TRes, TQuery>[],
         options?: ConcurrencyOptions,
     ): AsyncGenerator<Result<TRes, BaseError>> {

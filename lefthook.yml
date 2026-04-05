@@ -7,3 +7,10 @@ pre-commit:
     typecheck:
       glob: "**/*.{ts,tsx}"
       run: pnpm typecheck
+
+pre-push:
+  commands:
+    docs:
+      glob: "src/**/*.ts"
+      run: pnpm doc
+      stage_fixed: true
