@@ -21,7 +21,7 @@
         "url": "https://github.com/kernelpanic99/bc-api-client/issues"
     },
     "engines": {
-        "node": ">=20"
+        "node": ">=22"
     },
     "scripts": {
         "test": "vitest",
