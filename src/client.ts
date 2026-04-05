@@ -390,9 +390,9 @@ export class BigCommerceClient {
 
         const url = this.config.prefixUrl ?? requestOptions.prefixUrl ?? BASE_KY_CONFIG.prefixUrl;
         const fullPath = this.makePath('v3', path);
-        const fullQuery = toUrlSearchParams(newQuery);
+        const fullQuery = toUrlSearchParams({ ...newQuery, page: 1 });
         const fullUrl = `${url}/${fullPath}?${fullQuery}`;
-        const keyOverhead = key.length + 2; // `&key=` or `key=` prefix
+        const keyOverhead = encodeURIComponent(key).length + 2; // `&key=` or `key=` prefix
 
         const chunks = chunkStrLength(values.map(String), {
             chunkLength: limit,
