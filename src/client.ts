@@ -855,7 +855,9 @@ export class BigCommerceClient {
                             ),
                         ),
                     ),
-                ).finally(() => channel.close());
+                )
+                    .catch((err) => this.logger?.warn({ err }, 'In-flight concurrent requests aborted'))
+                    .finally(() => channel.close());
 
                 for await (const item of channel) {
                     yield item;
