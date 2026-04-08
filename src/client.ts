@@ -79,9 +79,8 @@ export class BigCommerceClient {
      * @param config.backoffRecover - Amount (or `(concurrency) => number` function) added to
      *   concurrency per successful response while below the configured max. Defaults to 1.
      *
-     * @throws {@link BCCredentialsError} if `storeHash` or `accessToken` are missing or if
-     *   `concurrency` is out of range.
-     * @throws {@link BCClientError} if `prefixUrl` is not a valid URL.
+     * @throws {@link BCCredentialsError} if `storeHash` or `accessToken` are missing.
+     * @throws {@link BCClientError} if `prefixUrl` is not a valid URL or `concurrency` is out of range.
      */
     constructor(private readonly config: ClientConfig) {
         this.validateConfig();
@@ -1178,6 +1177,10 @@ export class BigCommerceClient {
             errors.push('accessToken is empty');
         }
 
+        if (errors.length > 0) {
+            throw new BCCredentialsError(errors);
+        }
+
         if (this.config.prefixUrl) {
             try {
                 new URL(this.config.prefixUrl);
@@ -1186,19 +1189,7 @@ export class BigCommerceClient {
             }
         }
 
-        try {
-            this.validateConcurrency(this.config.concurrency);
-        } catch (err) {
-            if (err instanceof BCClientError) {
-                errors.push(err.message);
-            } else {
-                throw err;
-            }
-        }
-
-        if (errors.length > 0) {
-            throw new BCCredentialsError(errors);
-        }
+        this.validateConcurrency(this.config.concurrency);
     }
 
     private validateConcurrency(concurrency: number | undefined | false) {
