@@ -5,6 +5,51 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-beta.2] - 2026-04-05
+
+### Fixed
+
+- URL size estimation in `queryStream`: page number was not included in the estimated query, and key names were not counted as URL-encoded
+
+### Changed
+
+- `engines.node` bumped to `>=22`
+
+## [1.0.0-beta.0] - 2026-04-05
+
+Complete rewrite. See the [migration guide](docs/V1_MIGRATION_GUIDE.md) for full details.
+
+### Breaking Changes
+
+- `endpoints` module removed; use literal path strings instead (e.g. `'/catalog/products'`)
+- `skipErrors` option removed; use async generators or `batchSafe` to observe and act on errors
+- `kyOptions` removed; ky options can now be passed directly to the constructor and methods
+- Generic order in method signatures inverted: `<TResponse, TBody, TQuery>` (was `<TBody, TResponse>`)
+- Renamed methods:
+  - `concurrent` → `batchStream` (now an async generator)
+  - `concurrentSettled` → `batchSafe` (returns a custom `Result` type instead of `PromiseSettledResult`)
+  - `collectV2` → `collectBlind`
+- Default console logger at `info` level introduced (v0 had no default logger); pass `logger: false` to opt out
+
+### Added
+
+- `stream` — async generator version of `collect`
+- `streamBlind` — async generator version of `collectBlind`
+- `queryStream` — async generator version of `query`
+- StandardSchema validation support for query, body, and response (opt-in; works with Zod and compatible libraries)
+- Custom typed error hierarchy with distinct classes per error type
+- `concurrency: false` option to disable all concurrency machinery for deterministic behavior
+- `req` helper for constructing typesafe request arrays for `batchSafe`
+- `BigCommerceAuth` client ported from legacy
+
+### Changed
+
+- Networking delegated to [ky](https://github.com/sindresorhus/ky); custom 429 handling and concurrency backoff condensed into minimal ky hooks
+- `p-limit` replaces `Promise.all` for concurrency; concurrency drops to 1 automatically on 429
+- Base batching primitive is `AsyncGenerator`, enabling full control and observability over batching
+- Query params type expanded and now generic; accepts `Record<string, string>` (legacy-compatible) or any StandardSchema-validated shape
+- `DELETE` no longer throws on 404
+
 ## [0.2.2]
 
 ### Added
