@@ -14,7 +14,7 @@ Defined in: client.ts:57
 
 > **new BigCommerceClient**(`config`): `BigCommerceClient`
 
-Defined in: client.ts:86
+Defined in: client.ts:85
 
 Creates a new BigCommerceClient.
 
@@ -30,12 +30,11 @@ Creates a new BigCommerceClient.
 
 #### Throws
 
-[BCCredentialsError](BCCredentialsError.md) if `storeHash` or `accessToken` are missing or if
-  `concurrency` is out of range.
+[BCCredentialsError](BCCredentialsError.md) if `storeHash` or `accessToken` are missing.
 
 #### Throws
 
-[BCClientError](BCClientError.md) if `prefixUrl` is not a valid URL.
+[BCClientError](BCClientError.md) if `prefixUrl` is not a valid URL or `concurrency` is out of range.
 
 ## Methods
 
@@ -43,7 +42,7 @@ Creates a new BigCommerceClient.
 
 > **batchSafe**\<`TRes`, `TBody`, `TQuery`\>(`requests`, `options?`): `Promise`\<[`Result`](../type-aliases/Result.md)\<`TRes`, [`BaseError`](BaseError.md)\<[`ErrorContext`](../type-aliases/ErrorContext.md)\>\>[]\>
 
-Defined in: client.ts:681
+Defined in: client.ts:680
 
 Executes multiple requests concurrently and returns all results as [Result](../type-aliases/Result.md) values,
 never throwing. Errors from individual requests are captured as `Err` results.
@@ -77,7 +76,7 @@ Results in the order requests complete (not necessarily input order).
 
 > **batchStream**\<`TRes`, `TBody`, `TQuery`\>(`requests`, `options?`): `AsyncGenerator`\<[`Result`](../type-aliases/Result.md)\<`TRes`, [`BaseError`](BaseError.md)\<[`ErrorContext`](../type-aliases/ErrorContext.md)\>\>\>
 
-Defined in: client.ts:837
+Defined in: client.ts:836
 
 Executes multiple requests with configurable concurrency, yielding each result as a
 [Result](../type-aliases/Result.md) as it completes. Errors from individual requests are yielded as `Err`
@@ -117,7 +116,7 @@ get all the results, set `concurrency: false` to trade concurrency for determini
 
 > **collect**\<`TItem`, `TQuery`\>(`path`, `options?`): `Promise`\<`TItem`[]\>
 
-Defined in: client.ts:473
+Defined in: client.ts:472
 
 Fetches all pages from a v3 paginated endpoint and collects items into an array.
 
@@ -194,7 +193,7 @@ All items across all pages.
 
 > **collectBlind**\<`TItem`, `TQuery`\>(`path`, `options?`): `Promise`\<`TItem`[]\>
 
-Defined in: client.ts:525
+Defined in: client.ts:524
 
 Fetches all pages from a v2 flat-array endpoint and collects items into an array.
 
@@ -257,7 +256,7 @@ All items across all pages.
 
 > **delete**\<`TRes`, `TQuery`\>(`path`, `options?`): `Promise`\<`void`\>
 
-Defined in: client.ts:253
+Defined in: client.ts:252
 
 Sends a DELETE request to the given path.
 
@@ -320,7 +319,7 @@ Silently suppresses 404 responses (resource already gone) and empty response bod
 
 > **get**\<`TRes`, `TQuery`\>(`path`, `options?`): `Promise`\<`TRes`\>
 
-Defined in: client.ts:145
+Defined in: client.ts:144
 
 Sends a GET request to the given path.
 
@@ -387,7 +386,7 @@ Parsed and optionally validated response body.
 
 > **post**\<`TRes`, `TBody`, `TQuery`\>(`path`, `options?`): `Promise`\<`TRes`\>
 
-Defined in: client.ts:183
+Defined in: client.ts:182
 
 Sends a POST request to the given path.
 
@@ -459,7 +458,7 @@ Parsed and optionally validated response body.
 
 > **put**\<`TRes`, `TBody`, `TQuery`\>(`path`, `options?`): `Promise`\<`TRes`\>
 
-Defined in: client.ts:221
+Defined in: client.ts:220
 
 Sends a PUT request to the given path.
 
@@ -531,7 +530,7 @@ Parsed and optionally validated response body.
 
 > **query**\<`TItem`, `TQuery`\>(`path`, `options`): `Promise`\<`TItem`[]\>
 
-Defined in: client.ts:318
+Defined in: client.ts:317
 
 Fetches items from a v3 paginated endpoint by splitting `values` across multiple requests
 using the given `key` query param, chunking to stay within URL length limits.
@@ -609,7 +608,7 @@ All matching items across all chunked requests.
 
 > **queryStream**\<`TItem`, `TQuery`\>(`path`, `options`): `AsyncGenerator`\<[`Result`](../type-aliases/Result.md)\<`TItem`, [`BaseError`](BaseError.md)\<[`ErrorContext`](../type-aliases/ErrorContext.md)\>\>\>
 
-Defined in: client.ts:363
+Defined in: client.ts:362
 
 Streaming variant of [query](#query). Yields each item individually as results arrive,
 splitting `values` into URL-length-safe chunks across concurrent requests.
@@ -648,7 +647,7 @@ Each yielded value is a [Result](../type-aliases/Result.md) — check `err` befo
 
 > **stream**\<`TItem`, `TQuery`\>(`path`, `options?`): `AsyncGenerator`\<[`Result`](../type-aliases/Result.md)\<`TItem`, [`BaseError`](BaseError.md)\<[`ErrorContext`](../type-aliases/ErrorContext.md)\>\>\>
 
-Defined in: client.ts:722
+Defined in: client.ts:721
 
 Streams all items from a v3 paginated endpoint, fetching the first page sequentially
 and remaining pages concurrently via [batchStream](#batchstream).
@@ -688,7 +687,7 @@ Each yielded value is a [Result](../type-aliases/Result.md) — check `err` befo
 
 > **streamBlind**\<`TItem`, `TQuery`\>(`path`, `options?`): `AsyncGenerator`\<[`Result`](../type-aliases/Result.md)\<`TItem`, [`BaseError`](BaseError.md)\<[`ErrorContext`](../type-aliases/ErrorContext.md)\>\>\>
 
-Defined in: client.ts:578
+Defined in: client.ts:577
 
 Lazily streams items from a v2 flat-array endpoint, page by page.
 
