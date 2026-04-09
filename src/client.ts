@@ -50,7 +50,7 @@ import {
     req,
     toUrlSearchParams,
 } from './lib/request';
-import { Err, Ok, type Result } from './lib/result';
+import { type BatchResult, Err, Ok, type Result } from './lib/result';
 import type { StandardSchemaV1 } from './lib/standard-schema';
 import { AsyncChannel, chunkStrLength } from './lib/util';
 
@@ -280,6 +280,10 @@ export class BigCommerceClient {
      *
      * Collects all results into an array. Use {@link queryStream} to process items lazily.
      *
+     * **Sorting and concurrency:** when `concurrency > 1`, chunks complete out of order so
+     * sorted output is not preserved across the full result set. Pass `concurrency: false`
+     * if sort order matters.
+     *
      * @param path - API path relative to the store's versioned base URL.
      * @param options - Query options including `key`, `values`, pagination params, and concurrency
      *   controls.
@@ -337,6 +341,10 @@ export class BigCommerceClient {
      *
      * Each yielded value is a {@link Result} — check `err` before using `data`.
      *
+     * **Sorting and concurrency:** when `concurrency > 1`, chunks complete out of order so
+     * sorted output is not preserved across the full result set. Pass `concurrency: false`
+     * if sort order matters.
+     *
      * @param path - API path relative to the store's versioned base URL.
      * @param options - Query options including `key`, `values`, pagination params, and concurrency
      *   controls.
@@ -363,7 +371,18 @@ export class BigCommerceClient {
         path: string,
         options: QueryOptions<TItem, TQuery>,
     ): AsyncGenerator<Result<TItem, BaseError>> {
-        const { key, values, query, querySchema, itemSchema, ...requestOptions } = options;
+        const {
+            key,
+            values,
+            query,
+            querySchema,
+            itemSchema,
+            concurrency,
+            rateLimitBackoff,
+            backoff,
+            backoffRecover,
+            ...requestOptions
+        } = options;
 
         const limit = this.validatePaginationOption(path, 'limit', query?.limit ?? DEFAULT_LIMIT);
 
@@ -411,7 +430,12 @@ export class BigCommerceClient {
             }),
         );
 
-        for await (const { err, data } of this.batchStream(requests, options)) {
+        for await (const { err, data } of this.batchStream(requests, {
+            concurrency,
+            rateLimitBackoff,
+            backoff,
+            backoffRecover,
+        })) {
             if (err) {
                 yield Err(err);
                 continue;
@@ -437,6 +461,10 @@ export class BigCommerceClient {
      * Fetches all pages from a v3 paginated endpoint and collects items into an array.
      *
      * Use {@link stream} to process items lazily without buffering the full result set.
+     *
+     * **Sorting and concurrency:** the first page is fetched sequentially; remaining pages are
+     * fetched concurrently and may complete out of order. When `concurrency > 1`, sort order
+     * is not preserved across pages. Pass `concurrency: false` if sort order matters.
      *
      * @param path - API path relative to the store's versioned base URL.
      * @param options - Ky options are forwarded to page requests.
@@ -494,6 +522,10 @@ export class BigCommerceClient {
      *
      * Use {@link streamBlind} to process items lazily without buffering the full result set.
      *
+     * **Sorting and concurrency:** pages within each batch are fetched concurrently and may
+     * complete out of order. When `concurrency > 1`, sort order is not preserved across pages.
+     * Pass `concurrency: false` if sort order matters.
+     *
      * @param path - API path relative to the store's versioned base URL (always requests v2).
      * @param options - Ky options are forwarded to page requests.
      * @param options.query - Query parameters. `query.limit` controls page size (default 250,
@@ -548,6 +580,10 @@ export class BigCommerceClient {
      *
      * Use {@link collectBlind} to buffer all results into an array (throws on any error).
      *
+     * **Sorting and concurrency:** pages within each batch are fetched concurrently and may
+     * complete out of order. When `concurrency > 1`, sort order is not preserved across pages.
+     * Pass `concurrency: false` if sort order matters.
+     *
      * @param path - API path relative to the store's versioned base URL (always requests v2).
      * @param options - Ky options are forwarded to page requests.
      * @param options.query - Query parameters. `query.limit` controls page size (default 250,
@@ -592,7 +628,7 @@ export class BigCommerceClient {
 
         const concurrencyOptions = { concurrency: rawConcurrency, rateLimitBackoff, backoff, backoffRecover };
 
-        const concurrency = this.validateConcurrency(this.config.concurrency ?? rawConcurrency ?? DEFAULT_CONCURRENCY);
+        const concurrency = this.validateConcurrency(rawConcurrency ?? this.config.concurrency ?? DEFAULT_CONCURRENCY);
 
         const query = await this.validate(rawQuery, querySchema, BCQueryValidationError, 'GET', path);
         const page = this.validatePaginationOption(path, 'page', query?.page ?? 1);
@@ -660,8 +696,11 @@ export class BigCommerceClient {
     }
 
     /**
-     * Executes multiple requests concurrently and returns all results as {@link Result} values,
-     * never throwing. Errors from individual requests are captured as `Err` results.
+     * Executes multiple requests concurrently and returns all results as {@link BatchResult}
+     * values, never throwing. Errors from individual requests are captured as `Err` results.
+     *
+     * Results arrive in completion order, not input order. Use the `index` field on each
+     * {@link BatchResult} to correlate a result back to its position in the `requests` array.
      *
      * Use {@link batchStream} to process results as they arrive rather than waiting for all.
      *
@@ -675,13 +714,13 @@ export class BigCommerceClient {
      * @param options.backoffRecover - Amount (or function) added to concurrency per successful
      *   response. Defaults to `config.backoffRecover`, or 1 if not set on the client.
      *
-     * @returns Results in the order requests complete (not necessarily input order).
+     * @returns {@link BatchResult} array in the order requests completed (not input order).
      */
     async batchSafe<TRes = unknown, TBody = unknown, TQuery extends Query = Query>(
         requests: BatchRequestOptions<TBody, TRes, TQuery>[],
         options?: ConcurrencyOptions,
-    ): Promise<Result<TRes, BaseError>[]> {
-        const results: Result<TRes, BaseError>[] = [];
+    ): Promise<BatchResult<TRes, BaseError>[]> {
+        const results: BatchResult<TRes, BaseError>[] = [];
 
         for await (const res of this.batchStream(requests, options)) {
             results.push(res);
@@ -696,6 +735,10 @@ export class BigCommerceClient {
      *
      * Each yielded value is a {@link Result} — check `err` before using `data`. Use
      * {@link collect} to gather all items into an array.
+     *
+     * **Sorting and concurrency:** the first page is fetched sequentially; remaining pages are
+     * fetched concurrently and may complete out of order. When `concurrency > 1`, sort order
+     * is not preserved across pages. Pass `concurrency: false` if sort order matters.
      *
      * @param path - API path relative to the store's versioned base URL.
      * @param options - Ky options are forwarded to page requests.
@@ -722,7 +765,16 @@ export class BigCommerceClient {
         path: string,
         options?: CollectOptions<TItem, TQuery>,
     ): AsyncGenerator<Result<TItem, BaseError>> {
-        const { query, querySchema, itemSchema, ...requestOptions } = options ?? {};
+        const {
+            query,
+            querySchema,
+            itemSchema,
+            concurrency,
+            rateLimitBackoff,
+            backoff,
+            backoffRecover,
+            ...requestOptions
+        } = options ?? {};
 
         let limit = this.validatePaginationOption(path, 'limit', query?.limit ?? DEFAULT_LIMIT);
         const page = this.validatePaginationOption(path, 'page', query?.page ?? 1);
@@ -785,7 +837,9 @@ export class BigCommerceClient {
             },
         }));
 
-        for await (const pageRes of requests.length > 0 ? this.batchStream(requests, options) : []) {
+        for await (const pageRes of requests.length > 0
+            ? this.batchStream(requests, { concurrency, rateLimitBackoff, backoff, backoffRecover })
+            : []) {
             const { data: page, err } = pageRes;
 
             if (err) {
@@ -803,7 +857,7 @@ export class BigCommerceClient {
                 if (err instanceof BaseError) {
                     yield Err(err);
                 } else {
-                    yield Err(new BCClientError('Unknown error occured processing page', {}, { cause: err }));
+                    yield Err(new BCClientError('Unknown error occurred processing page', {}, { cause: err }));
                 }
             }
         }
@@ -811,8 +865,11 @@ export class BigCommerceClient {
 
     /**
      * Executes multiple requests with configurable concurrency, yielding each result as a
-     * {@link Result} as it completes. Errors from individual requests are yielded as `Err`
+     * {@link BatchResult} as it completes. Errors from individual requests are yielded as `Err`
      * results rather than thrown.
+     *
+     * Results arrive in completion order, not input order. Use the `index` field on each
+     * {@link BatchResult} to correlate a result back to its position in the `requests` array.
      *
      * Automatically adjusts concurrency up/down in response to rate-limit and error responses.
      * Use {@link batchSafe} to collect all results into an array.
@@ -836,21 +893,21 @@ export class BigCommerceClient {
     async *batchStream<TRes = unknown, TBody = unknown, TQuery extends Query = Query>(
         requests: BatchRequestOptions<TBody, TRes, TQuery>[],
         options?: ConcurrencyOptions,
-    ): AsyncGenerator<Result<TRes, BaseError>> {
+    ): AsyncGenerator<BatchResult<TRes, BaseError>> {
         const resolved = this.resolveStreamOptions(options);
 
         if (resolved.concurrency) {
             const limit = pLimit({ concurrency: resolved.concurrency, rejectOnClear: true });
             const client = this.makeStreamClient(limit, resolved);
-            const channel = new AsyncChannel<Result<TRes, BaseError>>();
+            const channel = new AsyncChannel<BatchResult<TRes, BaseError>>();
 
             try {
                 Promise.all(
-                    requests.map((req) =>
+                    requests.map((req, index) =>
                         limit(() =>
                             this.request(req.path, req, client).then(
-                                (val) => channel.push(Ok(val)),
-                                (err) => channel.push(Err(err)),
+                                (val) => channel.push({ ...Ok(val), index }),
+                                (err) => channel.push({ ...Err(err), index }),
                             ),
                         ),
                     ),
@@ -865,16 +922,16 @@ export class BigCommerceClient {
                 limit.clearQueue();
             }
         } else {
-            for (const request of requests) {
+            for (const [index, request] of requests.entries()) {
                 try {
                     const res = await this.request(request.path, request);
 
-                    yield Ok(res);
+                    yield { ...Ok(res), index };
                 } catch (err) {
                     if (err instanceof BaseError) {
-                        yield Err(err);
+                        yield { ...Err(err), index };
                     } else {
-                        yield Err(new BCClientError('Unknown error in batchStream', {}, { cause: err }));
+                        yield { ...Err(new BCClientError('Unknown error in batchStream', {}, { cause: err })), index };
                     }
                 }
             }
@@ -1037,13 +1094,13 @@ export class BigCommerceClient {
     }
 
     private async request<TBody, TRes, TQuery extends Query = Query>(
-        _path: string,
+        rawPath: string,
         options: RequestOptions<TBody, TRes, TQuery>,
         client?: KyInstance,
     ) {
         const { version, query, body, bodySchema, querySchema, responseSchema, ...kyOptions } = options;
 
-        const path = this.makePath(options.version ?? 'v3', _path);
+        const path = this.makePath(options.version ?? 'v3', rawPath);
         const validQuery = await this.validate(
             query,
             querySchema,

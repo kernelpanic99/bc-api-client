@@ -1,5 +1,6 @@
 import { BigCommerceClient } from 'src/client';
 import {
+    type BaseError,
     BCApiError,
     BCClientError,
     BCPaginatedItemValidationError,
@@ -7,11 +8,14 @@ import {
     BCPaginatedResponseError,
     BCResponseParseError,
 } from 'src/lib/errors';
-import { Err, Ok } from 'src/lib/result';
+import { Err, Ok, type Result } from 'src/lib/result';
 import type { StandardSchemaV1 } from 'src/lib/standard-schema';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const makeClient = () => new BigCommerceClient({ storeHash: 'abc', accessToken: 'tok', logger: false });
+
+/** Wraps a Result with an index to satisfy the BatchResult type expected by batchStream/batchSafe mocks. */
+const br = <T>(r: Result<T, BaseError>, index = 0) => ({ ...r, index });
 
 function makePage(
     items: unknown[],
@@ -334,7 +338,7 @@ describe('stream', () => {
                     { method: 'GET', path: '/products', query: { limit: 250, page: 2 } },
                     { method: 'GET', path: '/products', query: { limit: 250, page: 3 } },
                 ],
-                undefined,
+                { concurrency: undefined, rateLimitBackoff: undefined, backoff: undefined, backoffRecover: undefined },
             );
         });
 
@@ -389,8 +393,8 @@ describe('stream', () => {
         it('yields Err for invalid page response but continues to next page', async () => {
             vi.spyOn(client, 'get').mockResolvedValue(makePage([{ id: 1 }], { total_pages: 3, per_page: 250 }));
             vi.spyOn(client, 'batchStream').mockImplementation(async function* () {
-                yield Ok(null); // bad — not a paginated envelope
-                yield Ok(makePage([{ id: 3 }]));
+                yield br(Ok(null)); // bad — not a paginated envelope
+                yield br(Ok(makePage([{ id: 3 }])), 1);
             });
 
             const results = await drain(client.stream('/products'));
@@ -405,7 +409,7 @@ describe('stream', () => {
 
             vi.spyOn(client, 'get').mockResolvedValue(makePage([{ id: 1 }], { total_pages: 2, per_page: 250 }));
             vi.spyOn(client, 'batchStream').mockImplementation(async function* () {
-                yield Err(error);
+                yield br(Err(error));
             });
 
             const results = await drain(client.stream('/products'));
@@ -477,7 +481,7 @@ describe('streamBlind', () => {
 
     describe('request construction', () => {
         it('sends page and limit in each request', async () => {
-            const batchSpy = vi.spyOn(client, 'batchSafe').mockResolvedValue([Ok([])]);
+            const batchSpy = vi.spyOn(client, 'batchSafe').mockResolvedValue([br(Ok([]))]);
 
             await drain(client.streamBlind('/legacy', { query: { limit: 50 }, concurrency: 1 }));
 
@@ -488,7 +492,7 @@ describe('streamBlind', () => {
         });
 
         it('uses DEFAULT_LIMIT when limit is omitted', async () => {
-            const batchSpy = vi.spyOn(client, 'batchSafe').mockResolvedValue([Ok([])]);
+            const batchSpy = vi.spyOn(client, 'batchSafe').mockResolvedValue([br(Ok([]))]);
 
             await drain(client.streamBlind('/legacy', { concurrency: 1 }));
 
@@ -499,7 +503,7 @@ describe('streamBlind', () => {
         });
 
         it('starts from the given page', async () => {
-            const batchSpy = vi.spyOn(client, 'batchSafe').mockResolvedValue([Ok([])]);
+            const batchSpy = vi.spyOn(client, 'batchSafe').mockResolvedValue([br(Ok([]))]);
 
             await drain(client.streamBlind('/legacy', { query: { limit: 250, page: 3 }, concurrency: 1 }));
 
@@ -510,7 +514,7 @@ describe('streamBlind', () => {
         });
 
         it('spreads extra query params into every request', async () => {
-            const batchSpy = vi.spyOn(client, 'batchSafe').mockResolvedValue([Ok([])]);
+            const batchSpy = vi.spyOn(client, 'batchSafe').mockResolvedValue([br(Ok([]))]);
 
             await drain(client.streamBlind('/legacy', { query: { limit: 250, category_id: 5 }, concurrency: 1 }));
 
@@ -523,8 +527,8 @@ describe('streamBlind', () => {
         it('advances by concurrency pages per batch', async () => {
             const batchSpy = vi
                 .spyOn(client, 'batchSafe')
-                .mockResolvedValueOnce([Ok([{ id: 1 }]), Ok([{ id: 2 }])])
-                .mockResolvedValue([Ok([])]);
+                .mockResolvedValueOnce([br(Ok([{ id: 1 }])), br(Ok([{ id: 2 }]), 1)])
+                .mockResolvedValue([br(Ok([]))]);
 
             await drain(client.streamBlind('/legacy', { query: { limit: 250 }, concurrency: 2 }));
 
@@ -539,9 +543,9 @@ describe('streamBlind', () => {
         it('stops after receiving an empty page', async () => {
             const batchSpy = vi
                 .spyOn(client, 'batchSafe')
-                .mockResolvedValueOnce([Ok([{ id: 1 }])])
-                .mockResolvedValueOnce([Ok([])])
-                .mockResolvedValue([Ok([{ id: 99 }])]);
+                .mockResolvedValueOnce([br(Ok([{ id: 1 }]))])
+                .mockResolvedValueOnce([br(Ok([]))])
+                .mockResolvedValue([br(Ok([{ id: 99 }]))]);
 
             const results = await drain(client.streamBlind('/legacy', { concurrency: 1 }));
 
@@ -551,8 +555,8 @@ describe('streamBlind', () => {
 
         it('stops after a 404 without yielding an error', async () => {
             vi.spyOn(client, 'batchSafe')
-                .mockResolvedValueOnce([Ok([{ id: 1 }])])
-                .mockResolvedValueOnce([Err(make404Error())]);
+                .mockResolvedValueOnce([br(Ok([{ id: 1 }]))])
+                .mockResolvedValueOnce([br(Err(make404Error()))]);
 
             const results = await drain(client.streamBlind('/legacy', { concurrency: 1 }));
 
@@ -563,8 +567,8 @@ describe('streamBlind', () => {
             const err204 = new BCResponseParseError('GET', '/legacy', 204, null, undefined, '');
 
             vi.spyOn(client, 'batchSafe')
-                .mockResolvedValueOnce([Ok([{ id: 1 }])])
-                .mockResolvedValueOnce([Err(err204)]);
+                .mockResolvedValueOnce([br(Ok([{ id: 1 }]))])
+                .mockResolvedValueOnce([br(Err(err204))]);
 
             const results = await drain(client.streamBlind('/legacy', { concurrency: 1 }));
 
@@ -572,7 +576,7 @@ describe('streamBlind', () => {
         });
 
         it('stops at maxPages', async () => {
-            const batchSpy = vi.spyOn(client, 'batchSafe').mockResolvedValue([Ok([{ id: 1 }])]);
+            const batchSpy = vi.spyOn(client, 'batchSafe').mockResolvedValue([br(Ok([{ id: 1 }]))]);
 
             await drain(client.streamBlind('/legacy', { maxPages: 2, concurrency: 1 }));
 
@@ -583,8 +587,8 @@ describe('streamBlind', () => {
     describe('response handling', () => {
         it('yields Ok for each item in array pages', async () => {
             vi.spyOn(client, 'batchSafe')
-                .mockResolvedValueOnce([Ok([{ id: 1 }, { id: 2 }])])
-                .mockResolvedValue([Ok([])]);
+                .mockResolvedValueOnce([br(Ok([{ id: 1 }, { id: 2 }]))])
+                .mockResolvedValue([br(Ok([]))]);
 
             const results = await drain(client.streamBlind('/legacy', { concurrency: 1 }));
 
@@ -593,8 +597,8 @@ describe('streamBlind', () => {
 
         it('yields Err(BCClientError) when page response is not an array', async () => {
             vi.spyOn(client, 'batchSafe')
-                .mockResolvedValueOnce([Ok({ data: [], meta: {} })]) // v3 envelope — not a flat array
-                .mockResolvedValue([Ok([])]);
+                .mockResolvedValueOnce([br(Ok({ data: [], meta: {} }))]) // v3 envelope — not a flat array
+                .mockResolvedValue([br(Ok([]))]);
 
             const results = await drain(client.streamBlind('/legacy', { concurrency: 1 }));
 
@@ -606,8 +610,8 @@ describe('streamBlind', () => {
             const error = new BCClientError('request failed');
 
             vi.spyOn(client, 'batchSafe')
-                .mockResolvedValueOnce([Err(error)])
-                .mockResolvedValue([Ok([])]);
+                .mockResolvedValueOnce([br(Err(error))])
+                .mockResolvedValue([br(Ok([]))]);
 
             const results = await drain(client.streamBlind('/legacy', { concurrency: 1 }));
 
@@ -616,8 +620,8 @@ describe('streamBlind', () => {
 
         it('continues after a non-array page response', async () => {
             vi.spyOn(client, 'batchSafe')
-                .mockResolvedValueOnce([Ok('not an array'), Ok([{ id: 1 }])])
-                .mockResolvedValue([Ok([])]);
+                .mockResolvedValueOnce([br(Ok('not an array')), br(Ok([{ id: 1 }]), 1)])
+                .mockResolvedValue([br(Ok([]))]);
 
             const results = await drain(client.streamBlind('/legacy', { concurrency: 2 }));
 
@@ -629,8 +633,8 @@ describe('streamBlind', () => {
     describe('item schema validation', () => {
         it('yields Ok(validatedValue) when schema passes', async () => {
             vi.spyOn(client, 'batchSafe')
-                .mockResolvedValueOnce([Ok([10, 20])])
-                .mockResolvedValue([Ok([])]);
+                .mockResolvedValueOnce([br(Ok([10, 20]))])
+                .mockResolvedValue([br(Ok([]))]);
 
             const schema = makeSchema<number>((v) => ({ value: (v as number) * 2 }));
             const results = await drain(client.streamBlind('/legacy', { itemSchema: schema, concurrency: 1 }));
@@ -640,8 +644,8 @@ describe('streamBlind', () => {
 
         it('yields Err(BCPaginatedItemValidationError) when schema fails', async () => {
             vi.spyOn(client, 'batchSafe')
-                .mockResolvedValueOnce([Ok(['not-a-number'])])
-                .mockResolvedValue([Ok([])]);
+                .mockResolvedValueOnce([br(Ok(['not-a-number']))])
+                .mockResolvedValue([br(Ok([]))]);
 
             const schema = makeSchema<number>((v) =>
                 typeof v === 'number' ? { value: v } : { issues: [{ message: 'not a number' }] },
@@ -653,8 +657,8 @@ describe('streamBlind', () => {
 
         it('mixes Ok and Err when some items fail schema', async () => {
             vi.spyOn(client, 'batchSafe')
-                .mockResolvedValueOnce([Ok([1, 'bad', 3])])
-                .mockResolvedValue([Ok([])]);
+                .mockResolvedValueOnce([br(Ok([1, 'bad', 3]))])
+                .mockResolvedValue([br(Ok([]))]);
 
             const schema = makeSchema<number>((v) =>
                 typeof v === 'number' ? { value: v } : { issues: [{ message: 'bad' }] },
@@ -673,9 +677,9 @@ describe('collectBlind', () => {
         const client = makeClient();
 
         vi.spyOn(client, 'batchSafe')
-            .mockResolvedValueOnce([Ok([{ id: 1 }, { id: 2 }])])
-            .mockResolvedValueOnce([Ok([{ id: 3 }])])
-            .mockResolvedValue([Ok([])]);
+            .mockResolvedValueOnce([br(Ok([{ id: 1 }, { id: 2 }]))])
+            .mockResolvedValueOnce([br(Ok([{ id: 3 }]))])
+            .mockResolvedValue([br(Ok([]))]);
 
         const result = await client.collectBlind('/legacy', { concurrency: 1 });
 
@@ -687,8 +691,8 @@ describe('collectBlind', () => {
         const error = new BCClientError('bad page');
 
         vi.spyOn(client, 'batchSafe')
-            .mockResolvedValueOnce([Ok([{ id: 1 }])])
-            .mockResolvedValueOnce([Err(error)]);
+            .mockResolvedValueOnce([br(Ok([{ id: 1 }]))])
+            .mockResolvedValueOnce([br(Err(error))]);
 
         await expect(client.collectBlind('/legacy', { concurrency: 1 })).rejects.toThrow(error);
     });

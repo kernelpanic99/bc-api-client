@@ -314,4 +314,82 @@ describe('BigCommerceClient', () => {
             expect(results).toEqual([]);
         });
     });
+
+    describe('index correlation', () => {
+        it('batchStream: index matches input position when concurrency is false', async () => {
+            const items = [{ id: 1 }, { id: 2 }, { id: 3 }];
+            const client = bcClientStream(items.map((it) => echo(it)));
+            const requests = items.map((it) => ({ method: 'GET' as const, path: `/items/${it.id}` }));
+
+            const results = [];
+
+            for await (const result of client.batchStream(requests, { concurrency: false })) {
+                results.push(result);
+            }
+
+            for (const [i, result] of results.entries()) {
+                expect(result.index).toBe(i);
+            }
+        });
+
+        it('batchStream: index can be used to recover input order from out-of-order completions', async () => {
+            const items = [{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }, { id: 5 }];
+            let call = 0;
+            // Responses complete in reverse order: last request resolves first.
+            const delays = [50, 30, 20, 10, 0];
+
+            const client = new BigCommerceClient({
+                ...VALID_CREDENTIALS,
+                hooks: {
+                    beforeRequest: [
+                        async () => {
+                            const i = call++;
+                            await new Promise((r) => setTimeout(r, delays[i]));
+                            return echo(items[i]);
+                        },
+                    ],
+                },
+            });
+
+            const requests = items.map((_, i) => ({ method: 'GET' as const, path: `/items/${i}` }));
+            const results = [];
+
+            for await (const result of client.batchStream(requests)) {
+                results.push(result);
+            }
+
+            // Arrival order should differ from input order due to delays.
+            const arrivalIndexes = results.map((r) => r.index);
+            expect(arrivalIndexes).not.toEqual([0, 1, 2, 3, 4]);
+
+            // Sorting by index recovers input order.
+            const sorted = [...results].sort((a, b) => a.index - b.index);
+            expect(sorted.map((r) => r.data)).toEqual(items);
+        });
+
+        it('batchSafe: index matches input position and allows recovery of input order', async () => {
+            const items = [{ id: 1 }, { id: 2 }, { id: 3 }];
+            let call = 0;
+            const delays = [20, 10, 0];
+
+            const client = new BigCommerceClient({
+                ...VALID_CREDENTIALS,
+                hooks: {
+                    beforeRequest: [
+                        async () => {
+                            const i = call++;
+                            await new Promise((r) => setTimeout(r, delays[i]));
+                            return echo(items[i]);
+                        },
+                    ],
+                },
+            });
+
+            const requests = items.map((_, i) => ({ method: 'GET' as const, path: `/items/${i}` }));
+            const results = await client.batchSafe(requests);
+
+            const sorted = [...results].sort((a, b) => a.index - b.index);
+            expect(sorted.map((r) => r.data)).toEqual(items);
+        });
+    });
 });
