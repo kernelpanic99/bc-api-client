@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-beta.4] - 2026-04-09
+
+### Added
+
+- `BatchResult<T, E>` type — a `Result` extended with an `index` field indicating the zero-based position of the originating request in the input array; returned by `batchStream` and `batchSafe` so results can be correlated back to their inputs when requests complete out of order
+- JSDoc sorting/concurrency notes on `collect`, `collectBlind`, `query`, `queryStream`, `stream`, and `streamBlind` warning that output order is not preserved when `concurrency > 1`
+
+### Fixed
+
+- `streamBlind` batch size now correctly reflects the actual p-limit concurrency (including a shared limiter passed via `pLimit`) rather than the raw `concurrency` option
+
+### Changed
+
+- `streamBlind` / `collectBlind`: concurrency option precedence now prefers the method-level `concurrency` over the client-level default (was reversed)
+
 ## [1.0.0-beta.3] - 2026-04-08
 
 ### Fixed
