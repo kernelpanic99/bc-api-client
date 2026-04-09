@@ -1,4 +1,5 @@
 import type { Options as KyOptions } from 'ky';
+import type { LimitFunction } from 'p-limit';
 import type { Logger, LogLevel } from './logger';
 
 export type { Logger, LogLevel };
@@ -18,6 +19,11 @@ export type ConcurrencyOptions = {
      * response while below the configured max. Defaults to 1.
      */
     backoffRecover?: ((concurrency: number) => number) | number;
+    /**
+     * A p-limit instance to reuse across calls. When provided, `batchStream` uses it instead of
+     * creating a new one, allowing callers to observe and react to live concurrency changes.
+     */
+    pLimit?: LimitFunction;
 };
 
 /** Maximum allowed concurrency value. */
@@ -114,4 +120,5 @@ export const BASE_KY_CONFIG = {
 /**
  * Concurrency options with all values resolved to their defaults.
  */
-export type ResolvedConcurrencyOptions = Required<ConcurrencyOptions>;
+export type ResolvedConcurrencyOptions = Required<Omit<ConcurrencyOptions, 'pLimit'>> &
+    Pick<ConcurrencyOptions, 'pLimit'>;

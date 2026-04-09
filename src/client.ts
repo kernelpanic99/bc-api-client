@@ -623,12 +623,20 @@ export class BigCommerceClient {
             rateLimitBackoff,
             backoff,
             backoffRecover,
+            pLimit: rawPLimit,
             ...requestOptions
         } = options ?? {};
 
-        const concurrencyOptions = { concurrency: rawConcurrency, rateLimitBackoff, backoff, backoffRecover };
-
         const concurrency = this.validateConcurrency(rawConcurrency ?? this.config.concurrency ?? DEFAULT_CONCURRENCY);
+        const limiter = rawPLimit ?? (concurrency ? pLimit({ concurrency, rejectOnClear: true }) : undefined);
+
+        const concurrencyOptions = {
+            concurrency: rawConcurrency,
+            rateLimitBackoff,
+            backoff,
+            backoffRecover,
+            pLimit: limiter,
+        };
 
         const query = await this.validate(rawQuery, querySchema, BCQueryValidationError, 'GET', path);
         const page = this.validatePaginationOption(path, 'page', query?.page ?? 1);
@@ -644,7 +652,7 @@ export class BigCommerceClient {
                 break;
             }
 
-            const batchSize = concurrency || 1;
+            const batchSize = (limiter?.concurrency ?? concurrency) || 1;
             const pageRequests = Array.from({ length: batchSize }, (_, i) => currentPage + i).map((page) =>
                 req.get(path, {
                     ...requestOptions,
@@ -897,7 +905,7 @@ export class BigCommerceClient {
         const resolved = this.resolveStreamOptions(options);
 
         if (resolved.concurrency) {
-            const limit = pLimit({ concurrency: resolved.concurrency, rejectOnClear: true });
+            const limit = resolved.pLimit ?? pLimit({ concurrency: resolved.concurrency, rejectOnClear: true });
             const client = this.makeStreamClient(limit, resolved);
             const channel = new AsyncChannel<BatchResult<TRes, BaseError>>();
 
@@ -1035,6 +1043,7 @@ export class BigCommerceClient {
             rateLimitBackoff: options?.rateLimitBackoff ?? this.config.rateLimitBackoff ?? DEFAULT_RATE_LIMIT_BACKOFF,
             backoff: options?.backoff ?? this.config.backoff ?? DEFAULT_BACKOFF_RATE,
             backoffRecover: options?.backoffRecover ?? this.config.backoffRecover ?? DEFAULT_BACKOFF_RECOVER,
+            pLimit: options?.pLimit,
         };
     }
 

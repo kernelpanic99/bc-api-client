@@ -537,6 +537,32 @@ describe('streamBlind', () => {
                 { method: 'GET', version: 'v2', path: '/legacy', query: { limit: 250, page: 2 } },
             ]);
         });
+
+        it('adjusts next batch size to limit.concurrency after backoff', async () => {
+            const batchSpy = vi
+                .spyOn(client, 'batchSafe')
+                .mockImplementationOnce(async (_reqs, opts) => {
+                    const { pLimit } = opts ?? {};
+                    if (pLimit) {
+                        pLimit.concurrency = 2;
+                    }
+                    return [
+                        br(Ok([{ id: 1 }])),
+                        br(Ok([{ id: 2 }]), 1),
+                        br(Ok([{ id: 3 }]), 2),
+                        br(Ok([{ id: 4 }]), 3),
+                    ];
+                })
+                .mockResolvedValue([br(Ok([]))]);
+
+            await drain(client.streamBlind('/legacy', { query: { limit: 250 }, concurrency: 4 }));
+
+            expect(batchSpy.mock.calls[1][0]).toHaveLength(2);
+            expect(batchSpy.mock.calls[1][0]).toEqual([
+                { method: 'GET', version: 'v2', path: '/legacy', query: { limit: 250, page: 5 } },
+                { method: 'GET', version: 'v2', path: '/legacy', query: { limit: 250, page: 6 } },
+            ]);
+        });
     });
 
     describe('stopping conditions', () => {
