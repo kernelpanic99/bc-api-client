@@ -44,6 +44,7 @@
 
 - [ApiVersion](type-aliases/ApiVersion.md)
 - [BatchRequestOptions](type-aliases/BatchRequestOptions.md)
+- [BatchResult](type-aliases/BatchResult.md)
 - [BigCommerceAuthConfig](type-aliases/BigCommerceAuthConfig.md)
 - [BigCommerceAuthQuery](type-aliases/BigCommerceAuthQuery.md)
 - [Claims](type-aliases/Claims.md)

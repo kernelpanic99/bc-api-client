@@ -40,12 +40,15 @@ Creates a new BigCommerceClient.
 
 ### batchSafe()
 
-> **batchSafe**\<`TRes`, `TBody`, `TQuery`\>(`requests`, `options?`): `Promise`\<[`Result`](../type-aliases/Result.md)\<`TRes`, [`BaseError`](BaseError.md)\<[`ErrorContext`](../type-aliases/ErrorContext.md)\>\>[]\>
+> **batchSafe**\<`TRes`, `TBody`, `TQuery`\>(`requests`, `options?`): `Promise`\<[`BatchResult`](../type-aliases/BatchResult.md)\<`TRes`, [`BaseError`](BaseError.md)\<[`ErrorContext`](../type-aliases/ErrorContext.md)\>\>[]\>
 
-Defined in: client.ts:680
+Defined in: client.ts:727
 
-Executes multiple requests concurrently and returns all results as [Result](../type-aliases/Result.md) values,
-never throwing. Errors from individual requests are captured as `Err` results.
+Executes multiple requests concurrently and returns all results as [BatchResult](../type-aliases/BatchResult.md)
+values, never throwing. Errors from individual requests are captured as `Err` results.
+
+Results arrive in completion order, not input order. Use the `index` field on each
+[BatchResult](../type-aliases/BatchResult.md) to correlate a result back to its position in the `requests` array.
 
 Use [batchStream](#batchstream) to process results as they arrive rather than waiting for all.
 
@@ -66,21 +69,24 @@ Use [batchStream](#batchstream) to process results as they arrive rather than wa
 
 #### Returns
 
-`Promise`\<[`Result`](../type-aliases/Result.md)\<`TRes`, [`BaseError`](BaseError.md)\<[`ErrorContext`](../type-aliases/ErrorContext.md)\>\>[]\>
+`Promise`\<[`BatchResult`](../type-aliases/BatchResult.md)\<`TRes`, [`BaseError`](BaseError.md)\<[`ErrorContext`](../type-aliases/ErrorContext.md)\>\>[]\>
 
-Results in the order requests complete (not necessarily input order).
+[BatchResult](../type-aliases/BatchResult.md) array in the order requests completed (not input order).
 
 ***
 
 ### batchStream()
 
-> **batchStream**\<`TRes`, `TBody`, `TQuery`\>(`requests`, `options?`): `AsyncGenerator`\<[`Result`](../type-aliases/Result.md)\<`TRes`, [`BaseError`](BaseError.md)\<[`ErrorContext`](../type-aliases/ErrorContext.md)\>\>\>
+> **batchStream**\<`TRes`, `TBody`, `TQuery`\>(`requests`, `options?`): `AsyncGenerator`\<[`BatchResult`](../type-aliases/BatchResult.md)\<`TRes`, [`BaseError`](BaseError.md)\<[`ErrorContext`](../type-aliases/ErrorContext.md)\>\>\>
 
-Defined in: client.ts:836
+Defined in: client.ts:901
 
 Executes multiple requests with configurable concurrency, yielding each result as a
-[Result](../type-aliases/Result.md) as it completes. Errors from individual requests are yielded as `Err`
+[BatchResult](../type-aliases/BatchResult.md) as it completes. Errors from individual requests are yielded as `Err`
 results rather than thrown.
+
+Results arrive in completion order, not input order. Use the `index` field on each
+[BatchResult](../type-aliases/BatchResult.md) to correlate a result back to its position in the `requests` array.
 
 Automatically adjusts concurrency up/down in response to rate-limit and error responses.
 Use [batchSafe](#batchsafe) to collect all results into an array.
@@ -108,7 +114,7 @@ get all the results, set `concurrency: false` to trade concurrency for determini
 
 #### Returns
 
-`AsyncGenerator`\<[`Result`](../type-aliases/Result.md)\<`TRes`, [`BaseError`](BaseError.md)\<[`ErrorContext`](../type-aliases/ErrorContext.md)\>\>\>
+`AsyncGenerator`\<[`BatchResult`](../type-aliases/BatchResult.md)\<`TRes`, [`BaseError`](BaseError.md)\<[`ErrorContext`](../type-aliases/ErrorContext.md)\>\>\>
 
 ***
 
@@ -116,11 +122,15 @@ get all the results, set `concurrency: false` to trade concurrency for determini
 
 > **collect**\<`TItem`, `TQuery`\>(`path`, `options?`): `Promise`\<`TItem`[]\>
 
-Defined in: client.ts:472
+Defined in: client.ts:500
 
 Fetches all pages from a v3 paginated endpoint and collects items into an array.
 
 Use [stream](#stream) to process items lazily without buffering the full result set.
+
+**Sorting and concurrency:** the first page is fetched sequentially; remaining pages are
+fetched concurrently and may complete out of order. When `concurrency > 1`, sort order
+is not preserved across pages. Pass `concurrency: false` if sort order matters.
 
 #### Type Parameters
 
@@ -193,7 +203,7 @@ All items across all pages.
 
 > **collectBlind**\<`TItem`, `TQuery`\>(`path`, `options?`): `Promise`\<`TItem`[]\>
 
-Defined in: client.ts:524
+Defined in: client.ts:556
 
 Fetches all pages from a v2 flat-array endpoint and collects items into an array.
 
@@ -201,6 +211,10 @@ Pagination is discovered dynamically — pages are fetched in batches until an e
 a 404, or a 204 response is received. No prior knowledge of total count is required.
 
 Use [streamBlind](#streamblind) to process items lazily without buffering the full result set.
+
+**Sorting and concurrency:** pages within each batch are fetched concurrently and may
+complete out of order. When `concurrency > 1`, sort order is not preserved across pages.
+Pass `concurrency: false` if sort order matters.
 
 #### Type Parameters
 
@@ -530,12 +544,16 @@ Parsed and optionally validated response body.
 
 > **query**\<`TItem`, `TQuery`\>(`path`, `options`): `Promise`\<`TItem`[]\>
 
-Defined in: client.ts:317
+Defined in: client.ts:321
 
 Fetches items from a v3 paginated endpoint by splitting `values` across multiple requests
 using the given `key` query param, chunking to stay within URL length limits.
 
 Collects all results into an array. Use [queryStream](#querystream) to process items lazily.
+
+**Sorting and concurrency:** when `concurrency > 1`, chunks complete out of order so
+sorted output is not preserved across the full result set. Pass `concurrency: false`
+if sort order matters.
 
 #### Type Parameters
 
@@ -608,12 +626,16 @@ All matching items across all chunked requests.
 
 > **queryStream**\<`TItem`, `TQuery`\>(`path`, `options`): `AsyncGenerator`\<[`Result`](../type-aliases/Result.md)\<`TItem`, [`BaseError`](BaseError.md)\<[`ErrorContext`](../type-aliases/ErrorContext.md)\>\>\>
 
-Defined in: client.ts:362
+Defined in: client.ts:370
 
 Streaming variant of [query](#query). Yields each item individually as results arrive,
 splitting `values` into URL-length-safe chunks across concurrent requests.
 
 Each yielded value is a [Result](../type-aliases/Result.md) — check `err` before using `data`.
+
+**Sorting and concurrency:** when `concurrency > 1`, chunks complete out of order so
+sorted output is not preserved across the full result set. Pass `concurrency: false`
+if sort order matters.
 
 #### Type Parameters
 
@@ -647,13 +669,17 @@ Each yielded value is a [Result](../type-aliases/Result.md) — check `err` befo
 
 > **stream**\<`TItem`, `TQuery`\>(`path`, `options?`): `AsyncGenerator`\<[`Result`](../type-aliases/Result.md)\<`TItem`, [`BaseError`](BaseError.md)\<[`ErrorContext`](../type-aliases/ErrorContext.md)\>\>\>
 
-Defined in: client.ts:721
+Defined in: client.ts:772
 
 Streams all items from a v3 paginated endpoint, fetching the first page sequentially
 and remaining pages concurrently via [batchStream](#batchstream).
 
 Each yielded value is a [Result](../type-aliases/Result.md) — check `err` before using `data`. Use
 [collect](#collect) to gather all items into an array.
+
+**Sorting and concurrency:** the first page is fetched sequentially; remaining pages are
+fetched concurrently and may complete out of order. When `concurrency > 1`, sort order
+is not preserved across pages. Pass `concurrency: false` if sort order matters.
 
 #### Type Parameters
 
@@ -687,7 +713,7 @@ Each yielded value is a [Result](../type-aliases/Result.md) — check `err` befo
 
 > **streamBlind**\<`TItem`, `TQuery`\>(`path`, `options?`): `AsyncGenerator`\<[`Result`](../type-aliases/Result.md)\<`TItem`, [`BaseError`](BaseError.md)\<[`ErrorContext`](../type-aliases/ErrorContext.md)\>\>\>
 
-Defined in: client.ts:577
+Defined in: client.ts:613
 
 Lazily streams items from a v2 flat-array endpoint, page by page.
 
@@ -697,6 +723,10 @@ required. Each item is yielded as a [Result](../type-aliases/Result.md): `Ok(ite
 `Err(error)` for item-level validation failures and non-terminating page errors.
 
 Use [collectBlind](#collectblind) to buffer all results into an array (throws on any error).
+
+**Sorting and concurrency:** pages within each batch are fetched concurrently and may
+complete out of order. When `concurrency > 1`, sort order is not preserved across pages.
+Pass `concurrency: false` if sort order matters.
 
 #### Type Parameters
 
