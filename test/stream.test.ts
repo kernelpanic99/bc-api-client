@@ -8,7 +8,7 @@ import {
     BCPaginatedResponseError,
     BCResponseParseError,
 } from 'src/lib/errors';
-import { Err, Ok, type Result } from 'src/lib/result';
+import { Err, Ok, type PageResult, type Result } from 'src/lib/result';
 import type { StandardSchemaV1 } from 'src/lib/standard-schema';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -16,6 +16,9 @@ const makeClient = () => new BigCommerceClient({ storeHash: 'abc', accessToken: 
 
 /** Wraps a Result with an index to satisfy the BatchResult type expected by batchStream/batchSafe mocks. */
 const br = <T>(r: Result<T, BaseError>, index = 0) => ({ ...r, index });
+
+/** Wraps a Result with a page number to match the PageResult shape yielded by stream/streamBlind. */
+const pr = <T>(r: Result<T, BaseError>, page: number): PageResult<T, BaseError> => ({ ...r, page });
 
 function makePage(
     items: unknown[],
@@ -272,7 +275,7 @@ describe('stream', () => {
             const batchSpy = vi.spyOn(client, 'batchStream');
             const results = await drain(client.stream('/products'));
 
-            expect(results).toEqual(items.map(Ok));
+            expect(results).toEqual(items.map((v) => pr(Ok(v), 1)));
             expect(batchSpy).not.toHaveBeenCalled();
         });
 
@@ -293,7 +296,7 @@ describe('stream', () => {
             const schema = makeSchema<number>((v) => ({ value: (v as number) * 2 }));
             const results = await drain(client.stream('/p', { itemSchema: schema }));
 
-            expect(results).toEqual([Ok(84), Ok(14)]);
+            expect(results).toEqual([pr(Ok(84), 1), pr(Ok(14), 1)]);
         });
 
         it('yields Err(BCPaginatedItemValidationError) when schema fails', async () => {
@@ -319,9 +322,9 @@ describe('stream', () => {
 
             const results = await drain(client.stream('/p', { itemSchema: schema }));
 
-            expect(results[0]).toEqual(Ok(1));
+            expect(results[0]).toEqual(pr(Ok(1), 1));
             expect(results[1].err).toBeInstanceOf(BCPaginatedItemValidationError);
-            expect(results[2]).toEqual(Ok(3));
+            expect(results[2]).toEqual(pr(Ok(3), 1));
         });
     });
 
@@ -393,15 +396,16 @@ describe('stream', () => {
         it('yields Err for invalid page response but continues to next page', async () => {
             vi.spyOn(client, 'get').mockResolvedValue(makePage([{ id: 1 }], { total_pages: 3, per_page: 250 }));
             vi.spyOn(client, 'batchStream').mockImplementation(async function* () {
-                yield br(Ok(null)); // bad — not a paginated envelope
-                yield br(Ok(makePage([{ id: 3 }])), 1);
+                yield br(Ok(null)); // bad — not a paginated envelope, index 0 → page 2
+                yield br(Ok(makePage([{ id: 3 }])), 1); // index 1 → page 3
             });
 
             const results = await drain(client.stream('/products'));
 
-            expect(results[0]).toEqual(Ok({ id: 1 }));
+            expect(results[0]).toEqual(pr(Ok({ id: 1 }), 1));
             expect(results[1].err).toBeInstanceOf(BCPaginatedResponseError);
-            expect(results[2]).toEqual(Ok({ id: 3 }));
+            expect(results[1].page).toBe(2);
+            expect(results[2]).toEqual(pr(Ok({ id: 3 }), 3));
         });
 
         it('propagates Err from batchStream directly', async () => {
@@ -409,13 +413,13 @@ describe('stream', () => {
 
             vi.spyOn(client, 'get').mockResolvedValue(makePage([{ id: 1 }], { total_pages: 2, per_page: 250 }));
             vi.spyOn(client, 'batchStream').mockImplementation(async function* () {
-                yield br(Err(error));
+                yield br(Err(error)); // index 0 → page 2
             });
 
             const results = await drain(client.stream('/products'));
 
-            expect(results[0]).toEqual(Ok({ id: 1 }));
-            expect(results[1]).toEqual(Err(error));
+            expect(results[0]).toEqual(pr(Ok({ id: 1 }), 1));
+            expect(results[1]).toEqual(pr(Err(error), 2));
         });
     });
 });
@@ -575,7 +579,7 @@ describe('streamBlind', () => {
 
             const results = await drain(client.streamBlind('/legacy', { concurrency: 1 }));
 
-            expect(results).toEqual([Ok({ id: 1 })]);
+            expect(results).toEqual([pr(Ok({ id: 1 }), 1)]);
             expect(batchSpy).toHaveBeenCalledTimes(2);
         });
 
@@ -586,7 +590,7 @@ describe('streamBlind', () => {
 
             const results = await drain(client.streamBlind('/legacy', { concurrency: 1 }));
 
-            expect(results).toEqual([Ok({ id: 1 })]);
+            expect(results).toEqual([pr(Ok({ id: 1 }), 1)]);
         });
 
         it('stops after a 204 empty body without yielding an error', async () => {
@@ -598,7 +602,7 @@ describe('streamBlind', () => {
 
             const results = await drain(client.streamBlind('/legacy', { concurrency: 1 }));
 
-            expect(results).toEqual([Ok({ id: 1 })]);
+            expect(results).toEqual([pr(Ok({ id: 1 }), 1)]);
         });
 
         it('stops at maxPages', async () => {
@@ -618,7 +622,7 @@ describe('streamBlind', () => {
 
             const results = await drain(client.streamBlind('/legacy', { concurrency: 1 }));
 
-            expect(results).toEqual([Ok({ id: 1 }), Ok({ id: 2 })]);
+            expect(results).toEqual([pr(Ok({ id: 1 }), 1), pr(Ok({ id: 2 }), 1)]);
         });
 
         it('yields Err(BCClientError) when page response is not an array', async () => {
@@ -630,6 +634,7 @@ describe('streamBlind', () => {
 
             expect(results).toHaveLength(1);
             expect(results[0].err).toBeInstanceOf(BCClientError);
+            expect(results[0].page).toBe(1);
         });
 
         it('yields Err for non-terminating API errors and continues', async () => {
@@ -641,18 +646,19 @@ describe('streamBlind', () => {
 
             const results = await drain(client.streamBlind('/legacy', { concurrency: 1 }));
 
-            expect(results[0]).toEqual(Err(error));
+            expect(results[0]).toEqual(pr(Err(error), 1));
         });
 
         it('continues after a non-array page response', async () => {
             vi.spyOn(client, 'batchSafe')
-                .mockResolvedValueOnce([br(Ok('not an array')), br(Ok([{ id: 1 }]), 1)])
+                .mockResolvedValueOnce([br(Ok('not an array')), br(Ok([{ id: 1 }]), 1)]) // index 0 → page 1, index 1 → page 2
                 .mockResolvedValue([br(Ok([]))]);
 
             const results = await drain(client.streamBlind('/legacy', { concurrency: 2 }));
 
             expect(results[0].err).toBeInstanceOf(BCClientError);
-            expect(results[1]).toEqual(Ok({ id: 1 }));
+            expect(results[0].page).toBe(1);
+            expect(results[1]).toEqual(pr(Ok({ id: 1 }), 2));
         });
     });
 
@@ -665,7 +671,7 @@ describe('streamBlind', () => {
             const schema = makeSchema<number>((v) => ({ value: (v as number) * 2 }));
             const results = await drain(client.streamBlind('/legacy', { itemSchema: schema, concurrency: 1 }));
 
-            expect(results).toEqual([Ok(20), Ok(40)]);
+            expect(results).toEqual([pr(Ok(20), 1), pr(Ok(40), 1)]);
         });
 
         it('yields Err(BCPaginatedItemValidationError) when schema fails', async () => {
@@ -691,9 +697,9 @@ describe('streamBlind', () => {
             );
             const results = await drain(client.streamBlind('/legacy', { itemSchema: schema, concurrency: 1 }));
 
-            expect(results[0]).toEqual(Ok(1));
+            expect(results[0]).toEqual(pr(Ok(1), 1));
             expect(results[1].err).toBeInstanceOf(BCPaginatedItemValidationError);
-            expect(results[2]).toEqual(Ok(3));
+            expect(results[2]).toEqual(pr(Ok(3), 1));
         });
     });
 });

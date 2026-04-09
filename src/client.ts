@@ -50,7 +50,7 @@ import {
     req,
     toUrlSearchParams,
 } from './lib/request';
-import { type BatchResult, Err, Ok, type Result } from './lib/result';
+import { type BatchResult, Err, Ok, type PageResult, type Result } from './lib/result';
 import type { StandardSchemaV1 } from './lib/standard-schema';
 import { AsyncChannel, chunkStrLength } from './lib/util';
 
@@ -575,8 +575,9 @@ export class BigCommerceClient {
      *
      * Pagination is discovered dynamically — pages are fetched in concurrent batches until an
      * empty page, a 404, or a 204 response is received. No prior knowledge of total count is
-     * required. Each item is yielded as a {@link Result}: `Ok(item)` on success or
+     * required. Each item is yielded as a {@link PageResult}: `Ok(item)` on success or
      * `Err(error)` for item-level validation failures and non-terminating page errors.
+     * Use `page` to correlate the item back to its source page.
      *
      * Use {@link collectBlind} to buffer all results into an array (throws on any error).
      *
@@ -613,7 +614,7 @@ export class BigCommerceClient {
     async *streamBlind<TItem = unknown, TQuery extends Query = Query>(
         path: string,
         options?: BlindOptions<TItem, TQuery>,
-    ): AsyncGenerator<Result<TItem, BaseError>> {
+    ): AsyncGenerator<PageResult<TItem, BaseError>> {
         const {
             query: rawQuery,
             querySchema,
@@ -653,6 +654,7 @@ export class BigCommerceClient {
             }
 
             const batchSize = (limiter?.concurrency ?? concurrency) || 1;
+            const batchStartPage = currentPage;
             const pageRequests = Array.from({ length: batchSize }, (_, i) => currentPage + i).map((page) =>
                 req.get(path, {
                     ...requestOptions,
@@ -669,7 +671,9 @@ export class BigCommerceClient {
 
             const pages = await this.batchSafe(pageRequests, concurrencyOptions);
 
-            for (const { err, data } of pages) {
+            for (const { err, data, index } of pages) {
+                const itemPage = batchStartPage + index;
+
                 if (err) {
                     done =
                         (err instanceof BCApiError && err.context.status === 404) ||
@@ -678,7 +682,7 @@ export class BigCommerceClient {
                             err.context.status === 204);
 
                     if (!done) {
-                        yield Err(err);
+                        yield { ...Err(err), page: itemPage };
                     }
                 } else {
                     if (Array.isArray(data)) {
@@ -688,15 +692,18 @@ export class BigCommerceClient {
                         }
 
                         for (const item of data) {
-                            yield this.validatePaginatedItem(path, item, itemSchema);
+                            yield { ...(await this.validatePaginatedItem(path, item, itemSchema)), page: itemPage };
                         }
                     } else {
-                        yield Err(
-                            new BCClientError('Received non array response from blind pagination page endpoint', {
-                                data,
-                                path,
-                            }),
-                        );
+                        yield {
+                            ...Err(
+                                new BCClientError('Received non array response from blind pagination page endpoint', {
+                                    data,
+                                    path,
+                                }),
+                            ),
+                            page: itemPage,
+                        };
                     }
                 }
             }
@@ -741,7 +748,8 @@ export class BigCommerceClient {
      * Streams all items from a v3 paginated endpoint, fetching the first page sequentially
      * and remaining pages concurrently via {@link batchStream}.
      *
-     * Each yielded value is a {@link Result} — check `err` before using `data`. Use
+     * Each yielded value is a {@link PageResult} — check `err` before using `data`, and use
+     * `page` to correlate the item back to its source page. Use
      * {@link collect} to gather all items into an array.
      *
      * **Sorting and concurrency:** the first page is fetched sequentially; remaining pages are
@@ -772,7 +780,7 @@ export class BigCommerceClient {
     async *stream<TItem = unknown, TQuery extends Query = Query>(
         path: string,
         options?: CollectOptions<TItem, TQuery>,
-    ): AsyncGenerator<Result<TItem, BaseError>> {
+    ): AsyncGenerator<PageResult<TItem, BaseError>> {
         const {
             query,
             querySchema,
@@ -814,13 +822,16 @@ export class BigCommerceClient {
 
             // Validate and return the first page
             for (const item of data) {
-                yield this.validatePaginatedItem(path, item, itemSchema);
+                yield { ...(await this.validatePaginatedItem(path, item, itemSchema)), page };
             }
         } catch (err) {
             if (err instanceof BaseError) {
-                yield Err(err);
+                yield { ...Err(err), page };
             } else {
-                yield Err(new BCClientError('Unknown error occurred fetching first page', {}, { cause: err }));
+                yield {
+                    ...Err(new BCClientError('Unknown error occurred fetching first page', {}, { cause: err })),
+                    page,
+                };
             }
 
             return;
@@ -848,24 +859,28 @@ export class BigCommerceClient {
         for await (const pageRes of requests.length > 0
             ? this.batchStream(requests, { concurrency, rateLimitBackoff, backoff, backoffRecover })
             : []) {
-            const { data: page, err } = pageRes;
+            const { data: pageData, err, index } = pageRes;
+            const pageNum = page + index + 1;
 
             if (err) {
-                yield Err(err);
+                yield { ...Err(err), page: pageNum };
                 continue;
             }
 
             try {
-                const { data } = this.assertPaginatedResponse(path, page);
+                const { data } = this.assertPaginatedResponse(path, pageData);
 
                 for (const item of data) {
-                    yield this.validatePaginatedItem(path, item, itemSchema);
+                    yield { ...(await this.validatePaginatedItem(path, item, itemSchema)), page: pageNum };
                 }
             } catch (err) {
                 if (err instanceof BaseError) {
-                    yield Err(err);
+                    yield { ...Err(err), page: pageNum };
                 } else {
-                    yield Err(new BCClientError('Unknown error occurred processing page', {}, { cause: err }));
+                    yield {
+                        ...Err(new BCClientError('Unknown error occurred processing page', {}, { cause: err })),
+                        page: pageNum,
+                    };
                 }
             }
         }

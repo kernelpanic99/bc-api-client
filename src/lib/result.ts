@@ -32,6 +32,23 @@ export type Result<T, E> = Ok<T> | Err<E>;
 export type BatchResult<T, E> = Result<T, E> & { index: number };
 
 /**
+ * A {@link Result} extended with the one-based page number from which the item was fetched.
+ *
+ * Because concurrent requests complete out of page order, `page` is the only reliable way
+ * to correlate a result back to its source page when using {@link BigCommerceClient.stream}
+ * or {@link BigCommerceClient.streamBlind}.
+ *
+ * @example
+ * ```ts
+ * for await (const { page, err, data } of client.stream('catalog/products')) {
+ *   if (err) { console.error(`page ${page}:`, err); continue; }
+ *   console.log(`page ${page}:`, data);
+ * }
+ * ```
+ */
+export type PageResult<T, E> = Result<T, E> & { page: number };
+
+/**
  * Creates a successful {@link Result}. Check `result.ok` or `result.err` before accessing `data`.
  * @param data - The success value.
  */

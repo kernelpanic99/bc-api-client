@@ -42,7 +42,7 @@ Creates a new BigCommerceClient.
 
 > **batchSafe**\<`TRes`, `TBody`, `TQuery`\>(`requests`, `options?`): `Promise`\<[`BatchResult`](../type-aliases/BatchResult.md)\<`TRes`, [`BaseError`](BaseError.md)\<[`ErrorContext`](../type-aliases/ErrorContext.md)\>\>[]\>
 
-Defined in: client.ts:727
+Defined in: client.ts:734
 
 Executes multiple requests concurrently and returns all results as [BatchResult](../type-aliases/BatchResult.md)
 values, never throwing. Errors from individual requests are captured as `Err` results.
@@ -79,7 +79,7 @@ Use [batchStream](#batchstream) to process results as they arrive rather than wa
 
 > **batchStream**\<`TRes`, `TBody`, `TQuery`\>(`requests`, `options?`): `AsyncGenerator`\<[`BatchResult`](../type-aliases/BatchResult.md)\<`TRes`, [`BaseError`](BaseError.md)\<[`ErrorContext`](../type-aliases/ErrorContext.md)\>\>\>
 
-Defined in: client.ts:901
+Defined in: client.ts:916
 
 Executes multiple requests with configurable concurrency, yielding each result as a
 [BatchResult](../type-aliases/BatchResult.md) as it completes. Errors from individual requests are yielded as `Err`
@@ -667,14 +667,15 @@ if sort order matters.
 
 ### stream()
 
-> **stream**\<`TItem`, `TQuery`\>(`path`, `options?`): `AsyncGenerator`\<[`Result`](../type-aliases/Result.md)\<`TItem`, [`BaseError`](BaseError.md)\<[`ErrorContext`](../type-aliases/ErrorContext.md)\>\>\>
+> **stream**\<`TItem`, `TQuery`\>(`path`, `options?`): `AsyncGenerator`\<[`PageResult`](../type-aliases/PageResult.md)\<`TItem`, [`BaseError`](BaseError.md)\<[`ErrorContext`](../type-aliases/ErrorContext.md)\>\>\>
 
-Defined in: client.ts:772
+Defined in: client.ts:780
 
 Streams all items from a v3 paginated endpoint, fetching the first page sequentially
 and remaining pages concurrently via [batchStream](#batchstream).
 
-Each yielded value is a [Result](../type-aliases/Result.md) — check `err` before using `data`. Use
+Each yielded value is a [PageResult](../type-aliases/PageResult.md) — check `err` before using `data`, and use
+`page` to correlate the item back to its source page. Use
 [collect](#collect) to gather all items into an array.
 
 **Sorting and concurrency:** the first page is fetched sequentially; remaining pages are
@@ -697,7 +698,7 @@ is not preserved across pages. Pass `concurrency: false` if sort order matters.
 
 #### Returns
 
-`AsyncGenerator`\<[`Result`](../type-aliases/Result.md)\<`TItem`, [`BaseError`](BaseError.md)\<[`ErrorContext`](../type-aliases/ErrorContext.md)\>\>\>
+`AsyncGenerator`\<[`PageResult`](../type-aliases/PageResult.md)\<`TItem`, [`BaseError`](BaseError.md)\<[`ErrorContext`](../type-aliases/ErrorContext.md)\>\>\>
 
 #### Throws
 
@@ -711,16 +712,17 @@ is not preserved across pages. Pass `concurrency: false` if sort order matters.
 
 ### streamBlind()
 
-> **streamBlind**\<`TItem`, `TQuery`\>(`path`, `options?`): `AsyncGenerator`\<[`Result`](../type-aliases/Result.md)\<`TItem`, [`BaseError`](BaseError.md)\<[`ErrorContext`](../type-aliases/ErrorContext.md)\>\>\>
+> **streamBlind**\<`TItem`, `TQuery`\>(`path`, `options?`): `AsyncGenerator`\<[`PageResult`](../type-aliases/PageResult.md)\<`TItem`, [`BaseError`](BaseError.md)\<[`ErrorContext`](../type-aliases/ErrorContext.md)\>\>\>
 
-Defined in: client.ts:613
+Defined in: client.ts:614
 
 Lazily streams items from a v2 flat-array endpoint, page by page.
 
 Pagination is discovered dynamically — pages are fetched in concurrent batches until an
 empty page, a 404, or a 204 response is received. No prior knowledge of total count is
-required. Each item is yielded as a [Result](../type-aliases/Result.md): `Ok(item)` on success or
+required. Each item is yielded as a [PageResult](../type-aliases/PageResult.md): `Ok(item)` on success or
 `Err(error)` for item-level validation failures and non-terminating page errors.
+Use `page` to correlate the item back to its source page.
 
 Use [collectBlind](#collectblind) to buffer all results into an array (throws on any error).
 
@@ -744,7 +746,7 @@ Pass `concurrency: false` if sort order matters.
 
 #### Returns
 
-`AsyncGenerator`\<[`Result`](../type-aliases/Result.md)\<`TItem`, [`BaseError`](BaseError.md)\<[`ErrorContext`](../type-aliases/ErrorContext.md)\>\>\>
+`AsyncGenerator`\<[`PageResult`](../type-aliases/PageResult.md)\<`TItem`, [`BaseError`](BaseError.md)\<[`ErrorContext`](../type-aliases/ErrorContext.md)\>\>\>
 
 #### Throws
 

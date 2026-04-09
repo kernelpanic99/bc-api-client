@@ -58,6 +58,7 @@
 - [HttpMethod](type-aliases/HttpMethod.md)
 - [LogLevel](type-aliases/LogLevel.md)
 - [Ok](type-aliases/Ok.md)
+- [PageResult](type-aliases/PageResult.md)
 - [Pagination](type-aliases/Pagination.md)
 - [PostOptions](type-aliases/PostOptions.md)
 - [PowertoolsLikeLogger](type-aliases/PowertoolsLikeLogger.md)
