@@ -4,10 +4,10 @@ export type Pagination = {
     per_page: number;
     current_page: number;
     total_pages: number;
-    links: {
-        previous: string | null;
+    links?: {
+        previous?: string | null;
         current: string;
-        next: string | null;
+        next?: string | null;
     };
 };
 

@@ -1019,26 +1019,28 @@ export class BigCommerceClient {
 
         const { links } = pagination as { links?: unknown };
 
-        if (typeof links !== 'object' || links === null) {
-            throw new BCPaginatedResponseError(path, res, 'response.meta.pagination.links is missing or invalid');
-        }
+        if (links !== undefined) {
+            if (typeof links !== 'object' || links === null) {
+                throw new BCPaginatedResponseError(path, res, 'response.meta.pagination.links is invalid');
+            }
 
-        const isNullableString = (v: unknown) => v === null || typeof v === 'string';
+            const isNullableString = (v: unknown) => v === null || typeof v === 'string';
 
-        if (!('current' in links) || typeof links.current !== 'string') {
-            throw new BCPaginatedResponseError(
-                path,
-                res,
-                'response.meta.pagination.links.current is missing or invalid',
-            );
-        }
+            if (!('current' in links) || typeof links.current !== 'string') {
+                throw new BCPaginatedResponseError(
+                    path,
+                    res,
+                    'response.meta.pagination.links.current is missing or invalid',
+                );
+            }
 
-        if ('next' in links && !isNullableString(links.next)) {
-            throw new BCPaginatedResponseError(path, res, 'response.meta.pagination.links.next is invalid');
-        }
+            if ('next' in links && !isNullableString(links.next)) {
+                throw new BCPaginatedResponseError(path, res, 'response.meta.pagination.links.next is invalid');
+            }
 
-        if ('previous' in links && !isNullableString(links.previous)) {
-            throw new BCPaginatedResponseError(path, res, 'response.meta.pagination.links.previous is invalid');
+            if ('previous' in links && !isNullableString(links.previous)) {
+                throw new BCPaginatedResponseError(path, res, 'response.meta.pagination.links.previous is invalid');
+            }
         }
 
         return res as V3Resource<unknown[]>;

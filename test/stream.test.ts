@@ -177,15 +177,15 @@ describe('stream', () => {
             expect(result.err).toBeInstanceOf(BCPaginatedResponseError);
         });
 
-        it('yields Err(BCPaginatedResponseError) when links is missing', async () => {
+        it('succeeds when links is missing', async () => {
             vi.spyOn(client, 'get').mockResolvedValue({
                 data: [],
                 meta: { pagination: { per_page: 250, total_pages: 1 } },
             });
 
-            const [result] = await drain(client.stream('/p'));
+            const results = await drain(client.stream('/p'));
 
-            expect(result.err).toBeInstanceOf(BCPaginatedResponseError);
+            expect(results).toHaveLength(0);
         });
 
         it('yields Err(BCPaginatedResponseError) when links.current is missing', async () => {
