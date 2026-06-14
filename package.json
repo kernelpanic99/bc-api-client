@@ -52,24 +52,24 @@
     },
     "author": "Arthur Nikolaienko",
     "license": "MIT",
-    "packageManager": "pnpm@10.33.0",
+    "packageManager": "pnpm@11.6.0",
     "devDependencies": {
-        "@arethetypeswrong/core": "0.18.2",
-        "@aws-lambda-powertools/logger": "2.32.0",
-        "@biomejs/biome": "2.4.10",
-        "@types/node": "20.19.39",
-        "@typescript/native-preview": "7.0.0-dev.20260405.1",
-        "concurrently": "9.2.1",
-        "lefthook": "2.1.4",
+        "@arethetypeswrong/core": "0.18.3",
+        "@aws-lambda-powertools/logger": "2.33.1",
+        "@biomejs/biome": "2.5.0",
+        "@types/node": "25.9.3",
+        "@typescript/native-preview": "7.0.0-dev.20260614.1",
+        "concurrently": "10.0.3",
+        "lefthook": "2.1.9",
         "pino": "10.3.1",
-        "tsdown": "0.21.7",
-        "typedoc": "0.28.18",
-        "typedoc-plugin-markdown": "4.11.0",
-        "vitest": "4.1.2",
-        "zod": "4.3.6"
+        "tsdown": "0.22.2",
+        "typedoc": "0.28.19",
+        "typedoc-plugin-markdown": "4.12.0",
+        "vitest": "4.1.8",
+        "zod": "4.4.3"
     },
     "dependencies": {
-        "jose": "6.2.2",
+        "jose": "6.2.3",
         "ky": "1.14.3",
         "p-limit": "7.3.0"
     }
