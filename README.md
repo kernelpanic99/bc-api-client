@@ -38,11 +38,11 @@ An opinionated and minimalistic client focusing on simplicity and concurrent per
 ## Installation
 
 ```bash
-npm install bc-api-client@beta
+npm install bc-api-client
 # or
-pnpm add bc-api-client@beta
+pnpm add bc-api-client
 # or
-yarn add bc-api-client@beta
+yarn add bc-api-client
 ```
 
 ## Usage
