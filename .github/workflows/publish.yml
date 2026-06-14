@@ -19,7 +19,7 @@ jobs:
         uses: jdx/mise-action@v4
 
       - name: Install dependencies
-        run: mise x -- pnpm install --frozen-lockfile
+        run: mise x -- pnpm ci
 
       - name: Quality checks
         run: mise x -- pnpm qa
