@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2026-07-26
+
+### Changed
+
+- **Breaking:** `BCApiError.context.responseBody` is now the parsed response body (`unknown`) instead of a raw string, following the migration to ky v2
+- **Breaking:** `BCApiError` constructor no longer takes a `responseBody` argument; the body is read from the underlying `HTTPError.data`
+
+### Fixed
+
+- Retries were silently disabled for requests whose method was configured in uppercase; `retry.methods` is now matched case-correctly under ky v2
+
+### Maintenance
+
+- Migrate the HTTP layer to ky v2 and bump runtime and dev dependencies
+- Migrate the dev toolchain from mise to devenv
+- Restrict CI to pushes on `main` and update tooling config
+
 ## [1.0.0]
 
 - Move out of beta. 1.0 release
