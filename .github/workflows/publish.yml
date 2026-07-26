@@ -15,16 +15,28 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Mise install
-        uses: jdx/mise-action@v4
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+
+      - name: Cache devenv
+        uses: cachix/cachix-action@v16
+        with:
+          name: devenv
+          skipPush: true
+
+      - name: Install devenv
+        run: nix profile add nixpkgs#devenv
 
       - name: Install dependencies
-        run: mise x -- pnpm ci
+        run: devenv shell -- pnpm ci
 
       - name: Quality checks
-        run: mise x -- pnpm qa
+        run: devenv shell -- pnpm qa
 
       - name: Publish
         run: |
           TAG=$(node -e "const v = require('./package.json').version; process.stdout.write(v.includes('-') ? 'beta' : 'latest')")
-          mise x -- npm publish --provenance --no-git-checks --tag $TAG
+          devenv shell -- npm publish --provenance --no-git-checks --tag $TAG
