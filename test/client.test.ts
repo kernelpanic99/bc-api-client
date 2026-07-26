@@ -33,10 +33,8 @@ describe('BigCommerceClient', () => {
             });
         });
 
-        it('Fails to construct the instance with invalid prefixUrl', () => {
-            expect(() => new BigCommerceClient({ ...VALID_CREDENTIALS, prefixUrl: 'invalid' })).toThrow(
-                'Invalid prefixUrl',
-            );
+        it('Fails to construct the instance with invalid prefix', () => {
+            expect(() => new BigCommerceClient({ ...VALID_CREDENTIALS, prefix: 'invalid' })).toThrow('Invalid prefix');
         });
 
         it('Fails with only storeHash invalid', () => {
@@ -208,7 +206,7 @@ describe('BigCommerceClient', () => {
                     method: 'GET',
                     status: 404,
                     url: 'https://api.bigcommerce.com/stores/test/v3/catalog/products/1',
-                    responseBody: '{"message":"Not found"}',
+                    responseBody: { message: 'Not found' },
                 },
             });
         });
@@ -330,14 +328,10 @@ describe('BigCommerceClient', () => {
                     backoffLimit: 1,
                 },
                 logger: false,
-                hooks: {
-                    beforeRequest: [
-                        () => {
-                            counter();
+                fetch: () => {
+                    counter();
 
-                            return new Response('Internal Server Error', { status: 500 });
-                        },
-                    ],
+                    return Promise.resolve(new Response('Internal Server Error', { status: 500 }));
                 },
             });
 
@@ -347,7 +341,11 @@ describe('BigCommerceClient', () => {
         });
 
         it('Rate limit fails immediately without Reset header', async () => {
-            const client = createClient(new Response('rate limit', { status: 429 }));
+            const client = new BigCommerceClient({
+                ...VALID_CREDENTIALS,
+                logger: false,
+                fetch: () => Promise.resolve(new Response('rate limit', { status: 429 })),
+            });
 
             const res = await client.get('/catalog/products').catch((e) => e);
 
@@ -366,14 +364,19 @@ describe('BigCommerceClient', () => {
         });
 
         it('Rate limit fails immediately if the delay is too long', async () => {
-            const client = createClient(
-                new Response('rate limit', {
-                    status: 429,
-                    headers: {
-                        [HEADERS.RATE_LIMIT_RESET]: '120001',
-                    },
-                }),
-            );
+            const client = new BigCommerceClient({
+                ...VALID_CREDENTIALS,
+                logger: false,
+                fetch: () =>
+                    Promise.resolve(
+                        new Response('rate limit', {
+                            status: 429,
+                            headers: {
+                                [HEADERS.RATE_LIMIT_RESET]: '120001',
+                            },
+                        }),
+                    ),
+            });
 
             const err = await client.get('/catalog/products').catch((e) => e);
 
@@ -401,28 +404,26 @@ describe('BigCommerceClient', () => {
             const client = new BigCommerceClient({
                 ...VALID_CREDENTIALS,
                 logger: false,
-                hooks: {
-                    beforeRequest: [
-                        () => {
-                            if (attempts === 2) {
-                                return new Response('{"status": "ok"}', { status: 200 });
-                            }
+                fetch: () => {
+                    if (attempts === 2) {
+                        return Promise.resolve(new Response('{"status": "ok"}', { status: 200 }));
+                    }
 
-                            attempts++;
+                    attempts++;
 
-                            counter();
+                    counter();
 
-                            return new Response('rate limited', {
-                                status: 429,
-                                headers: {
-                                    [HEADERS.RATE_LIMIT_LEFT]: '0',
-                                    [HEADERS.RATE_LIMIT_WINDOW]: '30000',
-                                    [HEADERS.RATE_LIMIT_RESET]: '3000',
-                                    [HEADERS.RATE_LIMIT_QUOTA]: '300',
-                                },
-                            });
-                        },
-                    ],
+                    return Promise.resolve(
+                        new Response('rate limited', {
+                            status: 429,
+                            headers: {
+                                [HEADERS.RATE_LIMIT_LEFT]: '0',
+                                [HEADERS.RATE_LIMIT_WINDOW]: '30000',
+                                [HEADERS.RATE_LIMIT_RESET]: '3000',
+                                [HEADERS.RATE_LIMIT_QUOTA]: '300',
+                            },
+                        }),
+                    );
                 },
             });
 

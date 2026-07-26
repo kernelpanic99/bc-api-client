@@ -159,12 +159,12 @@ export class BCApiError extends BaseError<{
     statusMessage: string;
     headers: Record<string, string>;
     requestBody: string;
-    responseBody: string;
+    responseBody: unknown;
 }> {
     code = 'BC_API_ERROR';
 
-    constructor(err: HTTPError, requestBody: string, responseBody: string) {
-        const { request, response } = err;
+    constructor(err: HTTPError, requestBody: string) {
+        const { request, response, data } = err;
 
         super('BigCommerce API request failed', {
             method: request.method,
@@ -173,7 +173,7 @@ export class BCApiError extends BaseError<{
             statusMessage: response.statusText,
             headers: Object.fromEntries(response.headers as unknown as Iterable<[string, string]>),
             requestBody,
-            responseBody,
+            responseBody: data,
         });
     }
 }

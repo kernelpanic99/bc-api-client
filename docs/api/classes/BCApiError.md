@@ -13,13 +13,13 @@ Thrown when the BigCommerce API returns a non-2xx HTTP response.
 
 ## Extends
 
-- [`BaseError`](BaseError.md)\<\{ `headers`: `Record`\<`string`, `string`\>; `method`: `string`; `requestBody`: `string`; `responseBody`: `string`; `status`: `number`; `statusMessage`: `string`; `url`: `string`; \}\>
+- [`BaseError`](BaseError.md)\<\{ `headers`: `Record`\<`string`, `string`\>; `method`: `string`; `requestBody`: `string`; `responseBody`: `unknown`; `status`: `number`; `statusMessage`: `string`; `url`: `string`; \}\>
 
 ## Constructors
 
 ### Constructor
 
-> **new BCApiError**(`err`, `requestBody`, `responseBody`): `BCApiError`
+> **new BCApiError**(`err`, `requestBody`): `BCApiError`
 
 Defined in: lib/errors.ts:166
 
@@ -29,7 +29,6 @@ Defined in: lib/errors.ts:166
 | ------ | ------ |
 | `err` | `HTTPError` |
 | `requestBody` | `string` |
-| `responseBody` | `string` |
 
 #### Returns
 
@@ -48,7 +47,7 @@ Defined in: lib/errors.ts:166
 | `context.headers` | `public` | `Record`\<`string`, `string`\> | `undefined` | - | - | - | lib/errors.ts:160 |
 | `context.method` | `public` | `string` | `undefined` | - | - | - | lib/errors.ts:156 |
 | `context.requestBody` | `public` | `string` | `undefined` | - | - | - | lib/errors.ts:161 |
-| `context.responseBody` | `public` | `string` | `undefined` | - | - | - | lib/errors.ts:162 |
+| `context.responseBody` | `public` | `unknown` | `undefined` | - | - | - | lib/errors.ts:162 |
 | `context.status` | `public` | `number` | `undefined` | - | - | - | lib/errors.ts:158 |
 | `context.statusMessage` | `public` | `string` | `undefined` | - | - | - | lib/errors.ts:159 |
 | `context.url` | `public` | `string` | `undefined` | - | - | - | lib/errors.ts:157 |

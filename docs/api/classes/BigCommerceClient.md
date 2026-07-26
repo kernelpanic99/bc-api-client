@@ -22,7 +22,7 @@ Creates a new BigCommerceClient.
 
 | Parameter | Type | Description |
 | ------ | ------ | ------ |
-| `config` | [`ClientConfig`](../interfaces/ClientConfig.md) | Client configuration. Ky options (e.g. `prefixUrl`, `timeout`, `retry`, `hooks`) are forwarded to the underlying ky instance. |
+| `config` | [`ClientConfig`](../interfaces/ClientConfig.md) | Client configuration. Ky options (e.g. `prefix`, `timeout`, `retry`, `hooks`) are forwarded to the underlying ky instance. |
 
 #### Returns
 
@@ -34,7 +34,7 @@ Creates a new BigCommerceClient.
 
 #### Throws
 
-[BCClientError](BCClientError.md) if `prefixUrl` is not a valid URL or `concurrency` is out of range.
+[BCClientError](BCClientError.md) if `prefix` is not a valid URL or `concurrency` is out of range.
 
 ## Methods
 

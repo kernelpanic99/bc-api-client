@@ -82,7 +82,7 @@ The token response including `access_token`, `user`, and `context`.
 
 > **verify**(`jwtPayload`, `storeHash`): `Promise`\<[`Claims`](../type-aliases/Claims.md)\>
 
-Defined in: auth.ts:235
+Defined in: auth.ts:234
 
 Verifies a JWT payload from BigCommerce
 

@@ -36,16 +36,17 @@ export const createClient = (response?: unknown, status?: number): BigCommerceCl
             ...BASE_KY_CONFIG.retry,
             backoffLimit: 1,
         },
-        hooks: {
-            beforeRequest: [
-                () => {
-                    if (response instanceof Response) {
-                        return response;
-                    }
+        fetch: () => {
+            if (response instanceof Response) {
+                return Promise.resolve(response);
+            }
 
-                    return new Response(body, { status: status ?? 200 });
-                },
-            ],
+            return Promise.resolve(
+                new Response(body, {
+                    status: status ?? 200,
+                    headers: { 'content-type': 'application/json' },
+                }),
+            );
         },
     });
 };

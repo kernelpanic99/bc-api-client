@@ -338,7 +338,7 @@ try {
     if (err instanceof BCApiError) {
         // HTTP error from the API
         console.error(err.context.status);       // e.g. 404
-        console.error(err.context.responseBody); // raw response body
+        console.error(err.context.responseBody); // parsed response body
     } else if (err instanceof BCTimeoutError) {
         console.error('Timed out:', err.context.url);
     } else if (err instanceof BCQueryValidationError) {

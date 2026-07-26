@@ -93,7 +93,7 @@ export type RateLimitMeta = {
  * Default configuration for the underlying ky HTTP client.
  */
 export const BASE_KY_CONFIG = {
-    prefixUrl: 'https://api.bigcommerce.com',
+    prefix: 'https://api.bigcommerce.com',
     throwHttpErrors: true,
     // Some BC endpoints may take a while.
     // For example /catalog/product/options* endpoints may fully
@@ -103,7 +103,7 @@ export const BASE_KY_CONFIG = {
     retry: {
         limit: 3,
         // BC uses PUT for many upsert operations, it's not guaranteed to be idempotent
-        methods: ['GET', 'DELETE'],
+        methods: ['get', 'delete'],
         statusCodes: [429, 500, 502, 503, 504],
         // BC does not send standart Retry-After. We'll use custom beforeRetry hook
         afterStatusCodes: [],

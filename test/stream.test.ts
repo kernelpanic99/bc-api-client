@@ -141,24 +141,24 @@ describe('stream', () => {
             expect(result.err).toBeInstanceOf(BCPaginatedResponseError);
         });
 
-        it.each([
-            'per_page',
-            'total_pages',
-        ])('yields Err(BCPaginatedResponseError) when pagination.%s is missing', async (field) => {
-            const pagination = {
-                per_page: 250,
-                total_pages: 1,
-                links: { previous: null, current: '?page=1', next: null },
-            };
+        it.each(['per_page', 'total_pages'])(
+            'yields Err(BCPaginatedResponseError) when pagination.%s is missing',
+            async (field) => {
+                const pagination = {
+                    per_page: 250,
+                    total_pages: 1,
+                    links: { previous: null, current: '?page=1', next: null },
+                };
 
-            delete (pagination as Record<string, unknown>)[field];
+                delete (pagination as Record<string, unknown>)[field];
 
-            vi.spyOn(client, 'get').mockResolvedValue({ data: [], meta: { pagination } });
+                vi.spyOn(client, 'get').mockResolvedValue({ data: [], meta: { pagination } });
 
-            const [result] = await drain(client.stream('/p'));
+                const [result] = await drain(client.stream('/p'));
 
-            expect(result.err).toBeInstanceOf(BCPaginatedResponseError);
-        });
+                expect(result.err).toBeInstanceOf(BCPaginatedResponseError);
+            },
+        );
 
         it('yields Err(BCPaginatedResponseError) when per_page is 0', async () => {
             vi.spyOn(client, 'get').mockResolvedValue({
@@ -441,11 +441,12 @@ describe('collect', () => {
 function make404Error(): BCApiError {
     const httpError = Object.assign(new Error('Not Found'), {
         request: { method: 'GET', url: 'http://x.com', text: () => Promise.resolve('') },
-        response: { status: 404, statusText: 'Not Found', text: () => Promise.resolve(''), headers: new Headers() },
+        response: { status: 404, statusText: 'Not Found', headers: new Headers() },
+        data: { title: 'Not Found' },
     });
 
     // biome-ignore lint/suspicious/noExplicitAny: Test files
-    return new BCApiError(httpError as any, '', '');
+    return new BCApiError(httpError as any, '');
 }
 
 describe('streamBlind', () => {

@@ -14,6 +14,8 @@ Creates a failed [Result](Result.md). Check `result.ok` or `result.err` before a
 
 ## Param
 
+**err**
+
 The error value.
 
 ## Type Parameters

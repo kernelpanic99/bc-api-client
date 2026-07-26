@@ -148,13 +148,13 @@ export class BigCommerceAuth {
 
         this.logger = initLogger(config.logger);
 
-        const { prefixUrl: _, ...authKyConfig } = BASE_KY_CONFIG;
+        const { prefix: _, ...authKyConfig } = BASE_KY_CONFIG;
 
         this.client = ky.create({
             ...authKyConfig,
             retry: {
                 ...authKyConfig.retry,
-                methods: ['POST'],
+                methods: ['post'],
             },
         });
     }
@@ -203,8 +203,7 @@ export class BigCommerceAuth {
         } catch (error) {
             if (isHTTPError(error)) {
                 const requestBody = await error.request.text().catch(() => '');
-                const responseBody = await error.response.text().catch(() => '');
-                const err = new BCApiError(error, requestBody, responseBody);
+                const err = new BCApiError(error, requestBody);
 
                 this.logger?.error(err.context, 'Failed to request token');
 

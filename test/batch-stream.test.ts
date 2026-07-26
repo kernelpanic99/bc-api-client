@@ -179,9 +179,7 @@ describe('BigCommerceClient', () => {
 
             const client = new BigCommerceClient({
                 ...VALID_CREDENTIALS,
-                hooks: {
-                    beforeRequest: [() => (call++ === 0 ? errResponse(500) : echo({}))],
-                },
+                fetch: () => Promise.resolve(call++ === 0 ? errResponse(500) : echo({})),
             });
 
             for await (const _ of client.batchStream([{ method: 'GET' as const, path: '/test' }], {
@@ -204,16 +202,12 @@ describe('BigCommerceClient', () => {
 
             const client = new BigCommerceClient({
                 ...VALID_CREDENTIALS,
-                hooks: {
-                    beforeRequest: [
-                        () => {
-                            if (firstCall) {
-                                firstCall = false;
-                                return rateLimitResponse();
-                            }
-                            return echo({});
-                        },
-                    ],
+                fetch: () => {
+                    if (firstCall) {
+                        firstCall = false;
+                        return Promise.resolve(rateLimitResponse());
+                    }
+                    return Promise.resolve(echo({}));
                 },
             });
 
@@ -237,16 +231,12 @@ describe('BigCommerceClient', () => {
 
             const client = new BigCommerceClient({
                 ...VALID_CREDENTIALS,
-                hooks: {
-                    beforeRequest: [
-                        () => {
-                            if (firstCall) {
-                                firstCall = false;
-                                return errResponse(500);
-                            }
-                            return echo({});
-                        },
-                    ],
+                fetch: () => {
+                    if (firstCall) {
+                        firstCall = false;
+                        return Promise.resolve(errResponse(500));
+                    }
+                    return Promise.resolve(echo({}));
                 },
             });
 

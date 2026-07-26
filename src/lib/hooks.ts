@@ -4,7 +4,7 @@ import { BCRateLimitDelayTooLongError, BCRateLimitNoHeadersError, BCUrlTooLongEr
 import type { Logger } from './logger';
 import { extractRateLimitHeaders } from './util';
 
-export const validateUrlLength: BeforeRequestHook = (request) => {
+export const validateUrlLength: BeforeRequestHook = ({ request }) => {
     if (request.url.length > MAX_URL_LENGTH) {
         throw new BCUrlTooLongError(request.url, MAX_URL_LENGTH);
     }

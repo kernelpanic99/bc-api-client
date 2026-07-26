@@ -14,6 +14,8 @@ Creates a successful [Result](Result.md). Check `result.ok` or `result.err` befo
 
 ## Param
 
+**data**
+
 The success value.
 
 ## Type Parameters

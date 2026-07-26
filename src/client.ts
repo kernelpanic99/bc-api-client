@@ -62,7 +62,7 @@ export class BigCommerceClient {
     /**
      * Creates a new BigCommerceClient.
      *
-     * @param config - Client configuration. Ky options (e.g. `prefixUrl`, `timeout`, `retry`,
+     * @param config - Client configuration. Ky options (e.g. `prefix`, `timeout`, `retry`,
      *   `hooks`) are forwarded to the underlying ky instance.
      * @param config.storeHash - BigCommerce store hash. Must be a non-empty string.
      * @param config.accessToken - BigCommerce API access token. Must be a non-empty string.
@@ -80,7 +80,7 @@ export class BigCommerceClient {
      *   concurrency per successful response while below the configured max. Defaults to 1.
      *
      * @throws {@link BCCredentialsError} if `storeHash` or `accessToken` are missing.
-     * @throws {@link BCClientError} if `prefixUrl` is not a valid URL or `concurrency` is out of range.
+     * @throws {@link BCClientError} if `prefix` is not a valid URL or `concurrency` is out of range.
      */
     constructor(private readonly config: ClientConfig) {
         this.validateConfig();
@@ -406,7 +406,7 @@ export class BigCommerceClient {
             delete newQuery[key];
         }
 
-        const url = this.config.prefixUrl ?? requestOptions.prefixUrl ?? BASE_KY_CONFIG.prefixUrl;
+        const url = this.config.prefix ?? requestOptions.prefix ?? BASE_KY_CONFIG.prefix;
         const fullPath = this.makePath('v3', path);
         const fullQuery = toUrlSearchParams({ ...newQuery, page: 1 });
         const fullUrl = `${url}/${fullPath}?${fullQuery}`;
@@ -1104,7 +1104,7 @@ export class BigCommerceClient {
                     },
                 ],
                 afterResponse: [
-                    (_request, _options, response) => {
+                    ({ response }) => {
                         if (response.ok && limit.concurrency < concurrency) {
                             const recover =
                                 typeof backoffRecover === 'function'
@@ -1160,8 +1160,7 @@ export class BigCommerceClient {
 
             if (isHTTPError(err)) {
                 const requestBody = await err.request.text().catch(() => '');
-                const responseBody = await err.response.text().catch(() => '');
-                const error = new BCApiError(err, requestBody, responseBody);
+                const error = new BCApiError(err, requestBody);
 
                 this.logger?.error(error.context, 'Request failed');
 
@@ -1264,11 +1263,11 @@ export class BigCommerceClient {
             throw new BCCredentialsError(errors);
         }
 
-        if (this.config.prefixUrl) {
+        if (this.config.prefix) {
             try {
-                new URL(this.config.prefixUrl);
+                new URL(this.config.prefix);
             } catch (err) {
-                throw new BCClientError('Invalid prefixUrl', undefined, err);
+                throw new BCClientError('Invalid prefix', undefined, err);
             }
         }
 
