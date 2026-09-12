@@ -56,7 +56,7 @@
         "@arethetypeswrong/core": "0.18.5",
         "@aws-lambda-powertools/logger": "2.35.0",
         "@biomejs/biome": "2.5.13",
-        "@types/node": "26.1.1",
+        "@types/node": "22.20.2",
         "concurrently": "10.0.5",
         "lefthook": "2.1.12",
         "pino": "10.3.1",
