@@ -31,7 +31,7 @@
         "prepublishOnly": "pnpm build",
         "version": "git add -A src",
         "postversion": "git push && git push --tags",
-        "qa": "concurrently 'biome check' 'node node_modules/typescript-native/bin/tsc --noEmit' 'vitest --run' --kill-others-on-fail",
+        "qa": "concurrently 'biome check' 'node node_modules/typescript-native/bin/tsc --noEmit' 'vitest --run' 'typedoc --emit none' --kill-others-on-fail",
         "doc": "typedoc"
     },
     "files": [
