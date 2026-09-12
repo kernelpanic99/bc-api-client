@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.1] - 2026-09-12
+
+### Maintenance
+
+- Bump runtime dependencies: ky 2.1.0, jose 6.2.12, p-limit 7.3.2
+- Bump dev dependencies, including vitest 5, tsdown 0.23, biome 2.5.13, and zod 4.6.2
+- Typecheck with the TypeScript 7 native compiler; typedoc keeps a 6.x copy for the classic compiler API
+- Pin `@types/node` to the `engines.node` floor, so the compiler flags APIs missing from the oldest supported runtime
+- Add Dependabot for weekly npm and GitHub Actions updates
+- Validate the API docs in `qa`, so a typedoc failure surfaces in CI
+
 ## [2.0.0] - 2026-07-26
 
 ### Changed

@@ -1,0 +1,49 @@
+version: 2
+
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: friday
+      time: "18:00"
+      timezone: Europe/Athens
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: chore(deps)
+      prefix-development: chore(deps-dev)
+    cooldown:
+      default-days: 7
+      semver-major-days: 14
+    groups:
+      dev-dependencies:
+        dependency-type: development
+        update-types:
+          - minor
+          - patch
+    ignore:
+      # typedoc 0.28.20 peers on typescript 6.0.x and consumes the classic
+      # compiler API, which TypeScript 7 moved behind ./unstable/*. The
+      # native compiler tracks separately through the typescript-native alias.
+      - dependency-name: typescript
+        update-types:
+          - version-update:semver-major
+      # Types stay on the major that engines.node declares as the floor,
+      # so the compiler flags APIs missing from the oldest supported runtime.
+      - dependency-name: "@types/node"
+        update-types:
+          - version-update:semver-major
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: friday
+      time: "18:00"
+      timezone: Europe/Athens
+    commit-message:
+      prefix: chore(ci)
+    groups:
+      actions:
+        patterns:
+          - "*"
