@@ -542,8 +542,11 @@ export class BigCommerceClient {
      * @param options.querySchema - StandardSchemaV1 schema to validate `query`. Requires `query`
      *   to be provided.
      * @param options.itemSchema - StandardSchemaV1 schema to validate each returned item.
-     * @param options.maxPages - Maximum number of pages to fetch before stopping (default 500,
-     *   must be > 0). A warning is logged if this limit is reached.
+     * @param options.maxPages - Maximum number of pages the read fetches before stopping
+     *   (default 500, must be > 0). A batch is trimmed so no more than this many pages are
+     *   requested, counted from the starting page. A warning is logged if this limit is reached.
+     * @param options.stopOnShortPage - Treat a page holding fewer items than `limit` as the last
+     *   page, which saves the request that would confirm the end of the data. Default `false`.
      * @param options.concurrency - Max concurrent page requests per batch. Must be 1–1000.
      *   `false` for sequential. Defaults to `config.concurrency`, or 10 if not set on the client.
      * @param options.rateLimitBackoff - Concurrency cap on 429 responses. Defaults to
@@ -602,8 +605,11 @@ export class BigCommerceClient {
      * @param options.querySchema - StandardSchemaV1 schema to validate `query`. Requires `query`
      *   to be provided.
      * @param options.itemSchema - StandardSchemaV1 schema to validate each returned item.
-     * @param options.maxPages - Maximum number of pages to fetch before stopping (default 500,
-     *   must be > 0). A warning is logged if this limit is reached.
+     * @param options.maxPages - Maximum number of pages the read fetches before stopping
+     *   (default 500, must be > 0). A batch is trimmed so no more than this many pages are
+     *   requested, counted from the starting page. A warning is logged if this limit is reached.
+     * @param options.stopOnShortPage - Treat a page holding fewer items than `limit` as the last
+     *   page, which saves the request that would confirm the end of the data. Default `false`.
      * @param options.concurrency - Max concurrent page requests per batch. Must be 1–1000.
      *   `false` for sequential. Defaults to `config.concurrency`, or 10 if not set on the client.
      * @param options.rateLimitBackoff - Concurrency cap on 429 responses. Defaults to
@@ -630,6 +636,7 @@ export class BigCommerceClient {
             querySchema,
             itemSchema,
             maxPages: rawMaxPages,
+            stopOnShortPage,
             concurrency: rawConcurrency,
             rateLimitBackoff,
             backoff,
@@ -656,14 +663,17 @@ export class BigCommerceClient {
 
         let done = false;
         let currentPage = page;
+        let fetched = 0;
 
         do {
-            if (currentPage > maxPages) {
+            const remaining = maxPages - fetched;
+
+            if (remaining <= 0) {
                 this.logger?.warn({ currentPage }, 'Blind pagination reached maxPages before the end of the data');
                 break;
             }
 
-            const batchSize = (limiter?.concurrency ?? concurrency) || 1;
+            const batchSize = Math.min((limiter?.concurrency ?? concurrency) || 1, remaining);
             const batchStartPage = currentPage;
             const pageRequests = Array.from({ length: batchSize }, (_, i) => currentPage + i).map((page) =>
                 req.get(path, {
@@ -678,6 +688,7 @@ export class BigCommerceClient {
             );
 
             currentPage += batchSize;
+            fetched += batchSize;
 
             // Results arrive in completion order. Page order is what makes the first empty, 404
             // or 204 page the end of the data rather than whichever page happened to settle first.
@@ -716,6 +727,11 @@ export class BigCommerceClient {
 
                 for (const item of data) {
                     yield { ...(await this.validatePaginatedItem(path, item, itemSchema)), page: itemPage };
+                }
+
+                if (stopOnShortPage && data.length < limit) {
+                    done = true;
+                    break;
                 }
             }
         } while (!done);

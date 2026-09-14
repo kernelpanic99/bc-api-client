@@ -42,7 +42,7 @@ Creates a new BigCommerceClient.
 
 > **batchSafe**\<`TRes`, `TBody`, `TQuery`\>(`requests`, `options?`): `Promise`\<[`BatchResult`](../type-aliases/BatchResult.md)\<`TRes`, [`BaseError`](BaseError.md)\<[`ErrorContext`](../type-aliases/ErrorContext.md)\>\>[]\>
 
-Defined in: client.ts:745
+Defined in: client.ts:761
 
 Executes multiple requests concurrently and returns all results as [BatchResult](../type-aliases/BatchResult.md)
 values, never throwing. Errors from individual requests are captured as `Err` results.
@@ -79,7 +79,7 @@ Use [batchStream](#batchstream) to process results as they arrive rather than wa
 
 > **batchStream**\<`TRes`, `TBody`, `TQuery`\>(`requests`, `options?`): `AsyncGenerator`\<[`BatchResult`](../type-aliases/BatchResult.md)\<`TRes`, [`BaseError`](BaseError.md)\<[`ErrorContext`](../type-aliases/ErrorContext.md)\>\>\>
 
-Defined in: client.ts:927
+Defined in: client.ts:943
 
 Executes multiple requests with configurable concurrency, yielding each result as a
 [BatchResult](../type-aliases/BatchResult.md) as it completes. Errors from individual requests are yielded as `Err`
@@ -203,7 +203,7 @@ All items across all pages.
 
 > **collectBlind**\<`TItem`, `TQuery`\>(`path`, `options?`): `Promise`\<`TItem`[]\>
 
-Defined in: client.ts:565
+Defined in: client.ts:568
 
 Fetches all pages from a v2 flat-array endpoint and collects items into an array.
 
@@ -670,7 +670,7 @@ if sort order matters.
 
 > **stream**\<`TItem`, `TQuery`\>(`path`, `options?`): `AsyncGenerator`\<[`PageResult`](../type-aliases/PageResult.md)\<`TItem`, [`BaseError`](BaseError.md)\<[`ErrorContext`](../type-aliases/ErrorContext.md)\>\>\>
 
-Defined in: client.ts:791
+Defined in: client.ts:807
 
 Streams all items from a v3 paginated endpoint, fetching the first page sequentially
 and remaining pages concurrently via [batchStream](#batchstream).
@@ -715,7 +715,7 @@ is not preserved across pages. Pass `concurrency: false` if sort order matters.
 
 > **streamBlind**\<`TItem`, `TQuery`\>(`path`, `options?`): `AsyncGenerator`\<[`PageResult`](../type-aliases/PageResult.md)\<`TItem`, [`BaseError`](BaseError.md)\<[`ErrorContext`](../type-aliases/ErrorContext.md)\>\>\>
 
-Defined in: client.ts:624
+Defined in: client.ts:630
 
 Lazily streams items from a v2 flat-array endpoint, page by page.
 

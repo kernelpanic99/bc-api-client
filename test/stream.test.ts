@@ -614,6 +614,28 @@ describe('streamBlind', () => {
             expect(batchSpy).toHaveBeenCalledTimes(2);
         });
 
+        it('counts maxPages from the starting page', async () => {
+            const batchSpy = vi.spyOn(client, 'batchSafe').mockResolvedValue([br(Ok([{ id: 1 }]))]);
+
+            await drain(client.streamBlind('/legacy', { query: { page: 600 }, maxPages: 2, concurrency: 1 }));
+
+            expect(batchSpy).toHaveBeenCalledTimes(2);
+            expect(batchSpy.mock.calls[0][0][0].query).toMatchObject({ page: 600 });
+            expect(batchSpy.mock.calls[1][0][0].query).toMatchObject({ page: 601 });
+        });
+
+        it('trims the last batch so no more than maxPages are requested', async () => {
+            const batchSpy = vi
+                .spyOn(client, 'batchSafe')
+                .mockResolvedValue([br(Ok([{ id: 1 }])), br(Ok([{ id: 2 }]), 1)]);
+
+            await drain(client.streamBlind('/legacy', { maxPages: 3, concurrency: 2 }));
+
+            expect(batchSpy.mock.calls[0][0]).toHaveLength(2);
+            expect(batchSpy.mock.calls[1][0]).toHaveLength(1);
+            expect(batchSpy).toHaveBeenCalledTimes(2);
+        });
+
         it('yields a page that settles after the empty page ending the read', async () => {
             vi.spyOn(client, 'batchSafe').mockResolvedValueOnce([br(Ok([]), 1), br(Ok([{ id: 1 }]), 0)]);
 
@@ -647,6 +669,28 @@ describe('streamBlind', () => {
             const results = await drain(client.streamBlind('/legacy', { concurrency: 3 }));
 
             expect(results).toEqual([pr(Ok({ id: 1 }), 1)]);
+        });
+
+        it('stops on a short page when asked to', async () => {
+            const batchSpy = vi.spyOn(client, 'batchSafe').mockResolvedValue([br(Ok([{ id: 1 }]))]);
+
+            const results = await drain(
+                client.streamBlind('/legacy', { query: { limit: 2 }, stopOnShortPage: true, concurrency: 1 }),
+            );
+
+            expect(results).toEqual([pr(Ok({ id: 1 }), 1)]);
+            expect(batchSpy).toHaveBeenCalledTimes(1);
+        });
+
+        it('reads past a short page by default', async () => {
+            const batchSpy = vi
+                .spyOn(client, 'batchSafe')
+                .mockResolvedValueOnce([br(Ok([{ id: 1 }]))])
+                .mockResolvedValue([br(Ok([]))]);
+
+            await drain(client.streamBlind('/legacy', { query: { limit: 2 }, concurrency: 1 }));
+
+            expect(batchSpy).toHaveBeenCalledTimes(2);
         });
     });
 

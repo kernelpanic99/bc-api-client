@@ -161,7 +161,14 @@ export type CollectOptions<TItem, TQuery extends Query> = ConcurrencyOptions &
     };
 
 export type BlindOptions<TItem, TQuery extends Query> = Omit<CollectOptions<TItem, TQuery>, 'version'> & {
+    /** Maximum number of pages a read fetches before stopping. Default 500. */
     maxPages?: number;
+    /**
+     * Treat a page holding fewer items than `limit` as the last page, which saves the request
+     * that would otherwise confirm the end of the data. Default `false`, because an endpoint
+     * that answers a short page mid-run would end the read early.
+     */
+    stopOnShortPage?: boolean;
 };
 
 /**
