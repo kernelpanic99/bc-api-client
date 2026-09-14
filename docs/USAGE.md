@@ -131,7 +131,9 @@ const orders = await client.collectBlind('orders', {
 });
 ```
 
-By default the client fetches up to 500 pages. Raise or lower this with `maxPages`:
+Items arrive in page order, and the read ends at the first page that is empty, a 404, or a 204.
+
+By default the client fetches up to 500 pages, counted from the starting page. Raise or lower this with `maxPages`:
 
 ```ts
 for await (const result of client.streamBlind('orders', { maxPages: 50 })) {
@@ -142,6 +144,16 @@ for await (const result of client.streamBlind('orders', { maxPages: 50 })) {
 
     await processOrder(result.data);
 }
+```
+
+An endpoint that fills every page until the last one can stop a page earlier, without the request
+that confirms the end of the data:
+
+```ts
+const orders = await client.collectBlind('orders', {
+    query: { limit: 250 },
+    stopOnShortPage: true,
+});
 ```
 
 ______________________________________________________________________

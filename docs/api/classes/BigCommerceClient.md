@@ -6,7 +6,7 @@
 
 # Class: BigCommerceClient
 
-Defined in: client.ts:57
+Defined in: client.ts:65
 
 ## Constructors
 
@@ -14,7 +14,7 @@ Defined in: client.ts:57
 
 > **new BigCommerceClient**(`config`): `BigCommerceClient`
 
-Defined in: client.ts:85
+Defined in: client.ts:93
 
 Creates a new BigCommerceClient.
 
@@ -42,7 +42,7 @@ Creates a new BigCommerceClient.
 
 > **batchSafe**\<`TRes`, `TBody`, `TQuery`\>(`requests`, `options?`): `Promise`\<[`BatchResult`](../type-aliases/BatchResult.md)\<`TRes`, [`BaseError`](BaseError.md)\<[`ErrorContext`](../type-aliases/ErrorContext.md)\>\>[]\>
 
-Defined in: client.ts:734
+Defined in: client.ts:761
 
 Executes multiple requests concurrently and returns all results as [BatchResult](../type-aliases/BatchResult.md)
 values, never throwing. Errors from individual requests are captured as `Err` results.
@@ -79,7 +79,7 @@ Use [batchStream](#batchstream) to process results as they arrive rather than wa
 
 > **batchStream**\<`TRes`, `TBody`, `TQuery`\>(`requests`, `options?`): `AsyncGenerator`\<[`BatchResult`](../type-aliases/BatchResult.md)\<`TRes`, [`BaseError`](BaseError.md)\<[`ErrorContext`](../type-aliases/ErrorContext.md)\>\>\>
 
-Defined in: client.ts:916
+Defined in: client.ts:943
 
 Executes multiple requests with configurable concurrency, yielding each result as a
 [BatchResult](../type-aliases/BatchResult.md) as it completes. Errors from individual requests are yielded as `Err`
@@ -122,7 +122,7 @@ get all the results, set `concurrency: false` to trade concurrency for determini
 
 > **collect**\<`TItem`, `TQuery`\>(`path`, `options?`): `Promise`\<`TItem`[]\>
 
-Defined in: client.ts:500
+Defined in: client.ts:508
 
 Fetches all pages from a v3 paginated endpoint and collects items into an array.
 
@@ -203,7 +203,7 @@ All items across all pages.
 
 > **collectBlind**\<`TItem`, `TQuery`\>(`path`, `options?`): `Promise`\<`TItem`[]\>
 
-Defined in: client.ts:556
+Defined in: client.ts:568
 
 Fetches all pages from a v2 flat-array endpoint and collects items into an array.
 
@@ -212,9 +212,10 @@ a 404, or a 204 response is received. No prior knowledge of total count is requi
 
 Use [streamBlind](#streamblind) to process items lazily without buffering the full result set.
 
-**Sorting and concurrency:** pages within each batch are fetched concurrently and may
-complete out of order. When `concurrency > 1`, sort order is not preserved across pages.
-Pass `concurrency: false` if sort order matters.
+**Sorting and concurrency:** pages within each batch are fetched concurrently and complete
+out of order, and each batch is then read in page order, so items arrive in page order
+whatever the concurrency. The read ends at the first page that is empty, 404, or 204, and
+the pages after it in that batch are discarded.
 
 #### Type Parameters
 
@@ -270,7 +271,7 @@ All items across all pages.
 
 > **delete**\<`TRes`, `TQuery`\>(`path`, `options?`): `Promise`\<`void`\>
 
-Defined in: client.ts:252
+Defined in: client.ts:260
 
 Sends a DELETE request to the given path.
 
@@ -333,7 +334,7 @@ Silently suppresses 404 responses (resource already gone) and empty response bod
 
 > **get**\<`TRes`, `TQuery`\>(`path`, `options?`): `Promise`\<`TRes`\>
 
-Defined in: client.ts:144
+Defined in: client.ts:152
 
 Sends a GET request to the given path.
 
@@ -400,7 +401,7 @@ Parsed and optionally validated response body.
 
 > **post**\<`TRes`, `TBody`, `TQuery`\>(`path`, `options?`): `Promise`\<`TRes`\>
 
-Defined in: client.ts:182
+Defined in: client.ts:190
 
 Sends a POST request to the given path.
 
@@ -472,7 +473,7 @@ Parsed and optionally validated response body.
 
 > **put**\<`TRes`, `TBody`, `TQuery`\>(`path`, `options?`): `Promise`\<`TRes`\>
 
-Defined in: client.ts:220
+Defined in: client.ts:228
 
 Sends a PUT request to the given path.
 
@@ -544,7 +545,7 @@ Parsed and optionally validated response body.
 
 > **query**\<`TItem`, `TQuery`\>(`path`, `options`): `Promise`\<`TItem`[]\>
 
-Defined in: client.ts:321
+Defined in: client.ts:329
 
 Fetches items from a v3 paginated endpoint by splitting `values` across multiple requests
 using the given `key` query param, chunking to stay within URL length limits.
@@ -626,7 +627,7 @@ All matching items across all chunked requests.
 
 > **queryStream**\<`TItem`, `TQuery`\>(`path`, `options`): `AsyncGenerator`\<[`Result`](../type-aliases/Result.md)\<`TItem`, [`BaseError`](BaseError.md)\<[`ErrorContext`](../type-aliases/ErrorContext.md)\>\>\>
 
-Defined in: client.ts:370
+Defined in: client.ts:378
 
 Streaming variant of [query](#query). Yields each item individually as results arrive,
 splitting `values` into URL-length-safe chunks across concurrent requests.
@@ -669,7 +670,7 @@ if sort order matters.
 
 > **stream**\<`TItem`, `TQuery`\>(`path`, `options?`): `AsyncGenerator`\<[`PageResult`](../type-aliases/PageResult.md)\<`TItem`, [`BaseError`](BaseError.md)\<[`ErrorContext`](../type-aliases/ErrorContext.md)\>\>\>
 
-Defined in: client.ts:780
+Defined in: client.ts:807
 
 Streams all items from a v3 paginated endpoint, fetching the first page sequentially
 and remaining pages concurrently via [batchStream](#batchstream).
@@ -714,7 +715,7 @@ is not preserved across pages. Pass `concurrency: false` if sort order matters.
 
 > **streamBlind**\<`TItem`, `TQuery`\>(`path`, `options?`): `AsyncGenerator`\<[`PageResult`](../type-aliases/PageResult.md)\<`TItem`, [`BaseError`](BaseError.md)\<[`ErrorContext`](../type-aliases/ErrorContext.md)\>\>\>
 
-Defined in: client.ts:614
+Defined in: client.ts:630
 
 Lazily streams items from a v2 flat-array endpoint, page by page.
 
@@ -726,9 +727,10 @@ Use `page` to correlate the item back to its source page.
 
 Use [collectBlind](#collectblind) to buffer all results into an array (throws on any error).
 
-**Sorting and concurrency:** pages within each batch are fetched concurrently and may
-complete out of order. When `concurrency > 1`, sort order is not preserved across pages.
-Pass `concurrency: false` if sort order matters.
+**Sorting and concurrency:** pages within each batch are fetched concurrently and complete
+out of order, and each batch is then read in page order, so items arrive in page order
+whatever the concurrency. The read ends at the first page that is empty, 404, or 204, and
+the pages after it in that batch are discarded.
 
 #### Type Parameters
 

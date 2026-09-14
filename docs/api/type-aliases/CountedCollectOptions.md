@@ -8,7 +8,7 @@
 
 > **CountedCollectOptions**\<`TItem`, `TQuery`\> = [`CollectOptions`](CollectOptions.md)\<`TItem`, `TQuery`\> & `object`
 
-Defined in: lib/request.ts:170
+Defined in: lib/request.ts:177
 
 Options for v2 paginated operations with known count (BigCommerceClient.collectCount, BigCommerceClient.streamCount).
 
@@ -16,7 +16,7 @@ Options for v2 paginated operations with known count (BigCommerceClient.collectC
 
 | Name | Type | Description | Defined in |
 | ------ | ------ | ------ | ------ |
-| `count?` | `number` | Total number of items expected (for v2 endpoints without pagination metadata). | lib/request.ts:172 |
+| `count?` | `number` | Total number of items expected (for v2 endpoints without pagination metadata). | lib/request.ts:179 |
 
 ## Type Parameters
 

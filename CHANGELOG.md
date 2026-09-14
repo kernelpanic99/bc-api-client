@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] - 2026-09-14
+
+### Fixed
+
+- `streamBlind` and `collectBlind` no longer drop pages. A batch's results arrive in completion order and were read that way, so a page that completed before an earlier one ended the read while that earlier page still held items. Each batch is now read in page order
+- A non-terminating page error arriving after a 404 or a 204 in the same batch no longer clears the stop, which had let a read continue past the end of the data until `maxPages`
+- The pages that follow the terminating page in a batch are discarded rather than yielded
+
+### Changed
+
+- `maxPages` counts the pages a read fetches, as documented, rather than being compared against the page number. A batch is trimmed so a read never fetches more than `maxPages` pages, and a read starting above page 1 fetches that many pages from where it starts
+- Blind pagination yields items in page order whatever the concurrency, and the JSDoc on `streamBlind` and `collectBlind` says so
+
+### Added
+
+- `stopOnShortPage` on `BlindOptions`. A page holding fewer items than `limit` ends the read, which saves the request that would confirm the end of the data. Off by default, because an endpoint that answers a short page mid-run would end a read early
+
 ## [2.0.1] - 2026-09-12
 
 ### Maintenance
