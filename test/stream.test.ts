@@ -613,6 +613,41 @@ describe('streamBlind', () => {
 
             expect(batchSpy).toHaveBeenCalledTimes(2);
         });
+
+        it('yields a page that settles after the empty page ending the read', async () => {
+            vi.spyOn(client, 'batchSafe').mockResolvedValueOnce([br(Ok([]), 1), br(Ok([{ id: 1 }]), 0)]);
+
+            const results = await drain(client.streamBlind('/legacy', { concurrency: 2 }));
+
+            expect(results).toEqual([pr(Ok({ id: 1 }), 1)]);
+        });
+
+        it('stays stopped when a failing page follows the terminating one', async () => {
+            const batchSpy = vi
+                .spyOn(client, 'batchSafe')
+                .mockResolvedValue([
+                    br(Ok([{ id: 1 }]), 0),
+                    br(Err(make404Error()), 1),
+                    br(Err(new BCClientError('request failed')), 2),
+                ]);
+
+            const results = await drain(client.streamBlind('/legacy', { concurrency: 3 }));
+
+            expect(results).toEqual([pr(Ok({ id: 1 }), 1)]);
+            expect(batchSpy).toHaveBeenCalledTimes(1);
+        });
+
+        it('discards the pages after the terminating one in a batch', async () => {
+            vi.spyOn(client, 'batchSafe').mockResolvedValueOnce([
+                br(Ok([{ id: 1 }]), 0),
+                br(Ok([]), 1),
+                br(Ok([{ id: 99 }]), 2),
+            ]);
+
+            const results = await drain(client.streamBlind('/legacy', { concurrency: 3 }));
+
+            expect(results).toEqual([pr(Ok({ id: 1 }), 1)]);
+        });
     });
 
     describe('response handling', () => {

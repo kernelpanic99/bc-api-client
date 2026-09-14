@@ -54,6 +54,14 @@ import { type BatchResult, Err, Ok, type PageResult, type Result } from './lib/r
 import type { StandardSchemaV1 } from './lib/standard-schema';
 import { AsyncChannel, chunkStrLength } from './lib/util';
 
+/**
+ * Whether a page error is the end of the data rather than a failure. A v2 collection answers
+ * 404 or 204 for a page past the last one, and blind pagination stops there.
+ */
+const endsBlindPagination = (err: BaseError): boolean =>
+    (err instanceof BCApiError && err.context.status === 404) ||
+    (err instanceof BCResponseParseError && err.context.rawBody === '' && err.context.status === 204);
+
 export class BigCommerceClient {
     private readonly logger?: Logger;
     private readonly client: KyInstance;
@@ -522,9 +530,10 @@ export class BigCommerceClient {
      *
      * Use {@link streamBlind} to process items lazily without buffering the full result set.
      *
-     * **Sorting and concurrency:** pages within each batch are fetched concurrently and may
-     * complete out of order. When `concurrency > 1`, sort order is not preserved across pages.
-     * Pass `concurrency: false` if sort order matters.
+     * **Sorting and concurrency:** pages within each batch are fetched concurrently and complete
+     * out of order, and each batch is then read in page order, so items arrive in page order
+     * whatever the concurrency. The read ends at the first page that is empty, 404, or 204, and
+     * the pages after it in that batch are discarded.
      *
      * @param path - API path relative to the store's versioned base URL (always requests v2).
      * @param options - Ky options are forwarded to page requests.
@@ -581,9 +590,10 @@ export class BigCommerceClient {
      *
      * Use {@link collectBlind} to buffer all results into an array (throws on any error).
      *
-     * **Sorting and concurrency:** pages within each batch are fetched concurrently and may
-     * complete out of order. When `concurrency > 1`, sort order is not preserved across pages.
-     * Pass `concurrency: false` if sort order matters.
+     * **Sorting and concurrency:** pages within each batch are fetched concurrently and complete
+     * out of order, and each batch is then read in page order, so items arrive in page order
+     * whatever the concurrency. The read ends at the first page that is empty, 404, or 204, and
+     * the pages after it in that batch are discarded.
      *
      * @param path - API path relative to the store's versioned base URL (always requests v2).
      * @param options - Ky options are forwarded to page requests.
@@ -669,42 +679,43 @@ export class BigCommerceClient {
 
             currentPage += batchSize;
 
-            const pages = await this.batchSafe(pageRequests, concurrencyOptions);
+            // Results arrive in completion order. Page order is what makes the first empty, 404
+            // or 204 page the end of the data rather than whichever page happened to settle first.
+            const pages = (await this.batchSafe(pageRequests, concurrencyOptions)).sort((a, b) => a.index - b.index);
 
             for (const { err, data, index } of pages) {
                 const itemPage = batchStartPage + index;
 
                 if (err) {
-                    done =
-                        (err instanceof BCApiError && err.context.status === 404) ||
-                        (err instanceof BCResponseParseError &&
-                            err.context.rawBody === '' &&
-                            err.context.status === 204);
-
-                    if (!done) {
-                        yield { ...Err(err), page: itemPage };
+                    if (endsBlindPagination(err)) {
+                        done = true;
+                        break;
                     }
-                } else {
-                    if (Array.isArray(data)) {
-                        if (data.length === 0) {
-                            done = true;
-                            break;
-                        }
 
-                        for (const item of data) {
-                            yield { ...(await this.validatePaginatedItem(path, item, itemSchema)), page: itemPage };
-                        }
-                    } else {
-                        yield {
-                            ...Err(
-                                new BCClientError('Received non array response from blind pagination page endpoint', {
-                                    data,
-                                    path,
-                                }),
-                            ),
-                            page: itemPage,
-                        };
-                    }
+                    yield { ...Err(err), page: itemPage };
+                    continue;
+                }
+
+                if (!Array.isArray(data)) {
+                    yield {
+                        ...Err(
+                            new BCClientError('Received non array response from blind pagination page endpoint', {
+                                data,
+                                path,
+                            }),
+                        ),
+                        page: itemPage,
+                    };
+                    continue;
+                }
+
+                if (data.length === 0) {
+                    done = true;
+                    break;
+                }
+
+                for (const item of data) {
+                    yield { ...(await this.validatePaginatedItem(path, item, itemSchema)), page: itemPage };
                 }
             }
         } while (!done);

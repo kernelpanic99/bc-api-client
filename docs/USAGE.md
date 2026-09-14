@@ -131,6 +131,8 @@ const orders = await client.collectBlind('orders', {
 });
 ```
 
+Items arrive in page order, and the read ends at the first page that is empty, a 404, or a 204.
+
 By default the client fetches up to 500 pages. Raise or lower this with `maxPages`:
 
 ```ts
