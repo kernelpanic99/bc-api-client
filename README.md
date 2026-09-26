@@ -1,24 +1,23 @@
 # Bigcommerce management API client and JWT authenticator
 
 [![CI](https://github.com/kernelpanic99/bc-api-client/actions/workflows/ci.yml/badge.svg)](https://github.com/kernelpanic99/bc-api-client/actions/workflows/ci.yml)
-[![npm](https://img.shields.io/npm/v/bc-api-client/beta)](https://www.npmjs.com/package/bc-api-client?activeTab=versions)
+[![npm](https://img.shields.io/npm/v/bc-api-client)](https://www.npmjs.com/package/bc-api-client?activeTab=versions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Node 22+](https://img.shields.io/badge/node-22%2B-brightgreen)](https://nodejs.org)
 
-> [!WARNING]
-> V1 is a complete rewrite. See [Migration Guide](docs/V1_MIGRATION_GUIDE.md)
+> [!NOTE]
+> Upgrading? Breaking changes for each release are listed in the [Changelog](CHANGELOG.md). Coming from 0.x, see the [V1 Migration Guide](docs/V1_MIGRATION_GUIDE.md).
 
 An opinionated and minimalistic client focusing on simplicity and concurrent performance.
 
 ## Table of Contents
 
+- [Features](#features)
 - [Installation](#installation)
 - [Usage](#usage)
   - [API Client](#api-client)
   - [Authentication](#authentication)
 - [API Reference](#api-reference)
-  - [BigCommerceClient](#bigcommerceclient)
-  - [BigCommerceAuth](#bigcommerceauth)
 - [Tips](#tips)
 - [License](#license)
 
@@ -32,7 +31,9 @@ An opinionated and minimalistic client focusing on simplicity and concurrent per
   - Async generator streams
   - Automatic concurrency backoff on 429 and 5xx
   - V3 envelope pagination
-  - V2 "blind" pagination until 404, 204 or a given page limit
+  - V2 "blind" pagination in page order, until an empty page, 404, 204, a short page (opt-in) or a page limit
+  - Batched requests with per-request results
+  - Lookups by large lists of values, split to fit the URL size limit
 - App authenticator module. Request token and verify JWT.
 
 ## Installation
@@ -112,6 +113,7 @@ const claims = await auth.verify(jwtPayload, "your-store-hash");
 
 - [BigCommerceClient](/docs/api/classes/BigCommerceClient.md)
 - [BigCommerceAuth](/docs/api/classes/BigCommerceAuth.md)
+- [Full index](/docs/api/README.md): errors, types and helpers
 
 ## Tips
 
