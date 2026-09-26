@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.1] - 2026-09-26
+
+### Maintenance
+
+- Bump dev dependencies, including biome 2.5.14, vitest 5.0.1, and zod 4.6.5
+- Update the devenv lock
+- Bring the README up to date with 2.2.0: blind pagination stop conditions, batch and query features, and a link to the full API index
+
 ## [2.2.0] - 2026-09-14
 
 ### Fixed
