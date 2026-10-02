@@ -18,8 +18,8 @@ importers:
         specifier: 2.1.0
         version: 2.1.0
       p-limit:
-        specifier: 7.3.2
-        version: 7.3.2
+        specifier: 7.3.3
+        version: 7.3.3
     devDependencies:
       '@arethetypeswrong/core':
         specifier: 0.18.5
@@ -993,8 +993,8 @@ packages:
     resolution: {integrity: sha512-0eJJY6hXLGf1udHwfNftBqH+g73EU4B504nZeKpz1sYRKafAghwxEJunB2O7rDZkL4PGfsMVnTXZ2EjibbqcsA==}
     engines: {node: '>=14.0.0'}
 
-  p-limit@7.3.2:
-    resolution: {integrity: sha512-Ll0w3fU24vYpXoZmjjZIee6bJQDgG0oAyo1PdmFYI8UDwJJddaHAypxIH9avUu+t+lSsAwKVsb1jDCMIIChliw==}
+  p-limit@7.3.3:
+    resolution: {integrity: sha512-SKgVvDU5TNIxQ4r30U75BNLC6a+6GOEjngrk/ysM5+Zu3oJuk1SC5ApzIzY/7PjCEjoVPMWJ0zho/4QUiEB7TQ==}
     engines: {node: '>=20'}
 
   picocolors@1.1.1:
@@ -1967,7 +1967,7 @@ snapshots:
 
   on-exit-leak-free@2.1.2: {}
 
-  p-limit@7.3.2:
+  p-limit@7.3.3:
     dependencies:
       yocto-queue: 1.2.2
 
