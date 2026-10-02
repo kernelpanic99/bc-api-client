@@ -56,7 +56,7 @@
         "@arethetypeswrong/core": "0.18.5",
         "@aws-lambda-powertools/logger": "2.35.0",
         "@biomejs/biome": "2.5.14",
-        "@types/node": "22.20.3",
+        "@types/node": "22.20.4",
         "concurrently": "10.0.5",
         "lefthook": "2.1.14",
         "pino": "10.3.1",
@@ -65,7 +65,7 @@
         "typedoc-plugin-markdown": "4.13.1",
         "typescript": "6.0.3",
         "typescript-native": "npm:typescript@7.0.2",
-        "vitest": "5.0.1",
+        "vitest": "5.0.2",
         "zod": "4.6.5"
     },
     "dependencies": {
