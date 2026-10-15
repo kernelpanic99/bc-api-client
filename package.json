@@ -71,6 +71,6 @@
     "dependencies": {
         "jose": "6.2.12",
         "ky": "2.1.0",
-        "p-limit": "7.3.2"
+        "p-limit": "7.3.3"
     }
 }
