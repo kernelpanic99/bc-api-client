@@ -15,8 +15,8 @@ importers:
         specifier: 6.2.12
         version: 6.2.12
       ky:
-        specifier: 2.1.0
-        version: 2.1.0
+        specifier: 2.2.0
+        version: 2.2.0
       p-limit:
         specifier: 7.3.3
         version: 7.3.3
@@ -824,8 +824,8 @@ packages:
   jose@6.2.12:
     resolution: {integrity: sha512-9NiFmJEex0sy2Dk58j2UGBSHgUs2ypF9eZSu4L6vjOX3Dp96Sw1F3uL+H+D1sx02jZZdzUT0HgvCy59CuvXcWw==}
 
-  ky@2.1.0:
-    resolution: {integrity: sha512-nIKwelw+7qVqKOlX4Eht6GXfEXlDHcdIjyLWV3s119kYt5s+70ayTnYS+0fRNmtgGRRAfqdeWQbh8YizqkS0ng==}
+  ky@2.2.0:
+    resolution: {integrity: sha512-4+B63kyZt+Y8snQiUGydK1vgY9xYQJZEh9K/nIAIEts+gYJzy1EiAw3BbK8xpWRuWUpN70SNCMjqRGTm75xxIA==}
     engines: {node: '>=22'}
 
   lefthook-darwin-arm64@2.1.16:
@@ -1830,7 +1830,7 @@ snapshots:
 
   jose@6.2.12: {}
 
-  ky@2.1.0: {}
+  ky@2.2.0: {}
 
   lefthook-darwin-arm64@2.1.16:
     optional: true
