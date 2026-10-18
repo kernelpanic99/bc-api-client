@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.2] - 2026-10-18
+
+### Maintenance
+
+- Bump runtime dependencies: ky 2.2.0, p-limit 7.3.3
+- Bump dev dependencies, including biome 2.5.15, vitest 5.0.3, and lefthook 2.2.1
+- Resolve audit advisories in dev dependencies: brace-expansion, markdown-it, nanoid, and source-map-js
+
 ## [2.2.1] - 2026-09-26
 
 ### Maintenance
